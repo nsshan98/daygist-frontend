@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import {
@@ -20,7 +20,7 @@ import { loginSchema, LoginSchemaType } from "@/zod/auth-schema";
 import Link from "next/link";
 import Image from "next/image";
 
-import { signIn } from "@/lib/auth";
+import { signIn, googleSignIn } from "@/lib/auth";
 import { Spinner } from "@/components/atoms/spinner";
 
 const LoginForm = () => {
@@ -36,6 +36,60 @@ const LoginForm = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [globalError, setGlobalError] = useState<string>("");
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  const handleGoogleCredential = useCallback(async (response: { credential?: string }) => {
+    if (!response.credential) {
+      setGlobalError("Google sign-in failed. Please try again.");
+      return;
+    }
+
+    setIsGoogleLoading(true);
+    setGlobalError("");
+
+    try {
+      const result = await googleSignIn(response.credential);
+      if (result?.error) {
+        setGlobalError(result.error);
+      }
+    } catch {
+      setGlobalError("Google sign-in failed. Please try again.");
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) return;
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      window.google?.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleCredential,
+      });
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, [handleGoogleCredential]);
+
+  const handleGoogleSignIn = () => {
+    setIsGoogleLoading(true);
+    setGlobalError("");
+    window.google?.accounts.id.prompt((notification) => {
+      const momentType = notification.getMomentType();
+      if (momentType === "dismissed" || momentType === "skipped") {
+        setIsGoogleLoading(false);
+      }
+    });
+  };
 
   const onSubmit = async (data: LoginSchemaType) => {
     setGlobalError("");
@@ -95,23 +149,25 @@ const LoginForm = () => {
 
       {/* ── Right panel ── */}
       <div className="flex-1 flex items-center justify-center bg-card px-6 py-12">
-        <div className="w-full max-w-sm space-y-8">
+        <div className="w-full max-w-sm space-y-4">
 
           {/* App brand */}
-          <div className="text-center space-y-1">
+          <div className="text-center">
             <Link href="/" className="inline-block">
-              <span className="font-baumans text-4xl text-foreground tracking-tight">
+              <span className="font-baumans text-sm text-foreground tracking-tight">
                 DayGist
               </span>
             </Link>
           </div>
 
           {/* Heading */}
-          <div className="text-center">
-            <p className="text-muted-foreground text-base">
-              Welcome to DayGist
-            </p>
-          </div>
+          <p className="text-muted-foreground text-4xl text-center">
+            Welcome to DayGist
+          </p>
+
+          <p className="text-muted-foreground text-xl text-center">
+            Sign In to your Account
+          </p>
 
           {/* Form */}
           <Form {...loginForm}>
@@ -126,7 +182,7 @@ const LoginForm = () => {
               )}
 
               {/* Email / Phone */}
-              <FormField
+              {/* <FormField
                 control={loginForm.control}
                 name="phone_or_email"
                 render={({ field }) => (
@@ -145,10 +201,10 @@ const LoginForm = () => {
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+              /> */}
 
               {/* Password */}
-              <FormField
+              {/* <FormField
                 control={loginForm.control}
                 name="password"
                 render={({ field }) => (
@@ -193,10 +249,10 @@ const LoginForm = () => {
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+              /> */}
 
               {/* Sign in */}
-              <Button
+              {/* <Button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-auto mx-auto flex px-10 h-11 bg-foreground hover:bg-foreground/85 text-background font-medium rounded-full shadow-sm transition-all duration-200 hover:scale-[1.02]"
@@ -209,32 +265,38 @@ const LoginForm = () => {
                 ) : (
                   "Sign in"
                 )}
-              </Button>
+              </Button> */}
 
               {/* Divider */}
-              <div className="flex items-center gap-3">
+              {/* <div className="flex items-center gap-3">
                 <span className="flex-1 h-px bg-border" />
                 <span className="text-xs text-muted-foreground">or</span>
                 <span className="flex-1 h-px bg-border" />
-              </div>
+              </div> */}
 
-              {/* Google sign-in placeholder */}
+              {/* Google sign-in */}
               <button
                 type="button"
-                className="w-full flex items-center justify-center gap-3 h-11 rounded-xl border border-border bg-background hover:bg-muted transition-colors text-sm font-medium text-foreground"
+                onClick={handleGoogleSignIn}
+                disabled={isGoogleLoading}
+                className="w-full flex items-center justify-center gap-3 h-11 rounded-xl border border-border bg-background hover:bg-muted transition-colors text-sm font-medium text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {/* Google "G" icon using SVG */}
-                <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
-                  <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107" />
-                  <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00" />
-                  <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50" />
-                  <path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2" />
-                </svg>
-                Sign in with Google
+                {isGoogleLoading ? (
+                  <Spinner />
+                ) : (
+                  /* Google "G" icon using SVG */
+                  <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+                    <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107" />
+                    <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00" />
+                    <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50" />
+                    <path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2" />
+                  </svg>
+                )}
+                {isGoogleLoading ? "Signing in..." : "Sign in with Google"}
               </button>
 
               {/* Register link */}
-              <p className="text-center text-sm text-muted-foreground">
+              {/* <p className="text-center text-sm text-muted-foreground">
                 New to DayGist?{" "}
                 <Button
                   href="/auth/sign-up"
@@ -244,7 +306,7 @@ const LoginForm = () => {
                 >
                   Create Account
                 </Button>
-              </p>
+              </p> */}
             </form>
           </Form>
         </div>

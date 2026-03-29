@@ -85,6 +85,20 @@ const useSetNewPassword = () => {
   return { setNewPasswordMutation };
 };
 
+// ===============================|| GOOGLE LOGIN ||============================== //
+const useGoogleLogin = () => {
+  const googleLoginMutation = useMutation({
+    mutationFn: async (data: { idToken: string }) => {
+      return axiosClient.post("/users/google", data, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    },
+  });
+  return { googleLoginMutation };
+};
+
 // ===============================|| USER PROFILE ||============================== //
 const useShowUserProfile = () => {
   const showUserProfileQuery = useQuery({
@@ -99,4 +113,4 @@ const useShowUserProfile = () => {
   return { showUserProfileQuery };
 };
 
-export { useSignupUser, useVerifyUserOtp, useResendOtp, useForgetPassword, useForgetPasswordOtp, useSetNewPassword, useShowUserProfile };
+export { useSignupUser, useVerifyUserOtp, useResendOtp, useForgetPassword, useForgetPasswordOtp, useSetNewPassword, useGoogleLogin, useShowUserProfile };
