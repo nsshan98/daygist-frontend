@@ -37,58 +37,93 @@ const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [globalError, setGlobalError] = useState<string>("");
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [showGoogleFallback, setShowGoogleFallback] = useState(false);
 
   const handleGoogleCredential = useCallback(async (response: { credential?: string }) => {
+    console.log("Google credential response:", response);
+    
     if (!response.credential) {
-      setGlobalError("Google sign-in failed. Please try again.");
+      setGlobalError("Google sign-in failed. No credentials received. Please try again.");
+      setIsGoogleLoading(false);
       return;
     }
 
-    setIsGoogleLoading(true);
     setGlobalError("");
 
     try {
       const result = await googleSignIn(response.credential);
       if (result?.error) {
         setGlobalError(result.error);
+        setIsGoogleLoading(false);
       }
-    } catch {
+      // Success - will redirect via googleSignIn function
+    } catch (error) {
+      console.error("Google sign-in error:", error);
       setGlobalError("Google sign-in failed. Please try again.");
-    } finally {
       setIsGoogleLoading(false);
     }
   }, []);
 
   useEffect(() => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!clientId) return;
+    if (!clientId) {
+      console.error("Google Client ID not found in environment variables");
+      return;
+    }
 
     const script = document.createElement("script");
     script.src = "https://accounts.google.com/gsi/client";
     script.async = true;
     script.defer = true;
     script.onload = () => {
-      window.google?.accounts.id.initialize({
-        client_id: clientId,
-        callback: handleGoogleCredential,
-      });
+      console.log("Google GSI script loaded successfully");
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleCredential,
+          auto_select: false,
+        });
+        console.log("Google accounts initialized with client ID:", clientId.substring(0, 20) + "...");
+        
+        // Render the Google Sign-In button programmatically
+        const googleButtonContainer = document.getElementById('google-button-container');
+        if (googleButtonContainer) {
+          window.google.accounts.id.renderButton(
+            googleButtonContainer,
+            {
+              theme: 'outline',
+              size: 'large',
+              width: '100%',
+              text: 'signin_with',
+            }
+          );
+          // Google script loaded successfully, hide fallback
+          setShowGoogleFallback(false);
+        }
+      } else {
+        console.error("Google accounts object not available after script load");
+        // Google object not available, show fallback
+        setShowGoogleFallback(true);
+      }
+    };
+    script.onerror = () => {
+      console.error("Failed to load Google GSI script");
+      // Script failed to load, show fallback
+      setShowGoogleFallback(true);
     };
     document.body.appendChild(script);
 
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, [handleGoogleCredential]);
 
   const handleGoogleSignIn = () => {
-    setIsGoogleLoading(true);
-    setGlobalError("");
-    window.google?.accounts.id.prompt((notification) => {
-      const momentType = notification.getMomentType();
-      if (momentType === "dismissed" || momentType === "skipped") {
-        setIsGoogleLoading(false);
-      }
-    });
+    // This function is now kept for compatibility but the actual button
+    // is rendered by Google's library in the useEffect above
+    console.log("Google sign-in initiated");
   };
 
   const onSubmit = async (data: LoginSchemaType) => {
@@ -275,25 +310,32 @@ const LoginForm = () => {
               </div> */}
 
               {/* Google sign-in */}
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                disabled={isGoogleLoading}
-                className="w-full flex items-center justify-center gap-3 h-11 rounded-xl border border-border bg-background hover:bg-muted transition-colors text-sm font-medium text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isGoogleLoading ? (
-                  <Spinner />
-                ) : (
-                  /* Google "G" icon using SVG */
-                  <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
-                    <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107" />
-                    <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00" />
-                    <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50" />
-                    <path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2" />
-                  </svg>
-                )}
-                {isGoogleLoading ? "Signing in..." : "Sign in with Google"}
-              </button>
+              <div id="google-button-container" className="w-full flex items-center justify-center">
+                {/* Google button will be rendered here by the library */}
+              </div>
+              
+              {/* Fallback button if Google script fails to load */}
+              {showGoogleFallback && (
+                <button
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  disabled={isGoogleLoading}
+                  className="w-full flex items-center justify-center gap-3 h-11 rounded-xl border border-border bg-background hover:bg-muted transition-colors text-sm font-medium text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isGoogleLoading ? (
+                    <Spinner />
+                  ) : (
+                    /* Google "G" icon using SVG */
+                    <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+                      <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107" />
+                      <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00" />
+                      <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50" />
+                      <path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2" />
+                    </svg>
+                  )}
+                  {isGoogleLoading ? "Signing in..." : "Sign in with Google"}
+                </button>
+              )}
 
               {/* Register link */}
               {/* <p className="text-center text-sm text-muted-foreground">

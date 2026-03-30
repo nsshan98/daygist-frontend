@@ -3,8 +3,7 @@
 
 @custom-variant dark (&:is(.dark *));
 @theme {
-  --font-plus-jakarta-sans: var(--font-plus-jakarta-sans);
-  --font-baumans: var(--font-baumans);
+  --font-gabarito: var(--font-gabarito);
 }
 
 html {
@@ -164,7 +163,7 @@ html {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground font-plus-jakarta-sans;
+    @apply bg-background text-foreground font-gabarito;
   }
 }
 

@@ -1,19 +1,14 @@
 import type { Metadata } from "next";
-import { Baumans, Plus_Jakarta_Sans } from "next/font/google";
+import { Gabarito } from "next/font/google";
 import "../globals.css";
 import Navbar from "@/components/organisms/navbar";
 import Providers from "../providers";
-import { Toaster } from "sonner";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta-sans",
-  subsets: ["latin"],
-});
 
-const baumans = Baumans({
-  variable: "--font-baumans",
+const gabarito = Gabarito({
+  variable: "--font-gabarito",
   subsets: ["latin"],
-  weight: "400",
+  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
@@ -29,7 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${plusJakartaSans.variable} ${baumans.variable} antialiased`}
+        className={`${gabarito.variable} antialiased`}
       >
         <Providers>
           <Navbar />
