@@ -3,6 +3,7 @@
 import type React from "react";
 
 import { useEffect, useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import {
@@ -24,6 +25,7 @@ import { signIn, googleSignIn } from "@/lib/auth";
 import { Spinner } from "@/components/atoms/spinner";
 
 const LoginForm = () => {
+  const router = useRouter();
   const loginForm = useForm<LoginSchemaType>({
     defaultValues: {
       phone_or_email: "",
@@ -57,12 +59,22 @@ const LoginForm = () => {
         setIsGoogleLoading(false);
       }
       // Success - will redirect via googleSignIn function
-    } catch (error) {
+      // The redirect will throw NEXT_REDIRECT which is handled below
+    } catch (error: any) {
+      // Check if this is a Next.js redirect error (expected behavior)
+      if (error?.digest?.includes('NEXT_REDIRECT')) {
+        // This is a successful sign-in - Next.js is redirecting
+        // Don't log as error, don't show message, just let the redirect happen
+        console.log("✓ Google sign-in successful - redirecting to home...");
+        return;
+      }
+      
+      // This is a real error
       console.error("Google sign-in error:", error);
       setGlobalError("Google sign-in failed. Please try again.");
       setIsGoogleLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -132,20 +144,33 @@ const LoginForm = () => {
     formData.append("phone_or_email", data.phone_or_email);
     formData.append("password", data.password);
 
-    const result = await signIn(undefined, formData);
+    try {
+      const result = await signIn(undefined, formData);
 
-    console.log(result);
+      console.log(result);
 
-    if (result?.error) {
-      if (result.error.phone_or_email) {
-        loginForm.setError("phone_or_email", { message: result.error.phone_or_email[0] });
+      if (result?.error) {
+        if (result.error.phone_or_email) {
+          loginForm.setError("phone_or_email", { message: result.error.phone_or_email[0] });
+        }
+        if (result.error.password) {
+          loginForm.setError("password", { message: result.error.password[0] });
+        }
       }
-      if (result.error.password) {
-        loginForm.setError("password", { message: result.error.password[0] });
+      if (result?.message) {
+        setGlobalError(result.message);
       }
-    }
-    if (result?.message) {
-      setGlobalError(result.message);
+    } catch (error: any) {
+      // Check if this is a Next.js redirect error (expected behavior)
+      if (error?.digest?.includes('NEXT_REDIRECT')) {
+        // This is a successful login - Next.js is redirecting
+        console.log("✓ Login successful - redirecting to home...");
+        return;
+      }
+      
+      // Real error
+      console.error("Login error:", error);
+      setGlobalError("Login failed. Please try again.");
     }
   };
 

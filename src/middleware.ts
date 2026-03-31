@@ -8,7 +8,7 @@ const encodedKey = new TextEncoder().encode(secretKey);
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Define paths
+  // Public routes that don't require authentication
   const publicRoutes = [
     "/auth/login",
     "/auth/sign-up",
@@ -16,13 +16,9 @@ export async function middleware(req: NextRequest) {
     "/auth/forget-password",
     "/auth/new-password",
   ];
-  const protectedRoutes = ["/admin", "/dashboard", "/admin/onboarding"];
-
-  // Check if the current path is a public or protected route
+  
+  // Check if the current path is a public route
   const isPublicRoute = publicRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
-  const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route)
   );
 
@@ -42,14 +38,15 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Redirect unauthenticated users trying to access protected routes
-  if (isProtectedRoute && !isAuthenticated) {
-    return NextResponse.redirect(new URL("/auth/login", req.url));
+  // If trying to access auth routes while authenticated, redirect to home
+  if (isPublicRoute && isAuthenticated) {
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
-  // Redirect authenticated users trying to access public routes
-  if (isPublicRoute && isAuthenticated) {
-    return NextResponse.redirect(new URL("/admin", req.url));
+  // If NOT authenticated and trying to access ANY non-public route, redirect to login
+  // This makes ALL routes protected except /auth/*
+  if (!isAuthenticated && !isPublicRoute) {
+    return NextResponse.redirect(new URL("/auth/login", req.url));
   }
 
   return NextResponse.next();

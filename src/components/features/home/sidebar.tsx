@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "@/components/atoms/button";
 import { Card, CardContent } from "@/components/atoms/card";
 import { Badge } from "@/components/atoms/badge";
@@ -22,7 +23,7 @@ const navItems = [
   { label: "Notifications", icon: Bell, active: false, badge: 3 },
   { label: "Messages", icon: Mail, active: false, badge: 12 },
   { label: "Bookmarks", icon: Bookmark, active: false },
-  { label: "Profile", icon: User, active: false },
+  { label: "Profile", icon: User, active: false, href: "/profile" },
 ];
 
 const trendingTopics = [
@@ -52,24 +53,27 @@ export function Sidebar() {
                       ? 'shadow-lg hover:shadow-xl hover:scale-[1.02] bg-linear-to-r from-primary/90 to-primary' 
                       : 'hover:bg-primary/10 hover:text-primary'
                   }`}
+                  asChild
                 >
-                  {/* Active indicator line */}
-                  {item.active && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-linear-to-b from-secondary to-primary rounded-r-full" />
-                  )}
-                  
-                  <Icon className={`w-5 h-5 mr-3 transition-transform duration-300 ${
-                    item.active ? 'scale-110' : 'group-hover:scale-110'
-                  }`} />
-                  
-                  <span className="flex-1 text-left">{item.label}</span>
-                  
-                  {/* Notification badge */}
-                  {item.badge && (
-                    <div className="flex items-center justify-center min-w-5 h-5 px-1.5 bg-linear-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full shadow-lg">
-                      {item.badge > 99 ? '99+' : item.badge}
-                    </div>
-                  )}
+                  <Link href={item.href || "#"}>
+                    {/* Active indicator line */}
+                    {item.active && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-linear-to-b from-secondary to-primary rounded-r-full" />
+                    )}
+                                  
+                    <Icon className={`w-5 h-5 mr-3 transition-transform duration-300 ${
+                      item.active ? 'scale-110' : 'group-hover:scale-110'
+                    }`} />
+                                  
+                    <span className="flex-1 text-left">{item.label}</span>
+                                  
+                    {/* Notification badge */}
+                    {item.badge && (
+                      <div className="flex items-center justify-center min-w-5 h-5 px-1.5 bg-linear-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full shadow-lg">
+                        {item.badge > 99 ? '99+' : item.badge}
+                      </div>
+                    )}
+                  </Link>
                 </Button>
               );
             })}

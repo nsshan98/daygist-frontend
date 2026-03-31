@@ -46,7 +46,7 @@ export async function signIn(
       accessToken: result.access_token,
       refreshToken: result.refresh_token,
     });
-    redirect("/admin");
+    redirect("/");
   } else {
     return {
       message:
@@ -78,15 +78,26 @@ export async function googleSignIn(idToken: string): Promise<{ error?: string }>
     if (response.ok) {
       console.log("Google sign-in successful, creating session...");
 
+      // Handle both response formats:
+      // New format: { token, user }
+      // Old format: { access_token, refresh_token, user_info }
+      const accessToken = responseBody.token || responseBody.access_token;
+      const refreshToken = responseBody.refresh_token || ""; // Empty string if not provided
+      
+      // Extract user info from both formats
+      const userInfo = responseBody.user || responseBody.user_info || {};
+      const userId = userInfo._id || userInfo.user_id || "unknown";
+      const userName = userInfo.name || userInfo.full_name || "User";
+
       await createSession({
         user: {
-          id: String(responseBody.user_info?.user_id),
-          name: responseBody.user_info?.full_name || "User",
+          id: String(userId),
+          name: userName,
         },
-        accessToken: responseBody.access_token,
-        refreshToken: responseBody.refresh_token,
+        accessToken,
+        refreshToken,
       });
-      redirect("/admin");
+      redirect("/");
     } else {
       console.error("Google sign-in failed with status:", response.status, responseBody);
       
@@ -105,6 +116,11 @@ export async function googleSignIn(idToken: string): Promise<{ error?: string }>
       return { error: errorMessage };
     }
   } catch (error) {
+    // Next.js redirect() works by throwing a special NEXT_REDIRECT error.
+    // We must re-throw it so the framework can process the redirect correctly.
+    if (error instanceof Error && error.message === "NEXT_REDIRECT") {
+      throw error;
+    }
     console.error("Google sign-in error:", error);
     return { error: "Network error. Please check your connection and try again." };
   }

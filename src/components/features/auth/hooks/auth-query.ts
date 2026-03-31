@@ -104,7 +104,7 @@ const useShowUserProfile = () => {
   const showUserProfileQuery = useQuery({
     queryKey: ["user-profile"],
     queryFn: async () => {
-      const { data } = await axiosClient.get("/user/profile/");
+      const { data } = await axiosClient.get("/users/me");
       return data;
     },
     retry: false,
