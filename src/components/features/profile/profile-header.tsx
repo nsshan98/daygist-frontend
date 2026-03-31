@@ -5,17 +5,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Button } from "@/components/atoms/button";
 import { Card } from "@/components/atoms/card";
 import { Badge } from "@/components/atoms/badge";
-import { 
-  Camera, 
-  MapPin, 
-  Link as LinkIcon, 
+import {
+  Camera,
+  MapPin,
+  Link as LinkIcon,
   Calendar,
   MoreHorizontal,
   MessageCircle,
   UserPlus,
   Check,
   Share2,
-  Heart
+  Heart,
+  Edit
 } from "lucide-react";
 import { useUploadAvatar, useUploadCover } from "./hooks/profile-query";
 import { toast } from "sonner";
@@ -48,10 +49,10 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
   const [avatarImage, setAvatarImage] = useState<string>(profile.avatar.url);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  
+
   const coverInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  
+
   const { uploadCoverMutation } = useUploadCover();
   const { uploadAvatarMutation } = useUploadAvatar();
 
@@ -75,9 +76,9 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
   };
 
   const joinDate = new Date(profile.createdAt);
-  const formattedJoinDate = joinDate.toLocaleDateString('en-US', { 
-    month: 'long', 
-    year: 'numeric' 
+  const formattedJoinDate = joinDate.toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric'
   });
 
   const openEditDialog = () => {
@@ -116,7 +117,7 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
         }
       },
       onError: (error) => {
-        const message = isAxiosError(error) 
+        const message = isAxiosError(error)
           ? error.response?.data?.message || "Failed to update cover photo"
           : "Failed to update cover photo";
         toast.error(message);
@@ -154,17 +155,17 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
       onSuccess: (response) => {
         const newAvatarUrl = response.data?.avatar?.url;
 
-        console.log({newAvatarUrl});
-        console.log({response});
-        
-        
+        console.log({ newAvatarUrl });
+        console.log({ response });
+
+
         if (newAvatarUrl) {
           setAvatarImage(newAvatarUrl);
           toast.success("Profile picture updated successfully");
         }
       },
       onError: (error) => {
-        const message = isAxiosError(error) 
+        const message = isAxiosError(error)
           ? error.response?.data?.message || "Failed to update profile picture"
           : "Failed to update profile picture";
         toast.error(message);
@@ -189,7 +190,7 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
             className="w-full h-full object-cover"
           />
         )}
-        
+
         {/* Cover Upload Button */}
         {profile.isMe && (
           <div className="absolute top-4 right-4">
@@ -236,7 +237,7 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
                 {getInitials(profile.name)}
               </AvatarFallback>
             </Avatar>
-            
+
             {/* Avatar Upload Button */}
             {profile.isMe && (
               <>
@@ -265,26 +266,26 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
             )}
           </div>
 
-            {/* Name and Edit Button */}
-            <div className="flex-1 w-full sm:w-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 sm:mt-0 sm:ml-6">
-              {/* Name and Username */}
-              <div className="space-y-1">
-                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{profile.name}</h1>
-                <p className="text-base sm:text-lg text-muted-foreground mt-1">@{profile.username}</p>
-              </div>
-            
-              {/* Edit Profile Button */}
-              {profile.isMe && onEditProfile && (
-                <Button 
-                  variant="default" 
-                  className="gap-2 rounded-xl shrink-0"
-                  onClick={onEditProfile}
-                >
-                  <MoreHorizontal className="w-4 h-4" />
-                  Edit Profile
-                </Button>
-              )}
+          {/* Name and Edit Button */}
+          <div className="flex-1 w-full sm:w-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 sm:mt-0 sm:ml-6">
+            {/* Name and Username */}
+            <div className="space-y-1">
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{profile.name}</h1>
+              <p className="text-base sm:text-lg text-muted-foreground mt-1">@{profile.username}</p>
             </div>
+
+            {/* Edit Profile Button */}
+            {profile.isMe && onEditProfile && (
+              <Button
+                variant="default"
+                className="gap-2 rounded-xl shrink-0"
+                onClick={onEditProfile}
+              >
+                <Edit className="w-4 h-4" />
+                Edit Profile
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Name and Bio */}
@@ -314,17 +315,17 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
             <Calendar className="w-5 h-5" />
             <span>Joined {formattedJoinDate}</span>
           </div>
-          
+
           <div className="flex items-center gap-2.5 text-sm sm:text-base text-muted-foreground">
             <MapPin className="w-5 h-5" />
             <span>Lives in {profile.address?.country || 'N/A'}</span>
           </div>
-          
+
           <div className="flex items-center gap-2.5 text-sm sm:text-base text-muted-foreground">
             <Calendar className="w-5 h-5" />
             <span>{profile.age ? `${profile.age} years old` : 'N/A'}</span>
           </div>
-          
+
           <div className="flex items-center gap-2.5 text-sm sm:text-base text-muted-foreground">
             <Heart className="w-5 h-5" />
             <span className="capitalize">{profile.relationship ? profile.relationship.toLowerCase().replace('_', ' ') : 'N/A'}</span>
