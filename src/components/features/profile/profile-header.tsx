@@ -4,23 +4,17 @@ import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Button } from "@/components/atoms/button";
 import { Card } from "@/components/atoms/card";
-import { Badge } from "@/components/atoms/badge";
 import {
   Camera,
   MapPin,
-  Link as LinkIcon,
   Calendar,
-  MoreHorizontal,
-  MessageCircle,
-  UserPlus,
-  Check,
-  Share2,
   Heart,
   Edit
 } from "lucide-react";
 import { useUploadAvatar, useUploadCover } from "./hooks/profile-query";
 import { toast } from "sonner";
 import { isAxiosError } from "axios";
+import { ImageAdjustmentDialog } from "./image-adjustment-dialog";
 
 interface UserProfile {
   _id: string;
@@ -44,11 +38,23 @@ interface ProfileHeaderProps {
   onEditProfile?: () => void;
 }
 
+interface ImageAdjustments {
+  zoom: number;
+  rotation: number;
+  offsetY: number;
+}
+
 export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
   const [coverImage, setCoverImage] = useState<string | null>(profile.cover.url);
   const [avatarImage, setAvatarImage] = useState<string>(profile.avatar.url);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  
+  // Image adjustment dialog state
+  const [showCoverAdjustmentDialog, setShowCoverAdjustmentDialog] = useState(false);
+  const [showAvatarAdjustmentDialog, setShowAvatarAdjustmentDialog] = useState(false);
+  const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -98,12 +104,40 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
       return;
     }
 
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size should be less than 5MB");
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error(`Image size should be less than 2MB. Current size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
       return;
     }
 
+    // Show adjustment dialog instead of uploading directly
+    setPendingCoverFile(file);
+    setShowCoverAdjustmentDialog(true);
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error(`Image size should be less than 2MB. Current size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
+      return;
+    }
+
+    // Show adjustment dialog instead of uploading directly
+    setPendingAvatarFile(file);
+    setShowAvatarAdjustmentDialog(true);
+  };
+
+  // Upload cover after adjustment
+  const uploadAdjustedCover = (file: File, adjustments?: ImageAdjustments) => {
     setIsUploadingCover(true);
     const formData = new FormData();
     formData.append("file", file);
@@ -127,26 +161,13 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
         if (coverInputRef.current) {
           coverInputRef.current.value = "";
         }
+        setPendingCoverFile(null);
       },
     });
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error("Please select an image file");
-      return;
-    }
-
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size should be less than 5MB");
-      return;
-    }
-
+  // Upload avatar after adjustment
+  const uploadAdjustedAvatar = (file: File, adjustments?: ImageAdjustments) => {
     setIsUploadingAvatar(true);
     const formData = new FormData();
     formData.append("file", file);
@@ -175,6 +196,7 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
         if (avatarInputRef.current) {
           avatarInputRef.current.value = "";
         }
+        setPendingAvatarFile(null);
       },
     });
   };
@@ -338,6 +360,23 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
           </div>
         </div>
       </div>
+
+      {/* Image Adjustment Dialogs */}
+      <ImageAdjustmentDialog
+        open={showCoverAdjustmentDialog}
+        onOpenChange={setShowCoverAdjustmentDialog}
+        imageFile={pendingCoverFile}
+        onConfirm={uploadAdjustedCover}
+        type="cover"
+      />
+
+      <ImageAdjustmentDialog
+        open={showAvatarAdjustmentDialog}
+        onOpenChange={setShowAvatarAdjustmentDialog}
+        imageFile={pendingAvatarFile}
+        onConfirm={uploadAdjustedAvatar}
+        type="avatar"
+      />
     </Card>
   );
 }
