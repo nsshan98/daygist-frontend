@@ -1,6 +1,12 @@
 import { axiosClient } from "@/lib/axios-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+// ===============================|| SIGNED URL RESPONSE TYPE ||============================== //
+interface SignedUrlResponse {
+  ok: boolean;
+  url: string;
+}
+
 // ===============================|| GET USER PROFILE ||============================== //
 const useGetUserProfile = () => {
   const showUserProfileQuery = useQuery({
@@ -98,4 +104,43 @@ const useUploadCover = () => {
   return { uploadCoverMutation };
 };
 
-export { useGetUserProfile, useUpdateProfile, useUploadAvatar, useUploadCover };
+// ===============================|| GET SIGNED URL ||============================== //
+const useGetSignedUrl = () => {
+  const queryClient = useQueryClient();
+
+  // Use useQuery to fetch and cache signed URLs automatically
+  const useSignedUrl = (key: string | null | undefined) => {
+    return useQuery({
+      queryKey: ["signed-url", key],
+      queryFn: async () => {
+        if (!key) return null;
+        const encodedKey = encodeURIComponent(key);
+        const { data } = await axiosClient.get<SignedUrlResponse>(`/upload/signed?key=${encodedKey}`);
+        return data.url;
+      },
+      enabled: !!key,
+      staleTime: 1000 * 60 * 50, // 50 minutes (URL expires in 60 minutes typically)
+      gcTime: 1000 * 60 * 55, // 55 minutes
+    });
+  };
+
+  const prefetchSignedUrl = async (key: string) => {
+    await queryClient.prefetchQuery({
+      queryKey: ["signed-url", key],
+      queryFn: async () => {
+        const encodedKey = encodeURIComponent(key);
+        const { data } = await axiosClient.get<SignedUrlResponse>(`/upload/signed?key=${encodedKey}`);
+        return data.url;
+      },
+      staleTime: 1000 * 60 * 50,
+    });
+  };
+
+  const getCachedSignedUrl = (key: string) => {
+    return queryClient.getQueryData<string>(["signed-url", key]);
+  };
+
+  return { useSignedUrl, prefetchSignedUrl, getCachedSignedUrl };
+};
+
+export { useGetUserProfile, useUpdateProfile, useUploadAvatar, useUploadCover, useGetSignedUrl };

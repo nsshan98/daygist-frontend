@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Button } from "@/components/atoms/button";
 import { Card } from "@/components/atoms/card";
@@ -11,17 +11,18 @@ import {
   Heart,
   Edit
 } from "lucide-react";
-import { useUploadAvatar, useUploadCover } from "./hooks/profile-query";
+import { useUploadAvatar, useUploadCover, useGetSignedUrl } from "./hooks/profile-query";
 import { toast } from "sonner";
 import { isAxiosError } from "axios";
 import { ImageAdjustmentDialog } from "./image-adjustment-dialog";
+import { Skeleton } from "@/components/atoms/skeleton";
 
 interface UserProfile {
   _id: string;
   name: string;
   username: string;
-  avatar: { url: string; provider: string };
-  cover: { url: string | null };
+  avatar: { url: string; key: string; provider: string };
+  cover: { url: string | null; key: string | null };
   bio?: string | null;
   followerCount: number;
   followingCount: number;
@@ -45,8 +46,9 @@ interface ImageAdjustments {
 }
 
 export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
-  const [coverImage, setCoverImage] = useState<string | null>(profile.cover.url);
-  const [avatarImage, setAvatarImage] = useState<string>(profile.avatar.url);
+  // Use 'key' for signed URL fetching, fallback to 'url' if key is not available
+  const [coverKey, setCoverKey] = useState<string | null>(profile.cover.key || profile.cover.url);
+  const [avatarKey, setAvatarKey] = useState<string>(profile.avatar.key || profile.avatar.url);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   
@@ -61,6 +63,53 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
 
   const { uploadCoverMutation } = useUploadCover();
   const { uploadAvatarMutation } = useUploadAvatar();
+  const { useSignedUrl } = useGetSignedUrl();
+
+  // Helper function to check if a URL is a signed URL (contains query params) or a direct URL
+  const isSignedOrDirectUrl = (url: string | null): boolean => {
+    if (!url) return false;
+    // If URL starts with http/https and has query params, it's likely a signed URL
+    return url.startsWith('http') && url.includes('?');
+  };
+
+  // Helper function to check if a URL is a key (relative path like "images/...")
+  const isMediaKey = (url: string | null): boolean => {
+    if (!url) return false;
+    // If URL doesn't start with http, it's likely a key
+    return !url.startsWith('http');
+  };
+
+  // Determine if we need to fetch signed URLs (only for keys, not full URLs)
+  const coverKeyForQuery = useMemo(() => {
+    if (!coverKey) return null;
+    // Only fetch signed URL if it's a key (not a full URL)
+    return isMediaKey(coverKey) ? coverKey : null;
+  }, [coverKey]);
+
+  const avatarKeyForQuery = useMemo(() => {
+    if (!avatarKey) return null;
+    // Only fetch signed URL if it's a key (not a full URL)
+    return isMediaKey(avatarKey) ? avatarKey : null;
+  }, [avatarKey]);
+
+  // Use React Query to fetch signed URLs
+  const { data: coverSignedUrlFromQuery, isLoading: isLoadingCoverUrl } = useSignedUrl(coverKeyForQuery);
+  const { data: avatarSignedUrlFromQuery, isLoading: isLoadingAvatarUrl } = useSignedUrl(avatarKeyForQuery);
+
+  // Determine final signed URLs
+  const coverSignedUrl = useMemo(() => {
+    if (!coverKey) return null;
+    if (isSignedOrDirectUrl(coverKey)) return coverKey; // Already signed
+    if (isMediaKey(coverKey)) return coverSignedUrlFromQuery || null; // From query
+    return coverKey; // Regular URL
+  }, [coverKey, coverSignedUrlFromQuery]);
+
+  const avatarSignedUrl = useMemo(() => {
+    if (!avatarKey) return null;
+    if (isSignedOrDirectUrl(avatarKey)) return avatarKey; // Already signed
+    if (isMediaKey(avatarKey)) return avatarSignedUrlFromQuery || null; // From query
+    return avatarKey; // Regular URL
+  }, [avatarKey, avatarSignedUrlFromQuery]);
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
@@ -144,9 +193,10 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
 
     uploadCoverMutation.mutate(formData, {
       onSuccess: (response) => {
-        const newCoverUrl = response.data?.data?.cover?.url;
-        if (newCoverUrl) {
-          setCoverImage(newCoverUrl);
+        // Use 'key' if available, fallback to 'url'
+        const newCoverKey = response.data?.data?.cover?.key || response.data?.data?.cover?.url;
+        if (newCoverKey) {
+          setCoverKey(newCoverKey);
           toast.success("Cover photo updated successfully");
         }
       },
@@ -174,14 +224,11 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
 
     uploadAvatarMutation.mutate(formData, {
       onSuccess: (response) => {
-        const newAvatarUrl = response.data?.avatar?.url;
+        // Use 'key' if available, fallback to 'url'
+        const newAvatarKey = response.data?.avatar?.key || response.data?.avatar?.url;
 
-        console.log({ newAvatarUrl });
-        console.log({ response });
-
-
-        if (newAvatarUrl) {
-          setAvatarImage(newAvatarUrl);
+        if (newAvatarKey) {
+          setAvatarKey(newAvatarKey);
           toast.success("Profile picture updated successfully");
         }
       },
@@ -205,13 +252,15 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
     <Card className="border-none shadow-2xl overflow-hidden">
       {/* Cover Photo */}
       <div className="relative h-48 sm:h-64 md:h-80 bg-linear-to-br from-primary/20 via-secondary/20 to-muted/20">
-        {coverImage && (
+        {isLoadingCoverUrl ? (
+          <Skeleton className="w-full h-full" />
+        ) : coverSignedUrl ? (
           <img
-            src={coverImage}
+            src={coverSignedUrl}
             alt="Cover"
             className="w-full h-full object-cover"
           />
-        )}
+        ) : null}
 
         {/* Cover Upload Button */}
         {profile.isMe && (
@@ -254,7 +303,11 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
           {/* Avatar */}
           <div className="relative group shrink-0">
             <Avatar className="w-32 h-32 sm:w-40 sm:h-40 border-4 border-background shadow-2xl">
-              <AvatarImage src={avatarImage} alt={profile.name} />
+              {isLoadingAvatarUrl ? (
+                <Skeleton className="w-full h-full" />
+              ) : (
+                <AvatarImage src={avatarSignedUrl || undefined} alt={profile.name} />
+              )}
               <AvatarFallback className="text-2xl font-bold bg-linear-to-br from-primary to-secondary text-white">
                 {getInitials(profile.name)}
               </AvatarFallback>
