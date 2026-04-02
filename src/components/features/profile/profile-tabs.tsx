@@ -11,7 +11,10 @@ import {
   Image as ImageIcon,
   Video
 } from "lucide-react";
-import { FeedPost } from "@/components/features/home";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
+import { Button } from "@/components/atoms/button";
+import { useSignedMedia } from "./media-image";
+import { Skeleton } from "@/components/atoms/skeleton";
 
 interface Post {
   id: number;
@@ -34,7 +37,9 @@ interface MediaItem {
   id: number;
   type: 'image' | 'video';
   url: string;
+  key?: string; // Add key field for signed URL
   thumbnail?: string;
+  thumbnailKey?: string; // Add thumbnail key for signed URL
   postId?: number;
   likes?: number;
   comments?: number;
@@ -45,6 +50,99 @@ interface ProfileTabsProps {
   media?: MediaItem[];
   likedPosts?: Post[];
   savedPosts?: Post[];
+}
+
+// Simple Post Card for Profile
+function ProfilePostCard({ post }: { post: Post }) {
+  return (
+    <Card className="border-none shadow-lg overflow-hidden">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={post.user.avatar} alt={post.user.name} />
+            <AvatarFallback>{post.user.name[0]}</AvatarFallback>
+          </Avatar>
+          <div>
+            <h4 className="font-semibold text-sm">{post.user.name}</h4>
+            <p className="text-xs text-muted-foreground">@{post.user.username} • {post.time}</p>
+          </div>
+        </div>
+        <p className="text-sm mb-3">{post.content}</p>
+        {post.image && (
+          <img src={post.image} alt="Post" className="w-full rounded-lg mb-3" />
+        )}
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Heart className="w-4 h-4" /> {post.likes}
+          </span>
+          <span>{post.comments} comments</span>
+          <span>{post.shares} shares</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Media Item Component with Signed URL
+function MediaGridItem({ item }: { item: MediaItem }) {
+  const { useSignedUrl } = useSignedMedia();
+  const [isLoaded, setIsLoaded] = useState(false);
+  
+  // Fetch signed URLs
+  const { data: signedUrl } = useSignedUrl(item.key || null);
+  const { data: signedThumbnailUrl } = useSignedUrl(item.thumbnailKey || null);
+  
+  // Determine final URLs
+  const displayUrl = signedUrl || item.url;
+  const thumbnailDisplayUrl = signedThumbnailUrl || item.thumbnail || item.url;
+
+  return (
+    <div 
+      key={item.id} 
+      className="relative aspect-square group cursor-pointer overflow-hidden rounded-lg"
+    >
+      {!isLoaded && (
+        <Skeleton className="absolute inset-0 w-full h-full" />
+      )}
+      
+      {item.type === 'image' ? (
+        <img
+          src={displayUrl}
+          alt="Media"
+          className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+          onLoad={() => setIsLoaded(true)}
+        />
+      ) : (
+        <>
+          <img
+            src={thumbnailDisplayUrl}
+            alt="Video thumbnail"
+            className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => setIsLoaded(true)}
+          />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Video className="w-12 h-12 text-white" />
+          </div>
+        </>
+      )}
+      
+      {/* Overlay with stats */}
+      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white">
+        {(item.likes !== undefined) && (
+          <span className="flex items-center gap-1">
+            <Heart className="w-4 h-4 fill-white" />
+            {item.likes}
+          </span>
+        )}
+        {(item.comments !== undefined) && (
+          <span className="flex items-center gap-1">
+            <ImageIcon className="w-4 h-4" />
+            {item.comments}
+          </span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function ProfileTabs({ 
@@ -102,11 +200,9 @@ export function ProfileTabs({
       <TabsContent value="posts" className="mt-6 space-y-6">
         {mockPosts.length > 0 ? (
           mockPosts.map((post) => (
-            <FeedPost
+            <ProfilePostCard
               key={post.id}
-              {...post}
-              onLike={() => {}}
-              onSave={() => {}}
+              post={post}
             />
           ))
         ) : (
@@ -123,45 +219,7 @@ export function ProfileTabs({
         {mockMedia.length > 0 ? (
           <div className="grid grid-cols-3 gap-2 sm:gap-4">
             {mockMedia.map((item) => (
-              <div 
-                key={item.id} 
-                className="relative aspect-square group cursor-pointer overflow-hidden rounded-lg"
-              >
-                {item.type === 'image' ? (
-                  <img
-                    src={item.url}
-                    alt="Media"
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                  />
-                ) : (
-                  <>
-                    <img
-                      src={item.thumbnail || item.url}
-                      alt="Video thumbnail"
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Video className="w-12 h-12 text-white" />
-                    </div>
-                  </>
-                )}
-                
-                {/* Overlay with stats */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white">
-                  {(item.likes !== undefined) && (
-                    <span className="flex items-center gap-1">
-                      <Heart className="w-4 h-4 fill-white" />
-                      {item.likes}
-                    </span>
-                  )}
-                  {(item.comments !== undefined) && (
-                    <span className="flex items-center gap-1">
-                      <ImageIcon className="w-4 h-4" />
-                      {item.comments}
-                    </span>
-                  )}
-                </div>
-              </div>
+              <MediaGridItem key={item.id} item={item} />
             ))}
           </div>
         ) : (
@@ -177,11 +235,9 @@ export function ProfileTabs({
       <TabsContent value="likes" className="mt-6 space-y-6">
         {mockLikedPosts.length > 0 ? (
           mockLikedPosts.map((post) => (
-            <FeedPost
+            <ProfilePostCard
               key={post.id}
-              {...post}
-              onLike={() => {}}
-              onSave={() => {}}
+              post={post}
             />
           ))
         ) : (
@@ -197,11 +253,9 @@ export function ProfileTabs({
       <TabsContent value="saved" className="mt-6 space-y-6">
         {mockSavedPosts.length > 0 ? (
           mockSavedPosts.map((post) => (
-            <FeedPost
+            <ProfilePostCard
               key={post.id}
-              {...post}
-              onLike={() => {}}
-              onSave={() => {}}
+              post={post}
             />
           ))
         ) : (

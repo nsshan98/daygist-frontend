@@ -187,26 +187,43 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
 
   // Upload cover after adjustment
   const uploadAdjustedCover = (file: File, adjustments?: ImageAdjustments) => {
+    console.log('uploadAdjustedCover called:', {
+      fileName: file.name,
+      fileSize: `${(file.size / 1024).toFixed(2)}KB`,
+      adjustments,
+      fileType: 'cover'
+    });
+    
     setIsUploadingCover(true);
     const formData = new FormData();
     formData.append("file", file);
 
+    console.log('Calling uploadCoverMutation.mutate with formData');
     uploadCoverMutation.mutate(formData, {
       onSuccess: (response) => {
-        // Use 'key' if available, fallback to 'url'
-        const newCoverKey = response.data?.data?.cover?.key || response.data?.data?.cover?.url;
+        console.log('Cover upload success:', response.data);
+        
+        // Response structure: { ok: true, message: 'Cover updated', user: { cover: {...} } }
+        // Cover data is in response.data.user.cover
+        const newCoverKey = response.data?.user?.cover?.key || response.data?.user?.cover?.url;
+        
         if (newCoverKey) {
           setCoverKey(newCoverKey);
           toast.success("Cover photo updated successfully");
+        } else {
+          console.error('No cover key or URL in response:', response.data);
+          toast.error("Upload succeeded but no image URL returned");
         }
       },
       onError: (error) => {
+        console.error('Cover upload error:', error);
         const message = isAxiosError(error)
           ? error.response?.data?.message || "Failed to update cover photo"
           : "Failed to update cover photo";
         toast.error(message);
       },
       onSettled: () => {
+        console.log('Cover upload settled');
         setIsUploadingCover(false);
         if (coverInputRef.current) {
           coverInputRef.current.value = "";
@@ -249,6 +266,7 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
   };
 
   return (
+    <>
     <Card className="border-none shadow-2xl overflow-hidden">
       {/* Cover Photo */}
       <div className="relative h-48 sm:h-64 md:h-80 bg-linear-to-br from-primary/20 via-secondary/20 to-muted/20">
@@ -414,22 +432,23 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
         </div>
       </div>
 
-      {/* Image Adjustment Dialogs */}
-      <ImageAdjustmentDialog
-        open={showCoverAdjustmentDialog}
-        onOpenChange={setShowCoverAdjustmentDialog}
-        imageFile={pendingCoverFile}
-        onConfirm={uploadAdjustedCover}
-        type="cover"
-      />
-
-      <ImageAdjustmentDialog
-        open={showAvatarAdjustmentDialog}
-        onOpenChange={setShowAvatarAdjustmentDialog}
-        imageFile={pendingAvatarFile}
-        onConfirm={uploadAdjustedAvatar}
-        type="avatar"
-      />
     </Card>
+    {/* Image Adjustment Dialogs - Rendered outside the Card to avoid overflow clipping */}
+    <ImageAdjustmentDialog
+      open={showCoverAdjustmentDialog}
+      onOpenChange={setShowCoverAdjustmentDialog}
+      imageFile={pendingCoverFile}
+      onConfirm={uploadAdjustedCover}
+      type="cover"
+    />
+
+    <ImageAdjustmentDialog
+      open={showAvatarAdjustmentDialog}
+      onOpenChange={setShowAvatarAdjustmentDialog}
+      imageFile={pendingAvatarFile}
+      onConfirm={uploadAdjustedAvatar}
+      type="avatar"
+    />
+    </>
   );
 }

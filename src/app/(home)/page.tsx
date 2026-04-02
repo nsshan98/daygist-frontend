@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   FeedPost,
   CreatePost,
@@ -8,6 +8,10 @@ import {
   Sidebar,
 } from "@/components/features/home";
 import { Card, CardContent } from "@/components/atoms/card";
+import { useGetFeed, useLikePost, useSavePost, useSharePost } from "@/components/features/home/hooks/feed-query";
+import { Skeleton } from "@/components/atoms/skeleton";
+import { Button } from "@/components/atoms/button";
+import { RefreshCw, AlertCircle } from "lucide-react";
 
 interface PostUser {
   name: string;
@@ -28,112 +32,143 @@ interface Post {
   saved: boolean;
 }
 
-// Mock data for demonstration
-const mockStories = [
-  { id: 1, user: "Your Story", image: "/placeholder-user.jpg", isUser: true },
-  { id: 2, user: "john_doe", image: "/placeholder-user-1.jpg", hasNew: true },
-  { id: 3, user: "jane_smith", image: "/placeholder-user-2.jpg", hasNew: true },
-  { id: 4, user: "tech_guru", image: "/placeholder-user-3.jpg", hasNew: false },
-  { id: 5, user: "travel_bug", image: "/placeholder-user-4.jpg", hasNew: true },
-  { id: 6, user: "foodie_life", image: "/placeholder-user-5.jpg", hasNew: false },
-];
-
+// Mock data for suggestions (can be replaced with real API later)
 const mockSuggestions = [
   { id: 1, name: "Emily Rodriguez", username: "emily_r", avatar: "/placeholder-user-4.jpg", mutual: "3 mutual friends" },
   { id: 2, name: "Alex Thompson", username: "alex_t", avatar: "/placeholder-user-5.jpg", mutual: "5 mutual friends" },
   { id: 3, name: "Creative Studio", username: "creative_studio", avatar: "/placeholder-user-6.jpg", mutual: "Trending" },
 ];
 
-const mockPosts = [
-  {
-    id: 1,
-    user: {
-      name: "Sarah Johnson",
-      username: "sarah_j",
-      avatar: "/placeholder-user-1.jpg",
-    },
-    time: "2h ago",
-    content: "Just finished an amazing hike through the mountains! The view was absolutely breathtaking. 🏔️✨ #Nature #Hiking #Adventure",
-    image: "/placeholder-post-1.jpg",
-    likes: 234,
-    comments: 45,
-    shares: 12,
-    liked: false,
-    saved: false,
-  },
-  {
-    id: 2,
-    user: {
-      name: "Tech Daily",
-      username: "techdaily",
-      avatar: "/placeholder-user-2.jpg",
-    },
-    time: "4h ago",
-    content: "The future of AI is here! Check out these groundbreaking developments that are changing how we interact with technology. What's your take on this? 🤖💡",
-    image: "/placeholder-post-2.jpg",
-    likes: 892,
-    comments: 156,
-    shares: 89,
-    liked: true,
-    saved: true,
-  },
-  {
-    id: 3,
-    user: {
-      name: "Marcus Chen",
-      username: "marcus_c",
-      avatar: "/placeholder-user-3.jpg",
-    },
-    time: "6h ago",
-    content: "Sunday brunch vibes 🥞☕ Nothing beats a lazy morning with good food and great company!",
-    image: "/placeholder-post-3.jpg",
-    likes: 567,
-    comments: 78,
-    shares: 23,
-    liked: false,
-    saved: false,
-  },
-];
-
-
+// Loading skeleton for feed posts
+function FeedSkeleton() {
+  return (
+    <Card className="border-none shadow-xl overflow-hidden">
+      <CardContent className="p-6">
+        <div className="flex gap-4 mb-4">
+          <Skeleton className="h-12 w-12 rounded-full" />
+          <div className="space-y-2 flex-1">
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-3 w-1/4" />
+          </div>
+        </div>
+        <Skeleton className="h-4 w-full mb-2" />
+        <Skeleton className="h-4 w-3/4 mb-4" />
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Home() {
-  const [posts, setPosts] = useState<Post[]>(mockPosts);
+  const { 
+    feedQuery, 
+  } = useGetFeed();
+  
+  const { likePostMutation } = useLikePost();
+  const { savePostMutation } = useSavePost();
+  const { sharePostMutation } = useSharePost();
 
-  const handleLike = (postId: number) => {
-    setPosts(posts.map(post => 
-      post.id === postId 
-        ? { ...post, liked: !post.liked, likes: post.liked ? post.likes - 1 : post.likes + 1 }
-        : post
-    ));
-  };
+  const { 
+    data, 
+    fetchNextPage, 
+    hasNextPage, 
+    isFetchingNextPage, 
+    isLoading,
+    isError,
+    error,
+    refetch 
+  } = feedQuery;
 
-  const handleSave = (postId: number) => {
-    setPosts(posts.map(post => 
-      post.id === postId 
-        ? { ...post, saved: !post.saved }
-        : post
-    ));
-  };
+  // Flatten all pages into a single array
+  const posts = data?.pages.flatMap((page: any) => page.items) || [];
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('Feed data changed:', {
+      pagesCount: data?.pages?.length,
+      totalPosts: posts.length,
+      hasNextPage,
+      isFetchingNextPage,
+      lastPageCursor: data?.pages[data?.pages.length - 1]?.nextCursor
+    });
+  }, [data, posts.length, hasNextPage, isFetchingNextPage]);
 
-  const handleCreatePost = (content: string) => {
-    const newPost = {
-      id: Date.now(),
-      user: {
-        name: "You",
-        username: "your_profile",
-        avatar: "/placeholder-user.jpg",
+  // Infinite scroll handler
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (observerRef.current) observerRef.current.disconnect();
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
       },
-      time: "Just now",
-      content,
-      likes: 0,
-      comments: 0,
-      shares: 0,
-      liked: false,
-      saved: false,
+      { threshold: 0.5 }
+    );
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) observerRef.current.disconnect();
     };
-    setPosts([newPost, ...posts]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Handle like action
+  const handleLike = (postId: string) => {
+    likePostMutation.mutate(postId);
   };
+
+  // Handle save action
+  const handleSave = (postId: string) => {
+    savePostMutation.mutate(postId);
+  };
+
+  // Handle share action
+  const handleShare = (postId: string) => {
+    sharePostMutation.mutate(postId);
+  };
+
+  // Handle comment action (placeholder for now)
+  const handleComment = (postId: string) => {
+    console.log("Comment on post:", postId);
+    // TODO: Implement comment functionality
+  };
+
+  // Handle create post (placeholder for now)
+  const handleCreatePost = (content: string) => {
+    console.log("Create post:", content);
+    // TODO: Implement create post functionality
+    refetch();
+  };
+
+  // Error state
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-linear-to-b from-background via-background to-muted/20 flex items-center justify-center">
+        <Card className="max-w-md mx-4 border-none shadow-2xl">
+          <CardContent className="p-8 text-center space-y-4">
+            <AlertCircle className="h-16 w-16 mx-auto text-destructive" />
+            <h2 className="text-2xl font-bold">Failed to Load Feed</h2>
+            <p className="text-muted-foreground">
+              {(error as Error).message || "Something went wrong. Please try again."}
+            </p>
+            <Button 
+              onClick={() => refetch()}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-linear-to-b from-background via-background to-muted/20">
@@ -164,14 +199,56 @@ export default function Home() {
 
             {/* Posts Feed */}
             <div className="space-y-6">
-              {posts.map((post) => (
+              {/* Initial loading state */}
+              {isLoading && (
+                <>
+                  <FeedSkeleton />
+                  <FeedSkeleton />
+                  <FeedSkeleton />
+                </>
+              )}
+
+              {/* Empty state */}
+              {!isLoading && posts.length === 0 && (
+                <Card className="border-none shadow-xl">
+                  <CardContent className="p-12 text-center space-y-4">
+                    <div className="text-6xl">📝</div>
+                    <h3 className="text-xl font-semibold">No Posts Yet</h3>
+                    <p className="text-muted-foreground">
+                      Be the first to share something!
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Feed posts */}
+              {posts.map((item: any) => (
                 <FeedPost
-                  key={post.id}
-                  {...post}
+                  key={item.data._id}
+                  post={item}
                   onLike={handleLike}
                   onSave={handleSave}
+                  onShare={handleShare}
+                  onComment={handleComment}
                 />
               ))}
+
+              {/* Load more indicator */}
+              {isFetchingNextPage && (
+                <div className="py-8 flex justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                </div>
+              )}
+
+              {/* Infinite scroll trigger */}
+              <div ref={loadMoreRef} className="h-10" />
+
+              {/* No more posts message */}
+              {!hasNextPage && posts.length > 0 && (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  You're all caught up! Check back later for more posts.
+                </div>
+              )}
             </div>
           </div>
 
