@@ -11,8 +11,8 @@ const gabarito = Gabarito({
 });
 
 export const metadata: Metadata = {
-  title: "Protocol",
-  description: "Protocol",
+  title: "Daygist",
+  description: "Daygist",
 };
 
 export default function AuthLayout({

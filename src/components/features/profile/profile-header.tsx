@@ -9,8 +9,21 @@ import {
   MapPin,
   Calendar,
   Heart,
-  Edit
+  Edit,
+  UserPlus,
+  UserCheck,
+  ChevronDown,
+  UserMinus,
+  Ban,
+  BellOff
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/atoms/dropdown-menu";
 import { useUploadAvatar, useUploadCover, useGetSignedUrl } from "./hooks/profile-query";
 import { toast } from "sonner";
 import { isAxiosError } from "axios";
@@ -37,6 +50,9 @@ interface UserProfile {
 interface ProfileHeaderProps {
   profile: UserProfile;
   onEditProfile?: () => void;
+  onFollow?: () => void;
+  onUnfollow?: () => void;
+  isFollowLoading?: boolean;
 }
 
 interface ImageAdjustments {
@@ -45,7 +61,7 @@ interface ImageAdjustments {
   offsetY: number;
 }
 
-export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
+export function ProfileHeader({ profile, onEditProfile, onFollow, onUnfollow, isFollowLoading }: ProfileHeaderProps) {
   // Use 'key' for signed URL fetching, fallback to 'url' if key is not available
   const [coverKey, setCoverKey] = useState<string | null>(profile.cover.key || profile.cover.url);
   const [avatarKey, setAvatarKey] = useState<string>(profile.avatar.key || profile.avatar.url);
@@ -377,6 +393,59 @@ export function ProfileHeader({ profile, onEditProfile }: ProfileHeaderProps) {
                 <Edit className="w-4 h-4" />
                 Edit Profile
               </Button>
+            )}
+
+            {/* Follow/Unfollow Button */}
+            {!profile.isMe && (
+              profile.isFollowing ? (
+                /* Following Dropdown - shows options when already following */
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="secondary"
+                      className="gap-2 rounded-xl shrink-0"
+                      disabled={isFollowLoading}
+                    >
+                      {isFollowLoading ? (
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      ) : (
+                        <>
+                          <UserCheck className="w-4 h-4" />
+                          Following
+                          <ChevronDown className="w-4 h-4" />
+                        </>
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem
+                      onClick={onUnfollow}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <UserMinus className="w-4 h-4" />
+                      Unfollow
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                /* Follow Button - shown when not following */
+                <Button
+                  variant="default"
+                  className="gap-2 rounded-xl shrink-0"
+                  onClick={onFollow}
+                  disabled={isFollowLoading}
+                >
+                  {isFollowLoading ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4" />
+                      Follow
+                    </>
+                  )}
+                </Button>
+              )
             )}
           </div>
         </div>

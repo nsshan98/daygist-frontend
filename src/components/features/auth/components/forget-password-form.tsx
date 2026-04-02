@@ -79,7 +79,7 @@ const ForgetPasswordForm = () => {
             <p className="font-baumans text-3xl text-center bg-[#2445CE] text-white rounded-2xl p-2 w-12 h-12">
               P
             </p>
-            <p className="font-baumans text-3xl uppercase">Protocol </p>
+            <p className="font-baumans text-3xl uppercase">Daygist </p>
           </div>
         </Link>
 

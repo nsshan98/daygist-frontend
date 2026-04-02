@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Send } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Button } from "@/components/atoms/button";
@@ -121,7 +122,7 @@ export function FeedPost({
 
       <CardHeader className="pb-3 relative">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link href={`/${data.author.username}?id=${data.author._id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <Avatar className="h-12 w-12 ring-2 ring-offset-2 ring-offset-background ring-primary/20 group-hover:ring-primary/40 transition-all duration-300 shadow-lg">
               <AvatarImage src={finalAvatarUrl} alt={data.author.name} />
               <AvatarFallback className="bg-linear-to-br from-primary/20 to-secondary/20 font-semibold">
@@ -138,7 +139,7 @@ export function FeedPost({
                 </span>
               </p>
             </div>
-          </div>
+          </Link>
           <Button 
             variant="ghost" 
             size="icon"

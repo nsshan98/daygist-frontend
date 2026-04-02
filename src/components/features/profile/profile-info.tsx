@@ -95,39 +95,8 @@ export function ProfileInfo({ profile }: ProfileInfoProps) {
     </div>
   );
 
-  const hasContactInfo = profile.contact && (
-    profile.contact.phone || 
-    profile.contact.email || 
-    profile.contact.website ||
-    profile.contact.facebook ||
-    profile.contact.instagram ||
-    profile.contact.linkedin
-  );
-
-  const hasAboutInfo = profile.bio || profile.about;
-  const hasPersonalInfo = profile.birthDate || profile.age || profile.relationship;
-  const hasLocationInfo = profile.address?.fullAddress || profile.address?.city || profile.address?.country;
-  const hasEducation = profile.education && profile.education.length > 0;
-  const hasRole = profile.role;
   return (
-    <div className="space-y-6">
-      {/* Role Badge */}
-      <Card className="border-none shadow-lg overflow-hidden">
-        <CardContent className="p-0">
-          <div className="bg-linear-to-r from-primary to-secondary p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Account Type</p>
-                <h3 className="text-2xl font-bold mt-1 capitalize">
-                  {profile.role ? profile.role.toLowerCase().replace('_', ' ') : 'N/A'}
-                </h3>
-              </div>
-              <Briefcase className="w-12 h-12 opacity-50" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
+    <div className="space-y-2">
       {/* About Section */}
       <Card className="border-none shadow-lg">
         <CardContent className="p-6 space-y-4">

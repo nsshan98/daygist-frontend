@@ -15,7 +15,7 @@ const Footer = () => {
               <p className="font-baumans text-2xl text-center bg-[#2445CE] text-white rounded-md px-2">
                 P
               </p>
-              <p className="font-baumans text-2xl uppercase">Protocol </p>
+              <p className="font-baumans text-2xl uppercase">Daygist </p>
             </div>
             <p className="text-sm leading-relaxed">
               Empowering you to take charge of your financial future with
@@ -112,7 +112,7 @@ const Footer = () => {
         {/* Divider */}
         <div className="border-t border-gray-100 pt-8">
           <p className="text-sm">
-            Copyright © 2025 Protocol. All Rights Reserved.
+            Copyright © 2025 Daygist. All Rights Reserved.
           </p>
         </div>
       </div>

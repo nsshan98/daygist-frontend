@@ -143,4 +143,70 @@ const useGetSignedUrl = () => {
   return { useSignedUrl, prefetchSignedUrl, getCachedSignedUrl };
 };
 
-export { useGetUserProfile, useUpdateProfile, useUploadAvatar, useUploadCover, useGetSignedUrl };
+// ===============================|| GET USER PROFILE BY ID ||============================== //
+const useGetUserProfileById = (userId: string) => {
+  const showUserProfileByIdQuery = useQuery({
+    queryKey: ["user-profile", userId],
+    queryFn: async () => {
+      const { data } = await axiosClient.get(`/users/${userId}`);
+      return data;
+    },
+    enabled: !!userId,
+    retry: false,
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+  return { showUserProfileByIdQuery };
+};
+
+// ===============================|| GET USER PROFILE BY USERNAME ||============================== //
+const useGetUserProfileByUsername = (username: string) => {
+  const showUserProfileByUsernameQuery = useQuery({
+    queryKey: ["user-profile", "username", username],
+    queryFn: async () => {
+      const { data } = await axiosClient.get(`/users/username/${username}`);
+      return data;
+    },
+    enabled: !!username,
+    retry: false,
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+  return { showUserProfileByUsernameQuery };
+};
+
+// ===============================|| FOLLOW USER ||============================== //
+const useFollowUser = () => {
+  const queryClient = useQueryClient();
+  
+  const followUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data } = await axiosClient.post(`/follow/${userId}`);
+      return data;
+    },
+    onSuccess: (_, userId) => {
+      // Invalidate user profile queries
+      queryClient.invalidateQueries({ queryKey: ["user-profile", userId] });
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+    },
+  });
+  return { followUserMutation };
+};
+
+// ===============================|| UNFOLLOW USER ||============================== //
+const useUnfollowUser = () => {
+  const queryClient = useQueryClient();
+  
+  const unfollowUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data } = await axiosClient.delete(`/follow/${userId}`);
+      return data;
+    },
+    onSuccess: (_, userId) => {
+      // Invalidate user profile queries
+      queryClient.invalidateQueries({ queryKey: ["user-profile", userId] });
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+    },
+  });
+  return { unfollowUserMutation };
+};
+
+export { useGetUserProfile, useUpdateProfile, useUploadAvatar, useUploadCover, useGetSignedUrl, useGetUserProfileById, useGetUserProfileByUsername, useFollowUser, useUnfollowUser };

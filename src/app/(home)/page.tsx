@@ -269,7 +269,7 @@ export default function Home() {
                     <a href="#" className="hover:underline">Terms</a>
                   </div>
                   <p className="mt-4 text-xs text-muted-foreground">
-                    © 2025 Protocol, Inc.
+                    © 2025 Daygist, Inc.
                   </p>
                 </CardContent>
               </Card>

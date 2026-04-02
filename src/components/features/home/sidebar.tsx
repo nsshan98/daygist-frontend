@@ -159,7 +159,7 @@ export function Sidebar() {
             <a href="#" className="hover:text-primary hover:underline transition-all duration-300">Cookies</a>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            © 2025 Protocol, Inc.
+            © 2025 Daygist, Inc.
           </p>
         </CardContent>
       </Card>

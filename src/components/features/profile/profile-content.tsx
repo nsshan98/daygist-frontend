@@ -7,16 +7,63 @@ import {
   ProfileTabs, 
   EditProfileDialog,
   ProfileSkeleton,
-  useGetUserProfile 
+  useGetUserProfile,
+  useGetUserProfileById,
+  useFollowUser,
+  useUnfollowUser,
 } from "@/components/features/profile";
-import { Button } from "@/components/atoms/button";
-import { Pencil } from "lucide-react";
+import { isAxiosError } from "axios";
+import { toast } from "sonner";
 
-export function ProfileContent() {
+interface ProfileContentProps {
+  username?: string;
+  userId?: string;
+}
+
+export function ProfileContent({ username, userId }: ProfileContentProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const { showUserProfileQuery } = useGetUserProfile();
   
-  const { data: profile, isLoading, error } = showUserProfileQuery;
+  // Use different hooks based on whether we're viewing our own profile or someone else's
+  const { showUserProfileQuery } = useGetUserProfile();
+  const { showUserProfileByIdQuery } = useGetUserProfileById(userId || "");
+  const { followUserMutation } = useFollowUser();
+  const { unfollowUserMutation } = useUnfollowUser();
+  
+  // Determine which query to use - if userId is provided, fetch by ID, otherwise show own profile
+  const activeQuery = userId ? showUserProfileByIdQuery : showUserProfileQuery;
+  const { data: profile, isLoading, error } = activeQuery;
+
+  // Handle follow/unfollow - use the profile's _id from the response
+  const handleFollow = () => {
+    if (!userId) return;
+    followUserMutation.mutate(userId, {
+      onSuccess: () => {
+        toast.success("Following user");
+      },
+      onError: (error) => {
+        const message = isAxiosError(error)
+          ? error.response?.data?.message || "Failed to follow user"
+          : "Failed to follow user";
+        toast.error(message);
+      },
+    });
+  };
+
+  const handleUnfollow = () => {
+    if (!userId) return;
+    unfollowUserMutation.mutate(userId, {
+      onSuccess: () => {
+        toast.success("Unfollowed user");
+      },
+      onError: (error) => {
+        const message = isAxiosError(error)
+          ? error.response?.data?.message || "Failed to unfollow user"
+          : "Failed to unfollow user";
+        toast.error(message);
+      },
+    });
+  };
+
 
   if (isLoading) {
     return (
@@ -58,6 +105,9 @@ export function ProfileContent() {
             <ProfileHeader 
               profile={profile.data} 
               onEditProfile={() => setIsEditDialogOpen(true)}
+              onFollow={handleFollow}
+              onUnfollow={handleUnfollow}
+              isFollowLoading={followUserMutation.isPending || unfollowUserMutation.isPending}
             />
 
             {/* Profile Tabs (Posts, Media, Likes, Saved) */}
