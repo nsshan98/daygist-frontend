@@ -1,5 +1,6 @@
 import { axiosClient } from "@/lib/axios-client";
-import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { UploadResponse } from "./upload-query";
 
 // Types for feed data
 export interface FeedAuthor {
@@ -144,4 +145,76 @@ export const useSharePost = () => {
     },
   });
   return { sharePostMutation };
+};
+
+// ===============================|| CREATE TEXT POST ||============================== //
+export interface CreateTextPostPayload {
+  type: "text";
+  privacy: string;
+  text: string;
+  backgroundUrl?: string;
+  textStyle?: {
+    color: string;
+    fontSize: number;
+    fontWeight: string;
+    align: string;
+  };
+}
+
+export interface CreateImagePostPayload {
+  type: "image";
+  privacy: string;
+  caption: string;
+  layout: string;
+  images: {
+    url: string;
+    provider: string;
+    key: string;
+    width?: number;
+    height?: number;
+  }[];
+  subCategory?: string;
+}
+
+export interface CreateVideoPostPayload {
+  type: "video";
+  privacy: string;
+  caption: string;
+  videoMode: string;
+  category: string;
+  subCategory?: string;
+  mutedByDefault: boolean;
+  loop: boolean;
+  video: {
+    url: string;
+    thumbnailUrl?: string;
+    provider: string;
+    key: string;
+    durationSec?: number;
+    width?: number;
+    height?: number;
+  };
+}
+
+export type CreatePostPayload = CreateTextPostPayload | CreateImagePostPayload | CreateVideoPostPayload;
+
+export const useCreatePost = () => {
+  const queryClient = useQueryClient();
+  
+  const createPostMutation = useMutation({
+    mutationFn: async (payload: CreatePostPayload) => {
+      const { data } = await axiosClient.post("/posts/create", payload, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      return data;
+    },
+    onSuccess: () => {
+      // Invalidate feed query to refresh the feed
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+    },
+  });
+
+  return { createPostMutation };
 };

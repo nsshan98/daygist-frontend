@@ -139,13 +139,6 @@ export default function Home() {
     // TODO: Implement comment functionality
   };
 
-  // Handle create post (placeholder for now)
-  const handleCreatePost = (content: string) => {
-    console.log("Create post:", content);
-    // TODO: Implement create post functionality
-    refetch();
-  };
-
   // Error state
   if (isError) {
     return (
@@ -194,7 +187,7 @@ export default function Home() {
 
             {/* Create Post */}
             <div className="mb-8">
-              <CreatePost onPost={handleCreatePost} />
+              <CreatePost />
             </div>
 
             {/* Posts Feed */}
