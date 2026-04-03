@@ -13,6 +13,7 @@ export interface FeedAuthor {
     provider: string;
   };
   isMe: boolean;
+  isFollowing?: boolean;
 }
 
 export interface FeedMedia {
@@ -217,4 +218,42 @@ export const useCreatePost = () => {
   });
 
   return { createPostMutation };
+};
+
+// ===============================|| EDIT POST ||============================== //
+export interface EditPostPayload {
+  text: string;
+}
+
+export const useEditPost = () => {
+  const queryClient = useQueryClient();
+  
+  const editPostMutation = useMutation({
+    mutationFn: async ({ postId, text }: { postId: string; text: string }) => {
+      const { data } = await axiosClient.patch(`/posts/${postId}`, { text });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+    },
+  });
+
+  return { editPostMutation };
+};
+
+// ===============================|| DELETE POST ||============================== //
+export const useDeletePost = () => {
+  const queryClient = useQueryClient();
+  
+  const deletePostMutation = useMutation({
+    mutationFn: async (postId: string) => {
+      const { data } = await axiosClient.delete(`/posts/${postId}/delete`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+    },
+  });
+
+  return { deletePostMutation };
 };

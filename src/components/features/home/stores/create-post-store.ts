@@ -28,7 +28,7 @@ export interface CreatePostState {
   
   // Image post fields
   mediaFiles: File[];
-  imageLayout: "grid1" | "grid2" | "grid3" | "grid4";
+  imageLayout: "single" | "grid2" | "grid3" | "carousel";
   
   // Video post fields
   videoFile: File | null;
@@ -63,7 +63,7 @@ export interface CreatePostActions {
   // Image post actions
   addMediaFile: (file: File) => void;
   removeMediaFile: (index: number) => void;
-  setImageLayout: (layout: "grid1" | "grid2" | "grid3" | "grid4") => void;
+  setImageLayout: (layout: "single" | "grid2" | "grid3" | "carousel") => void;
   clearMediaFiles: () => void;
   
   // Video post actions
@@ -98,7 +98,7 @@ const initialState: CreatePostState = {
   textBackground: null,
   textStyle: initialTextStyle,
   mediaFiles: [],
-  imageLayout: "grid2",
+  imageLayout: "single",
   videoFile: null,
   videoMode: "standard",
   videoCategory: "general",

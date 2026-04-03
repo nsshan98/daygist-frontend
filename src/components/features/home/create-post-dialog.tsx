@@ -17,6 +17,7 @@ import { VideoPostForm } from "./create-post/video-post-form";
 import { useCreatePost, CreatePostPayload } from "./hooks/feed-query";
 import { useUploadImage, useUploadVideo } from "./hooks/upload-query";
 import { useShowUserProfile } from "../auth/hooks/auth-query";
+import { useSignedMedia } from "../profile/media-image";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Type, Image as ImageIcon, Video, Loader2 } from "lucide-react";
@@ -58,8 +59,13 @@ export function CreatePostDialog() {
   const { createPostMutation } = useCreatePost();
   const { uploadImageMutation } = useUploadImage();
   const { uploadVideoMutation } = useUploadVideo();
-
+  const { useSignedUrl } = useSignedMedia();
+  
   const user = showUserProfileQuery.data?.data;
+    
+  // Fetch signed URL for avatar
+  const { data: signedAvatarUrl } = useSignedUrl(user?.avatar?.key || null);
+  const avatarUrl = signedAvatarUrl || user?.avatar?.url;
 
   // Reset store when modal closes
   useEffect(() => {
@@ -200,7 +206,7 @@ export function CreatePostDialog() {
         {/* User Info Header */}
         <div className="flex items-center gap-3 py-2">
           <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-            <AvatarImage src={user?.avatar?.url} alt={user?.name} />
+            <AvatarImage src={avatarUrl} alt={user?.name} />
             <AvatarFallback className="bg-primary/10">
               {user?.name?.charAt(0) || "U"}
             </AvatarFallback>

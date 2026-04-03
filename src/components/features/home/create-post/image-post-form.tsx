@@ -5,7 +5,7 @@ import { useCreatePostStore } from "../stores/create-post-store";
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import { cn } from "@/lib/utils";
-import { ImagePlus, X, Grid3X3, LayoutGrid, Rows3, Square } from "lucide-react";
+import { ImagePlus, X, Grid3X3, LayoutGrid, Rows3, Square, GalleryHorizontal } from "lucide-react";
 
 // Object URL cache for cleanup
 const objectUrls = new Set<string>();
@@ -57,11 +57,11 @@ export function ImagePostForm() {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files || []);
       const imageFiles = files.filter((file) => file.type.startsWith("image/"));
-      
+
       // Limit to 10 images
       const remainingSlots = 10 - mediaFiles.length;
       const filesToAdd = imageFiles.slice(0, remainingSlots);
-      
+
       filesToAdd.forEach((file) => {
         if (file.size <= 25 * 1024 * 1024) {
           // 25MB limit
@@ -80,10 +80,10 @@ export function ImagePostForm() {
       e.preventDefault();
       const files = Array.from(e.dataTransfer.files);
       const imageFiles = files.filter((file) => file.type.startsWith("image/"));
-      
+
       const remainingSlots = 10 - mediaFiles.length;
       const filesToAdd = imageFiles.slice(0, remainingSlots);
-      
+
       filesToAdd.forEach((file) => {
         if (file.size <= 25 * 1024 * 1024) {
           addMediaFile(file);
@@ -98,10 +98,10 @@ export function ImagePostForm() {
   }, []);
 
   const layoutOptions = [
-    { value: "grid1" as const, icon: Square, label: "Single" },
+    { value: "single" as const, icon: Square, label: "Single" },
     { value: "grid2" as const, icon: LayoutGrid, label: "Grid" },
-    { value: "grid3" as const, icon: Rows3, label: "Rows" },
-    { value: "grid4" as const, icon: Grid3X3, label: "Mosaic" },
+    { value: "grid3" as const, icon: Grid3X3, label: "Rows" },
+    { value: "carousel" as const, icon: GalleryHorizontal, label: "Carousel" },
   ];
 
   return (
@@ -142,7 +142,7 @@ export function ImagePostForm() {
         >
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/jpg,image/png,image/heic"
             multiple
             onChange={handleFileSelect}
             className="hidden"
@@ -162,11 +162,10 @@ export function ImagePostForm() {
           <div
             className={cn(
               "grid gap-2 rounded-xl overflow-hidden",
-              mediaFiles.length === 1 && "grid-cols-1",
-              mediaFiles.length === 2 && "grid-cols-2",
-              mediaFiles.length === 3 && imageLayout === "grid2" && "grid-cols-2",
-              mediaFiles.length >= 3 && imageLayout === "grid3" && "grid-cols-3",
-              mediaFiles.length >= 4 && imageLayout === "grid4" && "grid-cols-2"
+              imageLayout === "single" && "grid-cols-1",
+              imageLayout === "grid2" && "grid-cols-2",
+              imageLayout === "grid3" && "grid-cols-3",
+              imageLayout === "carousel" && "grid-cols-1"
             )}
           >
             {previews.map((preview, index) => (
@@ -174,7 +173,7 @@ export function ImagePostForm() {
                 key={index}
                 className={cn(
                   "relative group aspect-square bg-muted rounded-lg overflow-hidden",
-                  index === 0 && mediaFiles.length === 3 && imageLayout === "grid2" && "row-span-2"
+                  imageLayout === "grid2" && mediaFiles.length === 3 && index === 0 && "row-span-2"
                 )}
               >
                 <img
@@ -197,7 +196,7 @@ export function ImagePostForm() {
             <div className="flex gap-2">
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/jpg,image/png,image/heic"
                 multiple
                 onChange={handleFileSelect}
                 className="hidden"

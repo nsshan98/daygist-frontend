@@ -1,13 +1,32 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Send } from "lucide-react";
+import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Send, Pencil, Trash2, UserPlus, UserMinus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Button } from "@/components/atoms/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/atoms/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/atoms/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/atoms/dialog";
+import { Textarea } from "@/components/atoms/textarea";
 import type { FeedItem } from "./hooks/feed-query";
+import { useEditPost, useDeletePost } from "./hooks/feed-query";
 import { MediaViewer } from "./media-viewer";
 import { useSignedMedia } from "@/components/features/profile/media-image";
+import { toast } from "sonner";
+import { useFollowUser, useUnfollowUser } from "../profile";
 
 interface FeedPostProps {
   post: FeedItem;
@@ -26,10 +45,83 @@ export function FeedPost({
 }: FeedPostProps) {
   const { data } = post;
   const { useSignedUrl } = useSignedMedia();
-  
+
   // Fetch signed URL for avatar
   const { data: signedAvatarUrl } = useSignedUrl(data.author.avatar?.key || null);
   const finalAvatarUrl = signedAvatarUrl || data.author.avatar.url;
+  
+  // Mutations
+  const { editPostMutation } = useEditPost();
+  const { deletePostMutation } = useDeletePost();
+  const { followUserMutation } = useFollowUser();
+  const { unfollowUserMutation } = useUnfollowUser();
+  
+  // Edit dialog state
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editText, setEditText] = useState("");
+  
+  // Delete dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  
+  // Handle edit post
+  const handleEditPost = () => {
+    setEditText(data.text || "");
+    setIsEditDialogOpen(true);
+  };
+  
+  const handleSaveEdit = () => {
+    if (!editText.trim()) return;
+    
+    editPostMutation.mutate(
+      { postId: data._id, text: editText },
+      {
+        onSuccess: () => {
+          toast.success("Post updated successfully");
+          setIsEditDialogOpen(false);
+        },
+        onError: () => {
+          toast.error("Failed to update post");
+        },
+      }
+    );
+  };
+  
+  // Handle delete post
+  const handleDeletePost = () => {
+    deletePostMutation.mutate(data._id, {
+      onSuccess: () => {
+        toast.success("Post deleted successfully");
+        setIsDeleteDialogOpen(false);
+      },
+      onError: () => {
+        toast.error("Failed to delete post");
+      },
+    });
+  };
+  
+  // Handle follow/unfollow
+  const handleFollowToggle = () => {
+    const isFollowing = data.isFollowingAuthor || data.author.isFollowing;
+    if (isFollowing) {
+      unfollowUserMutation.mutate(data.author._id, {
+        onSuccess: () => {
+          toast.success(`Unfollowed ${data.author.name}`);
+        },
+        onError: () => {
+          toast.error("Failed to unfollow");
+        },
+      });
+    } else {
+      followUserMutation.mutate(data.author._id, {
+        onSuccess: () => {
+          toast.success(`Following ${data.author.name}`);
+        },
+        onError: () => {
+          toast.error("Failed to follow");
+        },
+      });
+    }
+  };
   
   // Format relative time
   const formatRelativeTime = (dateString: string) => {
@@ -140,13 +232,49 @@ export function FeedPost({
               </p>
             </div>
           </Link>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-primary/10 hover:text-primary rounded-xl"
-          >
-            <MoreHorizontal className="h-5 w-5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-primary/10 hover:text-primary rounded-xl"
+              >
+                <MoreHorizontal className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {data.author.isMe ? (
+                <>
+                  <DropdownMenuItem onClick={handleEditPost} className="cursor-pointer">
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit post
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => setIsDeleteDialogOpen(true)} 
+                    className="cursor-pointer text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete post
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <DropdownMenuItem onClick={handleFollowToggle} className="cursor-pointer">
+                  {data.isFollowingAuthor || data.author.isFollowing ? (
+                    <>
+                      <UserMinus className="mr-2 h-4 w-4" />
+                      Unfollow
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Follow
+                    </>
+                  )}
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardHeader>
       
@@ -220,6 +348,66 @@ export function FeedPost({
           </div>
         </div>
       </CardFooter>
+
+      {/* Edit Post Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Post</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              placeholder="What's on your mind?"
+              className="min-h-32 resize-none"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="destructive" 
+              onClick={() => setIsEditDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveEdit}
+              disabled={!editText.trim() || editPostMutation.isPending}
+            >
+              {editPostMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Post Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Post</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-muted-foreground">
+              Are you sure you want to delete this post? This action cannot be undone.
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="secondary" 
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleDeletePost}
+              disabled={deletePostMutation.isPending}
+            >
+              {deletePostMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

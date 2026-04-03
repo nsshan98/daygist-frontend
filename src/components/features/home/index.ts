@@ -29,6 +29,8 @@ export {
   useSavePost,
   useSharePost,
   useCreatePost,
+  useEditPost,
+  useDeletePost,
   type FeedAuthor,
   type FeedMedia,
   type FeedPostData,
@@ -38,4 +40,5 @@ export {
   type CreateImagePostPayload,
   type CreateVideoPostPayload,
   type CreatePostPayload,
+  type EditPostPayload,
 } from "./hooks/feed-query";

@@ -183,9 +183,10 @@ const useFollowUser = () => {
       return data;
     },
     onSuccess: (_, userId) => {
-      // Invalidate user profile queries
+      // Invalidate user profile queries and feed
       queryClient.invalidateQueries({ queryKey: ["user-profile", userId] });
       queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
     },
   });
   return { followUserMutation };
@@ -201,9 +202,10 @@ const useUnfollowUser = () => {
       return data;
     },
     onSuccess: (_, userId) => {
-      // Invalidate user profile queries
+      // Invalidate user profile queries and feed
       queryClient.invalidateQueries({ queryKey: ["user-profile", userId] });
       queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
     },
   });
   return { unfollowUserMutation };
