@@ -22,7 +22,7 @@ import {
 } from "@/components/atoms/dialog";
 import { Textarea } from "@/components/atoms/textarea";
 import type { FeedItem } from "./hooks/feed-query";
-import { useEditPost, useDeletePost } from "./hooks/feed-query";
+import { useEditPost, useDeletePost, useSavePost, useUnsavePost, useLikePost, useUnlikePost } from "./hooks/feed-query";
 import { MediaViewer } from "./media-viewer";
 import { useSignedMedia } from "@/components/features/profile/media-image";
 import { toast } from "sonner";
@@ -55,6 +55,10 @@ export function FeedPost({
   const { deletePostMutation } = useDeletePost();
   const { followUserMutation } = useFollowUser();
   const { unfollowUserMutation } = useUnfollowUser();
+  const { savePostMutation } = useSavePost();
+  const { unsavePostMutation } = useUnsavePost();
+  const { likePostMutation } = useLikePost();
+  const { unlikePostMutation } = useUnlikePost();
   
   // Edit dialog state
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -120,6 +124,38 @@ export function FeedPost({
           toast.error("Failed to follow");
         },
       });
+    }
+  };
+  
+  // Handle save/unsave
+  const handleSaveToggle = () => {
+    if (data.isSaved) {
+      unsavePostMutation.mutate(data._id, {
+        onSuccess: () => {
+          toast.success("Post removed from saved");
+        },
+        onError: () => {
+          toast.error("Failed to unsave post");
+        },
+      });
+    } else {
+      savePostMutation.mutate(data._id, {
+        onSuccess: () => {
+          toast.success("Post saved");
+        },
+        onError: () => {
+          toast.error("Failed to save post");
+        },
+      });
+    }
+  };
+
+  // Handle like/unlike with optimistic updates
+  const handleLikeToggle = () => {
+    if (data.isLiked) {
+      unlikePostMutation.mutate(data._id);
+    } else {
+      likePostMutation.mutate(data._id);
     }
   };
   
@@ -294,7 +330,8 @@ export function FeedPost({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => onLike?.(data._id)}
+                onClick={handleLikeToggle}
+                disabled={likePostMutation.isPending || unlikePostMutation.isPending}
                 className={`group/like relative overflow-hidden rounded-xl transition-all duration-300 hover:scale-110 ${data.isLiked ? 'text-red-500' : 'hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30'}`}
               >
                 {/* Like animation background */}
@@ -321,10 +358,10 @@ export function FeedPost({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => onSave?.(data._id)}
-              className={`rounded-xl transition-all duration-300 hover:scale-110 ${data.isShared ? 'text-primary' : 'hover:bg-primary/10 hover:text-primary'}`}
+              onClick={handleSaveToggle}
+              className={`rounded-xl transition-all duration-300 hover:scale-110 ${data.isSaved ? 'text-primary' : 'hover:bg-primary/10 hover:text-primary'}`}
             >
-              <Bookmark className={`h-5 w-5 transition-all duration-300 ${data.isShared ? 'fill-current scale-110' : ''}`} />
+              <Bookmark className={`h-5 w-5 transition-all duration-300 ${data.isSaved ? 'fill-current scale-110' : ''}`} />
             </Button>
           </div>
 

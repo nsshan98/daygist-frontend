@@ -27,6 +27,7 @@ export {
   useGetFeed,
   useLikePost,
   useSavePost,
+  useUnsavePost,
   useSharePost,
   useCreatePost,
   useEditPost,

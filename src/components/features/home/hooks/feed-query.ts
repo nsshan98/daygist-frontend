@@ -1,5 +1,5 @@
 import { axiosClient } from "@/lib/axios-client";
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { UploadResponse } from "./upload-query";
 
 // Types for feed data
@@ -55,6 +55,7 @@ export interface FeedPostData {
   feedType: "post";
   isFollowingAuthor: boolean;
   isLiked: boolean;
+  isSaved: boolean;
   isShared: boolean;
 }
 
@@ -116,25 +117,364 @@ export const useGetFeed = () => {
 };
 
 // ===============================|| LIKE POST ||============================== //
+export interface LikeResponse {
+  success: boolean;
+  message: string;
+  data: {
+    id: string;
+    type: string;
+    isLiked: boolean;
+    likeCount: number;
+  };
+}
+
+interface LikeContext {
+  previousFeed: unknown;
+  previousSaved: unknown;
+  previousDetail: unknown;
+}
+
 export const useLikePost = () => {
-  const likePostMutation = useMutation({
+  const queryClient = useQueryClient();
+
+  const likePostMutation = useMutation<LikeResponse, Error, string, LikeContext>({
     mutationFn: async (postId: string) => {
       const { data } = await axiosClient.post(`/posts/${postId}/like`);
       return data;
     },
+    onMutate: async (postId) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["feed"] });
+      await queryClient.cancelQueries({ queryKey: ["saved-posts"] });
+      await queryClient.cancelQueries({ queryKey: ["post-detail", postId] });
+
+      // Snapshot previous values
+      const previousFeed = queryClient.getQueryData(["feed"]);
+      const previousSaved = queryClient.getQueryData(["saved-posts"]);
+      const previousDetail = queryClient.getQueryData(["post-detail", postId]);
+
+      // Optimistically update feed
+      queryClient.setQueryData(["feed"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map((item: any) => {
+              if (item.data._id === postId) {
+                return {
+                  ...item,
+                  data: {
+                    ...item.data,
+                    isLiked: true,
+                    likeCount: item.data.likeCount + 1,
+                  },
+                };
+              }
+              return item;
+            }),
+          })),
+        };
+      });
+
+      // Optimistically update saved posts
+      queryClient.setQueryData(["saved-posts"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            posts: page.posts.map((p: any) => {
+              if (p._id === postId) {
+                return {
+                  ...p,
+                  isLiked: true,
+                  likeCount: p.likeCount + 1,
+                };
+              }
+              return p;
+            }),
+          })),
+        };
+      });
+
+      // Optimistically update post detail
+      queryClient.setQueryData(["post-detail", postId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          post: {
+            ...old.post,
+            isLiked: true,
+            likeCount: old.post.likeCount + 1,
+          },
+        };
+      });
+
+      return { previousFeed, previousSaved, previousDetail };
+    },
+    onError: (err, postId, context) => {
+      // Rollback on error
+      if (context?.previousFeed) {
+        queryClient.setQueryData(["feed"], context.previousFeed);
+      }
+      if (context?.previousSaved) {
+        queryClient.setQueryData(["saved-posts"], context.previousSaved);
+      }
+      if (context?.previousDetail) {
+        queryClient.setQueryData(["post-detail", postId], context.previousDetail);
+      }
+    },
+    onSettled: (data, error, postId) => {
+      // Sync with server response
+      if (data?.data) {
+        const { isLiked, likeCount } = data.data;
+        
+        queryClient.setQueryData(["feed"], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              items: page.items.map((item: any) => {
+                if (item.data._id === postId) {
+                  return {
+                    ...item,
+                    data: {
+                      ...item.data,
+                      isLiked,
+                      likeCount,
+                    },
+                  };
+                }
+                return item;
+              }),
+            })),
+          };
+        });
+
+        queryClient.setQueryData(["saved-posts"], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              posts: page.posts.map((p: any) => {
+                if (p._id === postId) {
+                  return {
+                    ...p,
+                    isLiked,
+                    likeCount,
+                  };
+                }
+                return p;
+              }),
+            })),
+          };
+        });
+
+        queryClient.setQueryData(["post-detail", postId], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            post: {
+              ...old.post,
+              isLiked,
+              likeCount,
+            },
+          };
+        });
+      }
+    },
   });
+
   return { likePostMutation };
+};
+
+// ===============================|| UNLIKE POST ||============================== //
+export const useUnlikePost = () => {
+  const queryClient = useQueryClient();
+
+  const unlikePostMutation = useMutation<LikeResponse, Error, string, LikeContext>({
+    mutationFn: async (postId: string) => {
+      const { data } = await axiosClient.delete(`/posts/${postId}/like`);
+      return data;
+    },
+    onMutate: async (postId) => {
+      await queryClient.cancelQueries({ queryKey: ["feed"] });
+      await queryClient.cancelQueries({ queryKey: ["saved-posts"] });
+      await queryClient.cancelQueries({ queryKey: ["post-detail", postId] });
+
+      const previousFeed = queryClient.getQueryData(["feed"]);
+      const previousSaved = queryClient.getQueryData(["saved-posts"]);
+      const previousDetail = queryClient.getQueryData(["post-detail", postId]);
+
+      // Optimistically update feed
+      queryClient.setQueryData(["feed"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map((item: any) => {
+              if (item.data._id === postId) {
+                return {
+                  ...item,
+                  data: {
+                    ...item.data,
+                    isLiked: false,
+                    likeCount: Math.max(0, item.data.likeCount - 1),
+                  },
+                };
+              }
+              return item;
+            }),
+          })),
+        };
+      });
+
+      // Optimistically update saved posts
+      queryClient.setQueryData(["saved-posts"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            posts: page.posts.map((p: any) => {
+              if (p._id === postId) {
+                return {
+                  ...p,
+                  isLiked: false,
+                  likeCount: Math.max(0, p.likeCount - 1),
+                };
+              }
+              return p;
+            }),
+          })),
+        };
+      });
+
+      // Optimistically update post detail
+      queryClient.setQueryData(["post-detail", postId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          post: {
+            ...old.post,
+            isLiked: false,
+            likeCount: Math.max(0, old.post.likeCount - 1),
+          },
+        };
+      });
+
+      return { previousFeed, previousSaved, previousDetail };
+    },
+    onError: (err, postId, context) => {
+      if (context?.previousFeed) {
+        queryClient.setQueryData(["feed"], context.previousFeed);
+      }
+      if (context?.previousSaved) {
+        queryClient.setQueryData(["saved-posts"], context.previousSaved);
+      }
+      if (context?.previousDetail) {
+        queryClient.setQueryData(["post-detail", postId], context.previousDetail);
+      }
+    },
+    onSettled: (data, error, postId) => {
+      if (data?.data) {
+        const { isLiked, likeCount } = data.data;
+        
+        queryClient.setQueryData(["feed"], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              items: page.items.map((item: any) => {
+                if (item.data._id === postId) {
+                  return {
+                    ...item,
+                    data: {
+                      ...item.data,
+                      isLiked,
+                      likeCount,
+                    },
+                  };
+                }
+                return item;
+              }),
+            })),
+          };
+        });
+
+        queryClient.setQueryData(["saved-posts"], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              posts: page.posts.map((p: any) => {
+                if (p._id === postId) {
+                  return {
+                    ...p,
+                    isLiked,
+                    likeCount,
+                  };
+                }
+                return p;
+              }),
+            })),
+          };
+        });
+
+        queryClient.setQueryData(["post-detail", postId], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            post: {
+              ...old.post,
+              isLiked,
+              likeCount,
+            },
+          };
+        });
+      }
+    },
+  });
+
+  return { unlikePostMutation };
 };
 
 // ===============================|| SAVE POST ||============================== //
 export const useSavePost = () => {
+  const queryClient = useQueryClient();
+  
   const savePostMutation = useMutation({
     mutationFn: async (postId: string) => {
       const { data } = await axiosClient.post(`/posts/${postId}/save`);
       return data;
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+    },
   });
   return { savePostMutation };
+};
+
+// ===============================|| UNSAVE POST ||============================== //
+export const useUnsavePost = () => {
+  const queryClient = useQueryClient();
+  
+  const unsavePostMutation = useMutation({
+    mutationFn: async (postId: string) => {
+      const { data } = await axiosClient.delete(`/posts/${postId}/save`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+    },
+  });
+  return { unsavePostMutation };
 };
 
 // ===============================|| SHARE POST ||============================== //
@@ -256,4 +596,96 @@ export const useDeletePost = () => {
   });
 
   return { deletePostMutation };
+};
+
+// ===============================|| GET POST DETAIL ||============================== //
+export interface PostDetailResponse {
+  success: boolean;
+  post: FeedPostData & {
+    description: string;
+    category: string;
+    subCategory: string;
+    isDeleted: boolean;
+    viewCount: number;
+  };
+  shareLink: string;
+}
+
+export const useGetPostDetail = (postId: string) => {
+  const postDetailQuery = useQuery<PostDetailResponse>({
+    queryKey: ["post-detail", postId],
+    queryFn: async () => {
+      const { data } = await axiosClient.get(`/posts/${postId}`);
+      return data;
+    },
+    enabled: !!postId,
+    staleTime: 1000 * 60 * 5,
+    retry: 2,
+  });
+
+  return { postDetailQuery };
+};
+
+// ===============================|| GET SAVED POSTS ||============================== //
+export interface SavedPost {
+  _id: string;
+  author: FeedAuthor;
+  type: "image" | "video" | "text";
+  privacy: string;
+  text: string;
+  description: string;
+  backgroundUrl: string | null;
+  textStyle: {
+    color: string;
+    fontSize: number;
+    fontWeight: string;
+    align: string;
+  } | null;
+  medias: FeedMedia[];
+  layout: string | null;
+  mutedByDefault: boolean;
+  loop: boolean;
+  videoMode: string;
+  category: string;
+  subCategory: string;
+  isDeleted: boolean;
+  likeCount: number;
+  commentCount: number;
+  saveCount: number;
+  shareCount: number;
+  viewCount: number;
+  createdAt: string;
+  updatedAt: string;
+  isLiked?: boolean;
+}
+
+export interface SavedPostsResponse {
+  success: boolean;
+  page: number;
+  limit: number;
+  posts: SavedPost[];
+}
+
+export const useGetSavedPosts = () => {
+  const savedPostsQuery = useInfiniteQuery<SavedPostsResponse>({
+    queryKey: ["saved-posts"],
+    queryFn: async ({ pageParam }) => {
+      const limit = 20;
+      const page = pageParam ? (typeof pageParam === 'number' ? pageParam : 1) : 1;
+      const url = `/posts/me/saved/list?page=${page}&limit=${limit}`;
+      const { data } = await axiosClient.get(url);
+      return data;
+    },
+    getNextPageParam: (lastPage) => {
+      if (lastPage.posts.length < lastPage.limit) {
+        return undefined;
+      }
+      return lastPage.page + 1;
+    },
+    initialPageParam: 1,
+    staleTime: 1000 * 60 * 5,
+    retry: 2,
+  });
+
+  return { savedPostsQuery };
 };

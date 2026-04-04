@@ -9,7 +9,8 @@ import {
   Mail, 
   PlusSquare, 
   Menu,
-  X
+  X,
+  Bookmark
 } from "lucide-react";
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
@@ -86,6 +87,13 @@ const Navbar = ({ user }: NavbarProps) => {
             <Button variant="ghost" size="icon" asChild className="hidden sm:inline-flex rounded-full hover:bg-primary/10 hover:text-primary">
               <Link href="/explore">
                 <Compass className="w-6 h-6" />
+              </Link>
+            </Button>
+
+            {/* Saved Posts */}
+            <Button variant="ghost" size="icon" asChild className="hidden sm:inline-flex rounded-full hover:bg-primary/10 hover:text-primary">
+              <Link href="/saved-posts">
+                <Bookmark className="w-6 h-6" />
               </Link>
             </Button>
 
@@ -183,6 +191,7 @@ const Navbar = ({ user }: NavbarProps) => {
             {[
               { label: "Home", icon: Home, href: "/" },
               { label: "Explore", icon: Compass, href: "/explore" },
+              { label: "Saved Posts", icon: Bookmark, href: "/saved-posts" },
               { label: "Notifications", icon: Bell, href: "/notifications", badge: 3 },
               { label: "Messages", icon: Mail, href: "/messages", badge: 12 },
               { label: "Profile", icon: PlusSquare, href: "/profile" },

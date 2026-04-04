@@ -22,7 +22,7 @@ const navItems = [
   { label: "Explore", icon: Compass, active: false },
   { label: "Notifications", icon: Bell, active: false, badge: 3 },
   { label: "Messages", icon: Mail, active: false, badge: 12 },
-  { label: "Bookmarks", icon: Bookmark, active: false },
+  { label: "Saved", icon: Bookmark, active: false, href: "/saved-posts" },
   { label: "Profile", icon: User, active: false, href: "/profile" },
 ];
 
