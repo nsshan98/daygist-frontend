@@ -20,8 +20,6 @@ import {
 const navItems = [
   { label: "Home", icon: Home, active: true },
   { label: "Explore", icon: Compass, active: false },
-  { label: "Notifications", icon: Bell, active: false, badge: 3 },
-  { label: "Messages", icon: Mail, active: false, badge: 12 },
   { label: "Saved", icon: Bookmark, active: false, href: "/saved-posts" },
   { label: "Profile", icon: User, active: false, href: "/profile" },
 ];
@@ -36,7 +34,7 @@ const trendingTopics = [
 
 export function Sidebar() {
   return (
-    <div className="sticky top-8 space-y-6">
+    <div className="sticky top-8 space-y-6 max-h-[calc(100vh-4rem)] overflow-y-auto pr-1">
       {/* Main Navigation */}
       <Card className="border-none shadow-2xl backdrop-blur-sm bg-linear-to-br from-card/90 to-card/60 overflow-hidden">
         {/* Decorative accent */}
@@ -67,12 +65,6 @@ export function Sidebar() {
                                   
                     <span className="flex-1 text-left">{item.label}</span>
                                   
-                    {/* Notification badge */}
-                    {item.badge && (
-                      <div className="flex items-center justify-center min-w-5 h-5 px-1.5 bg-linear-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full shadow-lg">
-                        {item.badge > 99 ? '99+' : item.badge}
-                      </div>
-                    )}
                   </Link>
                 </Button>
               );
@@ -100,7 +92,7 @@ export function Sidebar() {
       </Card>
 
       {/* Trending Topics */}
-      <Card className="border-none shadow-2xl backdrop-blur-sm bg-linear-to-br from-card/90 to-card/60 overflow-hidden">
+      {/* <Card className="border-none shadow-2xl backdrop-blur-sm bg-linear-to-br from-card/90 to-card/60 overflow-hidden">
         <div className="h-1.5 w-full bg-linear-to-r from-secondary via-primary to-secondary" />
         
         <CardContent className="p-4">
@@ -137,7 +129,6 @@ export function Sidebar() {
             ))}
           </div>
 
-          {/* More topics button */}
           <Button 
             variant="outline" 
             className="w-full mt-4 rounded-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg hover:bg-primary/5 hover:border-primary/50"
@@ -146,7 +137,7 @@ export function Sidebar() {
             Explore more topics
           </Button>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Footer Links */}
       <Card className="border-none shadow-xl backdrop-blur-sm bg-linear-to-br from-card/50 to-card/30">
@@ -159,7 +150,7 @@ export function Sidebar() {
             <a href="#" className="hover:text-primary hover:underline transition-all duration-300">Cookies</a>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            © 2025 Daygist, Inc.
+            © 2026 Daygist, Inc.
           </p>
         </CardContent>
       </Card>

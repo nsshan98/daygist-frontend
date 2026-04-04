@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FeedPost,
   CreatePost,
   Suggestions,
   Sidebar,
+  CommentDialog,
 } from "@/components/features/home";
+import type { FeedItem } from "@/components/features/home/hooks/feed-query";
 import { Card, CardContent } from "@/components/atoms/card";
-import { useGetFeed, useLikePost, useSavePost, useSharePost } from "@/components/features/home/hooks/feed-query";
+import { useGetFeed, useLikePost, useSavePost, useSharePost, useUnlikePost, useUnsavePost } from "@/components/features/home/hooks/feed-query";
+import { useGetUserProfile } from "@/components/features/profile/hooks/profile-query";
 import { Skeleton } from "@/components/atoms/skeleton";
 import { Button } from "@/components/atoms/button";
 import { RefreshCw, AlertCircle } from "lucide-react";
@@ -67,6 +70,16 @@ export default function Home() {
   const { likePostMutation } = useLikePost();
   const { savePostMutation } = useSavePost();
   const { sharePostMutation } = useSharePost();
+  const { unsavePostMutation } = useUnsavePost();
+  const { unlikePostMutation } = useUnlikePost();
+
+  // Comment dialog state
+  const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false);
+  const [selectedPostForComment, setSelectedPostForComment] = useState<FeedItem | null>(null);
+
+  // Get current user profile for avatar in comment dialog
+  const { showUserProfileQuery } = useGetUserProfile();
+  const currentUser = showUserProfileQuery.data?.data;
 
   const { 
     data, 
@@ -128,15 +141,42 @@ export default function Home() {
     savePostMutation.mutate(postId);
   };
 
+  // Handle like/unlike for comment dialog
+  const handleLikeToggle = (postId: string) => {
+    const post = posts.find((item: FeedItem) => item.data._id === postId);
+    if (post) {
+      if (post.data.isLiked) {
+        unlikePostMutation.mutate(postId);
+      } else {
+        likePostMutation.mutate(postId);
+      }
+    }
+  };
+
+  // Handle save/unsave for comment dialog
+  const handleSaveToggle = (postId: string) => {
+    const post = posts.find((item: FeedItem) => item.data._id === postId);
+    if (post) {
+      if (post.data.isSaved) {
+        unsavePostMutation.mutate(postId);
+      } else {
+        savePostMutation.mutate(postId);
+      }
+    }
+  };
+
   // Handle share action
   const handleShare = (postId: string) => {
     sharePostMutation.mutate(postId);
   };
 
-  // Handle comment action (placeholder for now)
+  // Handle comment action
   const handleComment = (postId: string) => {
-    console.log("Comment on post:", postId);
-    // TODO: Implement comment functionality
+    const postItem = posts.find((item: FeedItem) => item.data._id === postId);
+    if (postItem) {
+      setSelectedPostForComment(postItem);
+      setIsCommentDialogOpen(true);
+    }
   };
 
   // Error state
@@ -177,9 +217,7 @@ export default function Home() {
           
           {/* Left Sidebar - Navigation (Hidden on mobile) */}
           <div className="hidden xl:block xl:col-span-3">
-            <div className="sticky top-8 space-y-6">
-              <Sidebar />
-            </div>
+            <Sidebar />
           </div>
 
           {/* Center Feed */}
@@ -245,9 +283,24 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Comment Dialog */}
+          <CommentDialog
+            post={selectedPostForComment}
+            open={isCommentDialogOpen}
+            onOpenChange={setIsCommentDialogOpen}
+            onLikeToggle={handleLikeToggle}
+            onSaveToggle={handleSaveToggle}
+            isLiking={likePostMutation.isPending || unlikePostMutation.isPending}
+            isSaving={savePostMutation.isPending || unsavePostMutation.isPending}
+            currentUser={currentUser ? {
+              name: currentUser.name,
+              avatar: currentUser.avatar
+            } : null}
+          />
+
           {/* Right Sidebar - Suggestions (Hidden on mobile/tablet) */}
           <div className="hidden xl:block xl:col-span-3">
-            <div className="sticky top-8 space-y-6">
+            <div className="sticky top-8 space-y-6 max-h-[calc(100vh-4rem)] overflow-y-auto pr-1">
               <Suggestions suggestions={mockSuggestions} />
 
               <Card className="border-none shadow-lg">
@@ -262,7 +315,7 @@ export default function Home() {
                     <a href="#" className="hover:underline">Terms</a>
                   </div>
                   <p className="mt-4 text-xs text-muted-foreground">
-                    © 2025 Daygist, Inc.
+                    © 2026 Daygist, Inc.
                   </p>
                 </CardContent>
               </Card>

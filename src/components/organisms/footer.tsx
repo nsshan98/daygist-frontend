@@ -112,7 +112,7 @@ const Footer = () => {
         {/* Divider */}
         <div className="border-t border-gray-100 pt-8">
           <p className="text-sm">
-            Copyright © 2025 Daygist. All Rights Reserved.
+            Copyright © 2026 Daygist. All Rights Reserved.
           </p>
         </div>
       </div>

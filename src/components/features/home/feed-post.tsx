@@ -378,7 +378,12 @@ export function FeedPost({
               </span>
             </div>
             <div className="flex gap-3">
-              <span className="hover:text-foreground transition-colors cursor-pointer">{data.commentCount} comments</span>
+              <span 
+                className="hover:text-foreground transition-colors cursor-pointer"
+                onClick={() => onComment?.(data._id)}
+              >
+                {data.commentCount} comments
+              </span>
               <span className="hover:text-foreground transition-colors cursor-pointer">{data.shareCount} shares</span>
               <span className="hover:text-foreground transition-colors cursor-pointer">{data.saveCount} saves</span>
             </div>

@@ -4,6 +4,7 @@ export { CreatePostDialog } from "./create-post-dialog";
 export { Suggestions } from "./suggestions";
 export { Sidebar } from "./sidebar";
 export { MediaViewer } from "./media-viewer";
+export { CommentDialog } from "./comment-dialog";
 
 // Store exports
 export {
@@ -26,6 +27,7 @@ export {
 export {
   useGetFeed,
   useLikePost,
+  useUnlikePost,
   useSavePost,
   useUnsavePost,
   useSharePost,
@@ -43,3 +45,14 @@ export {
   type CreatePostPayload,
   type EditPostPayload,
 } from "./hooks/feed-query";
+
+export {
+  useGetComments,
+  useCreateComment,
+  useGetReplies,
+  type Comment,
+  type CommentAuthor,
+  type CommentsResponse,
+  type CreateCommentPayload,
+  type CreateCommentResponse,
+} from "./hooks/comment-query";
