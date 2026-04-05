@@ -15,6 +15,7 @@ import { useGetUserProfile } from "@/components/features/profile/hooks/profile-q
 import { Skeleton } from "@/components/atoms/skeleton";
 import { Button } from "@/components/atoms/button";
 import { RefreshCw, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 
 interface PostUser {
   name: string;
@@ -167,7 +168,14 @@ export default function Home() {
 
   // Handle share action
   const handleShare = (postId: string) => {
-    sharePostMutation.mutate(postId);
+    sharePostMutation.mutate(postId, {
+      onSuccess: () => {
+        toast.success("Post shared successfully");
+      },
+      onError: () => {
+        toast.error("Failed to share post");
+      },
+    });
   };
 
   // Handle comment action

@@ -22,7 +22,7 @@ import {
 } from "@/components/atoms/dialog";
 import { Textarea } from "@/components/atoms/textarea";
 import type { FeedItem } from "./hooks/feed-query";
-import { useEditPost, useDeletePost, useSavePost, useUnsavePost, useLikePost, useUnlikePost } from "./hooks/feed-query";
+import { useEditPost, useDeletePost, useSavePost, useUnsavePost, useLikePost, useUnlikePost, useSharePost } from "./hooks/feed-query";
 import { MediaViewer } from "./media-viewer";
 import { useSignedMedia } from "@/components/features/profile/media-image";
 import { toast } from "sonner";
@@ -59,6 +59,7 @@ export function FeedPost({
   const { unsavePostMutation } = useUnsavePost();
   const { likePostMutation } = useLikePost();
   const { unlikePostMutation } = useUnlikePost();
+  const { sharePostMutation } = useSharePost();
   
   // Edit dialog state
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -157,6 +158,18 @@ export function FeedPost({
     } else {
       likePostMutation.mutate(data._id);
     }
+  };
+  
+  // Handle share
+  const handleShare = () => {
+    sharePostMutation.mutate(data._id, {
+      onSuccess: () => {
+        toast.success("Post shared successfully");
+      },
+      onError: () => {
+        toast.error("Failed to share post");
+      },
+    });
   };
   
   // Format relative time
@@ -349,7 +362,8 @@ export function FeedPost({
               <Button 
                 variant="ghost" 
                 size="icon"
-                onClick={() => onShare?.(data._id)}
+                onClick={handleShare}
+                disabled={sharePostMutation.isPending}
                 className="rounded-xl transition-all duration-300 hover:scale-110 hover:bg-primary/10 hover:text-primary"
               >
                 <Send className="h-5 w-5" />

@@ -478,13 +478,177 @@ export const useUnsavePost = () => {
 };
 
 // ===============================|| SHARE POST ||============================== //
+export interface ShareResponse {
+  success: boolean;
+  message: string;
+  data: {
+    id: string;
+    type: string;
+    isShared: boolean;
+    shareCount: number;
+  };
+}
+
+interface ShareContext {
+  previousFeed: unknown;
+  previousSaved: unknown;
+  previousDetail: unknown;
+}
+
 export const useSharePost = () => {
-  const sharePostMutation = useMutation({
+  const queryClient = useQueryClient();
+
+  const sharePostMutation = useMutation<ShareResponse, Error, string, ShareContext>({
     mutationFn: async (postId: string) => {
       const { data } = await axiosClient.post(`/posts/${postId}/share`);
       return data;
     },
+    onMutate: async (postId) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["feed"] });
+      await queryClient.cancelQueries({ queryKey: ["saved-posts"] });
+      await queryClient.cancelQueries({ queryKey: ["post-detail", postId] });
+
+      // Snapshot previous values
+      const previousFeed = queryClient.getQueryData(["feed"]);
+      const previousSaved = queryClient.getQueryData(["saved-posts"]);
+      const previousDetail = queryClient.getQueryData(["post-detail", postId]);
+
+      // Optimistically update feed
+      queryClient.setQueryData(["feed"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map((item: any) => {
+              if (item.data._id === postId) {
+                return {
+                  ...item,
+                  data: {
+                    ...item.data,
+                    isShared: true,
+                    shareCount: item.data.shareCount + 1,
+                  },
+                };
+              }
+              return item;
+            }),
+          })),
+        };
+      });
+
+      // Optimistically update saved posts
+      queryClient.setQueryData(["saved-posts"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            posts: page.posts.map((p: any) => {
+              if (p._id === postId) {
+                return {
+                  ...p,
+                  isShared: true,
+                  shareCount: p.shareCount + 1,
+                };
+              }
+              return p;
+            }),
+          })),
+        };
+      });
+
+      // Optimistically update post detail
+      queryClient.setQueryData(["post-detail", postId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          post: {
+            ...old.post,
+            isShared: true,
+            shareCount: old.post.shareCount + 1,
+          },
+        };
+      });
+
+      return { previousFeed, previousSaved, previousDetail };
+    },
+    onError: (err, postId, context) => {
+      // Rollback on error
+      if (context?.previousFeed) {
+        queryClient.setQueryData(["feed"], context.previousFeed);
+      }
+      if (context?.previousSaved) {
+        queryClient.setQueryData(["saved-posts"], context.previousSaved);
+      }
+      if (context?.previousDetail) {
+        queryClient.setQueryData(["post-detail", postId], context.previousDetail);
+      }
+    },
+    onSettled: (data, error, postId) => {
+      // Sync with server response
+      if (data?.data) {
+        const { isShared, shareCount } = data.data;
+        
+        queryClient.setQueryData(["feed"], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              items: page.items.map((item: any) => {
+                if (item.data._id === postId) {
+                  return {
+                    ...item,
+                    data: {
+                      ...item.data,
+                      isShared,
+                      shareCount,
+                    },
+                  };
+                }
+                return item;
+              }),
+            })),
+          };
+        });
+
+        queryClient.setQueryData(["saved-posts"], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              posts: page.posts.map((p: any) => {
+                if (p._id === postId) {
+                  return {
+                    ...p,
+                    isShared,
+                    shareCount,
+                  };
+                }
+                return p;
+              }),
+            })),
+          };
+        });
+
+        queryClient.setQueryData(["post-detail", postId], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            post: {
+              ...old.post,
+              isShared,
+              shareCount,
+            },
+          };
+        });
+      }
+    },
   });
+
   return { sharePostMutation };
 };
 

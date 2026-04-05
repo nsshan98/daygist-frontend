@@ -47,6 +47,7 @@ import {
   useUnsavePost,
   useEditPost,
   useDeletePost,
+  useSharePost,
   type FeedMedia,
 } from "@/components/features/home/hooks/feed-query";
 import { useSignedMedia } from "@/components/features/profile/media-image";
@@ -122,6 +123,7 @@ export function PostDetailContent() {
   const { deletePostMutation } = useDeletePost();
   const { followUserMutation } = useFollowUser();
   const { unfollowUserMutation } = useUnfollowUser();
+  const { sharePostMutation } = useSharePost();
 
   const { data, isLoading, isError, error } = postDetailQuery;
   const post = data?.post;
@@ -248,16 +250,20 @@ export function PostDetailContent() {
   // Handle share
   const handleShare = () => {
     if (!post) return;
-    if (navigator.share) {
-      navigator.share({
-        title: "Daygist Post",
-        text: post.text || "Check out this post",
-        url: window.location.href,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Link copied to clipboard");
-    }
+    
+    // Call the API to increment share count
+    sharePostMutation.mutate(post._id, {
+      onSuccess: () => {
+        toast.success("Post shared successfully");
+        
+        // Also copy link to clipboard for convenience
+        navigator.clipboard.writeText(window.location.href);
+        toast.success("Link copied to clipboard");
+      },
+      onError: () => {
+        toast.error("Failed to share post");
+      },
+    });
   };
 
   // Loading state
@@ -555,6 +561,7 @@ export function PostDetailContent() {
                   <Button
                     variant="ghost"
                     onClick={handleShare}
+                    disabled={sharePostMutation.isPending}
                     className="flex-1 gap-2 rounded-xl transition-all duration-300 hover:bg-primary/10 hover:text-primary"
                   >
                     <Share2 className="h-5 w-5" />
