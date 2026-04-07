@@ -830,6 +830,65 @@ export interface SavedPostsResponse {
   posts: SavedPost[];
 }
 
+export interface MyPostsResponse {
+  success: boolean;
+  items: FeedPostData[];
+  nextCursor?: { createdAt: string; _id: string };
+}
+
+export const useGetMyPosts = () => {
+  const myPostsQuery = useInfiniteQuery<MyPostsResponse>({
+    queryKey: ["my-posts"],
+    queryFn: async ({ pageParam }) => {
+      const limit = 10;
+      let cursor = "";
+      if (pageParam) {
+        if (typeof pageParam === 'object') {
+          cursor = `&cursor=${encodeURIComponent(JSON.stringify(pageParam))}`;
+        }
+      }
+      const url = `/users/me/posts?limit=${limit}${cursor}`;
+      const { data } = await axiosClient.get(url);
+      return data;
+    },
+    getNextPageParam: (lastPage) => {
+      return lastPage.nextCursor || undefined;
+    },
+    initialPageParam: undefined as { createdAt: string; _id: string } | undefined,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 2,
+  });
+
+  return { myPostsQuery };
+};
+
+export const useGetUserPostsById = (userId: string) => {
+  const userPostsQuery = useInfiniteQuery<MyPostsResponse>({
+    queryKey: ["user-posts", userId],
+    queryFn: async ({ pageParam }) => {
+      const limit = 10;
+      let cursor = "";
+      if (pageParam) {
+        if (typeof pageParam === 'object') {
+          cursor = `&cursor=${encodeURIComponent(JSON.stringify(pageParam))}`;
+        }
+      }
+      const url = `/users/${userId}/posts?limit=${limit}${cursor}`;
+      const { data } = await axiosClient.get(url);
+      return data;
+    },
+    getNextPageParam: (lastPage) => {
+      return lastPage.nextCursor || undefined;
+    },
+    initialPageParam: undefined as { createdAt: string; _id: string } | undefined,
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 2,
+  });
+
+  return { userPostsQuery };
+};
+
 export const useGetSavedPosts = () => {
   const savedPostsQuery = useInfiniteQuery<SavedPostsResponse>({
     queryKey: ["saved-posts"],

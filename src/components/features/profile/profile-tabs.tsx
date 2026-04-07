@@ -9,12 +9,16 @@ import {
   Heart, 
   Bookmark,
   Image as ImageIcon,
-  Video
+  Video,
+  Loader2
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Button } from "@/components/atoms/button";
 import { useSignedMedia } from "./media-image";
 import { Skeleton } from "@/components/atoms/skeleton";
+import { useGetMyPosts, useGetUserPostsById, type FeedPostData } from "@/components/features/home/hooks/feed-query";
+import { MediaViewer } from "@/components/features/home/media-viewer";
+import Link from "next/link";
 
 interface Post {
   id: number;
@@ -50,6 +54,7 @@ interface ProfileTabsProps {
   media?: MediaItem[];
   likedPosts?: Post[];
   savedPosts?: Post[];
+  userId?: string; // Add userId prop for fetching other user's posts
 }
 
 // Simple Post Card for Profile
@@ -77,6 +82,128 @@ function ProfilePostCard({ post }: { post: Post }) {
           </span>
           <span>{post.comments} comments</span>
           <span>{post.shares} shares</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// My Post Card Component with Signed URL Support
+function MyPostCard({ post }: { post: FeedPostData }) {
+  const { useSignedUrl } = useSignedMedia();
+  
+  // Fetch signed URL for avatar
+  const { data: signedAvatarUrl } = useSignedUrl(post.author.avatar?.key || null);
+  const finalAvatarUrl = signedAvatarUrl || post.author.avatar.url;
+
+  // Format relative time
+  const formatRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return "Just now";
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    
+    return date.toLocaleDateString("en-US", { 
+      month: "short", 
+      day: "numeric",
+      year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined
+    });
+  };
+
+  // Render text post with background
+  const renderTextPost = () => {
+    if (post.backgroundUrl && post.textStyle) {
+      return (
+        <div 
+          className="relative aspect-square w-full overflow-hidden rounded-2xl shadow-inner"
+          style={{ 
+            backgroundImage: `url(${post.backgroundUrl})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center"
+          }}
+        >
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-8">
+            <p 
+              className="text-center leading-relaxed"
+              style={{
+                color: post.textStyle.color,
+                fontSize: `${post.textStyle.fontSize}px`,
+                fontWeight: post.textStyle.fontWeight,
+                textAlign: post.textStyle.align as any
+              }}
+            >
+              {post.text}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // Plain text post
+    if (post.text) {
+      return (
+        <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">
+          {post.text}
+        </p>
+      );
+    }
+
+    return null;
+  };
+
+  // Render media grid
+  const renderMediaGrid = () => {
+    if (!post.medias || post.medias.length === 0) return null;
+
+    // Single media
+    if (post.medias.length === 1) {
+      return (
+        <div className="mt-4">
+          <MediaViewer media={post.medias[0]} layout={post.layout} />
+        </div>
+      );
+    }
+
+    // Multiple media - Grid layout
+    return (
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        {post.medias.map((media, index) => (
+          <MediaViewer key={index} media={media} layout="grid" />
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <Card className="border-none shadow-lg overflow-hidden">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={finalAvatarUrl} alt={post.author.name} />
+            <AvatarFallback>{post.author.name[0]}</AvatarFallback>
+          </Avatar>
+          <div>
+            <h4 className="font-semibold text-sm">{post.author.name}</h4>
+            <p className="text-xs text-muted-foreground">@{post.author.username} • {formatRelativeTime(post.createdAt)}</p>
+          </div>
+        </div>
+        
+        {/* Text content */}
+        {renderTextPost()}
+        
+        {/* Media content */}
+        {renderMediaGrid()}
+        
+        <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3">
+          <span className="flex items-center gap-1">
+            <Heart className="w-4 h-4" /> {post.likeCount}
+          </span>
+          <span>{post.commentCount} comments</span>
+          <span>{post.shareCount} shares</span>
         </div>
       </CardContent>
     </Card>
@@ -149,9 +276,29 @@ export function ProfileTabs({
   posts = [], 
   media = [],
   likedPosts = [],
-  savedPosts = []
+  savedPosts = [],
+  userId
 }: ProfileTabsProps) {
   const [activeTab, setActiveTab] = useState("posts");
+  
+  // Determine if we're viewing own profile or another user's profile
+  const isOwnProfile = !userId;
+  
+  // Fetch my posts (own profile)
+  const { myPostsQuery } = useGetMyPosts();
+  
+  // Fetch user posts by ID (other user's profile)
+  const { userPostsQuery } = useGetUserPostsById(userId || "");
+  
+  // Use the appropriate query based on whether we're viewing our own profile or another user's
+  const activeQuery = isOwnProfile ? myPostsQuery : userPostsQuery;
+  
+  // Flatten all pages of posts
+  const postsList = activeQuery.data?.pages.flatMap(page => page.items || []) || [];
+  const isPostsLoading = activeQuery.isLoading;
+  const isPostsFetchingNextPage = activeQuery.isFetchingNextPage;
+  const hasNextPage = activeQuery.hasNextPage;
+  const fetchNextPage = activeQuery.fetchNextPage;
 
   // Mock data for demonstration (replace with actual data fetching)
   const mockPosts: Post[] = posts.length > 0 ? posts : [];
@@ -198,18 +345,60 @@ export function ProfileTabs({
 
       {/* Posts Tab */}
       <TabsContent value="posts" className="mt-6 space-y-6">
-        {mockPosts.length > 0 ? (
-          mockPosts.map((post) => (
-            <ProfilePostCard
-              key={post.id}
-              post={post}
-            />
-          ))
+        {isPostsLoading ? (
+          // Loading skeleton
+          <div className="space-y-6">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="border-none shadow-lg overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-3/4 mb-3" />
+                  <Skeleton className="h-48 w-full rounded-lg" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : postsList.length > 0 ? (
+          <>
+            {postsList.map((post: FeedPostData) => (
+              <MyPostCard
+                key={post._id}
+                post={post}
+              />
+            ))}
+            
+            {/* Load More Button */}
+            {hasNextPage && (
+              <div className="flex justify-center mt-6">
+                <Button
+                  onClick={() => fetchNextPage()}
+                  disabled={isPostsFetchingNextPage}
+                  variant="secondary"
+                >
+                  {isPostsFetchingNextPage ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Load More Posts'
+                  )}
+                </Button>
+              </div>
+            )}
+          </>
         ) : (
           <EmptyState 
             icon={FileText} 
-            title="No Posts Yet" 
-            description="When you create posts, they'll appear here."
+            title={isOwnProfile ? "No Posts Yet" : "No Posts"} 
+            description={isOwnProfile ? "When you create posts, they'll appear here." : "This user hasn't posted yet."}
           />
         )}
       </TabsContent>

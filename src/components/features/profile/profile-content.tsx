@@ -111,7 +111,7 @@ export function ProfileContent({ username, userId }: ProfileContentProps) {
             />
 
             {/* Profile Tabs (Posts, Media, Likes, Saved) */}
-            <ProfileTabs />
+            <ProfileTabs userId={userId} />
           </div>
 
           {/* Sidebar - Profile Info - Right Column (4 cols) */}
