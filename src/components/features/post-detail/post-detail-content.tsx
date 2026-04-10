@@ -39,13 +39,13 @@ import { Textarea } from "@/components/atoms/textarea";
 import { Skeleton } from "@/components/atoms/skeleton";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { EditPostDialog } from "@/components/features/home/edit-post-dialog";
 import {
   useGetPostDetail,
   useLikePost,
   useUnlikePost,
   useSavePost,
   useUnsavePost,
-  useEditPost,
   useDeletePost,
   useSharePost,
   type FeedMedia,
@@ -110,7 +110,6 @@ export function PostDetailContent() {
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editText, setEditText] = useState("");
   const [commentText, setCommentText] = useState("");
 
   // Queries and mutations
@@ -119,7 +118,6 @@ export function PostDetailContent() {
   const { unlikePostMutation } = useUnlikePost();
   const { savePostMutation } = useSavePost();
   const { unsavePostMutation } = useUnsavePost();
-  const { editPostMutation } = useEditPost();
   const { deletePostMutation } = useDeletePost();
   const { followUserMutation } = useFollowUser();
   const { unfollowUserMutation } = useUnfollowUser();
@@ -205,30 +203,6 @@ export function PostDetailContent() {
         },
       });
     }
-  };
-
-  // Handle edit
-  const handleEditPost = () => {
-    if (!post) return;
-    setEditText(post.text || "");
-    setIsEditDialogOpen(true);
-  };
-
-  const handleSaveEdit = () => {
-    if (!post || !editText.trim()) return;
-    editPostMutation.mutate(
-      { postId: post._id, text: editText },
-      {
-        onSuccess: () => {
-          toast.success("Post updated successfully");
-          setIsEditDialogOpen(false);
-          queryClient.invalidateQueries({ queryKey: ["post-detail", postId] });
-        },
-        onError: () => {
-          toast.error("Failed to update post");
-        },
-      }
-    );
   };
 
   // Handle delete
@@ -471,7 +445,7 @@ export function PostDetailContent() {
                 <DropdownMenuContent align="end" className="w-48">
                   {post.author.isMe ? (
                     <>
-                      <DropdownMenuItem onClick={handleEditPost} className="cursor-pointer">
+                      <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)} className="cursor-pointer">
                         <Pencil className="mr-2 h-4 w-4" />
                         Edit post
                       </DropdownMenuItem>
@@ -611,32 +585,13 @@ export function PostDetailContent() {
       </div>
 
       {/* Edit Post Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Post</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Textarea
-              value={editText}
-              onChange={(e) => setEditText(e.target.value)}
-              placeholder="What's on your mind?"
-              className="min-h-32 resize-none"
-            />
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="destructive" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSaveEdit}
-              disabled={!editText.trim() || editPostMutation.isPending}
-            >
-              {editPostMutation.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {post && (
+        <EditPostDialog 
+          isOpen={isEditDialogOpen} 
+          onOpenChange={setIsEditDialogOpen} 
+          post={post} 
+        />
+      )}
 
       {/* Delete Post Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

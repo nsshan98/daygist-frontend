@@ -22,11 +22,12 @@ import {
 } from "@/components/atoms/dialog";
 import { Textarea } from "@/components/atoms/textarea";
 import type { FeedItem } from "./hooks/feed-query";
-import { useEditPost, useDeletePost, useSavePost, useUnsavePost, useLikePost, useUnlikePost, useSharePost } from "./hooks/feed-query";
+import { useDeletePost, useSavePost, useUnsavePost, useLikePost, useUnlikePost, useSharePost } from "./hooks/feed-query";
 import { MediaViewer } from "./media-viewer";
 import { useSignedMedia } from "@/components/features/profile/media-image";
 import { toast } from "sonner";
 import { useFollowUser, useUnfollowUser } from "../profile";
+import { EditPostDialog } from "./edit-post-dialog";
 
 interface FeedPostProps {
   post: FeedItem;
@@ -51,7 +52,6 @@ export function FeedPost({
   const finalAvatarUrl = signedAvatarUrl || data.author.avatar.url;
   
   // Mutations
-  const { editPostMutation } = useEditPost();
   const { deletePostMutation } = useDeletePost();
   const { followUserMutation } = useFollowUser();
   const { unfollowUserMutation } = useUnfollowUser();
@@ -63,33 +63,9 @@ export function FeedPost({
   
   // Edit dialog state
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editText, setEditText] = useState("");
   
   // Delete dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  
-  // Handle edit post
-  const handleEditPost = () => {
-    setEditText(data.text || "");
-    setIsEditDialogOpen(true);
-  };
-  
-  const handleSaveEdit = () => {
-    if (!editText.trim()) return;
-    
-    editPostMutation.mutate(
-      { postId: data._id, text: editText },
-      {
-        onSuccess: () => {
-          toast.success("Post updated successfully");
-          setIsEditDialogOpen(false);
-        },
-        onError: () => {
-          toast.error("Failed to update post");
-        },
-      }
-    );
-  };
   
   // Handle delete post
   const handleDeletePost = () => {
@@ -294,7 +270,7 @@ export function FeedPost({
             <DropdownMenuContent align="end" className="w-48">
               {data.author.isMe ? (
                 <>
-                  <DropdownMenuItem onClick={handleEditPost} className="cursor-pointer">
+                  <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)} className="cursor-pointer">
                     <Pencil className="mr-2 h-4 w-4" />
                     Edit post
                   </DropdownMenuItem>
@@ -406,35 +382,11 @@ export function FeedPost({
       </CardFooter>
 
       {/* Edit Post Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Post</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Textarea
-              value={editText}
-              onChange={(e) => setEditText(e.target.value)}
-              placeholder="What's on your mind?"
-              className="min-h-32 resize-none"
-            />
-          </div>
-          <DialogFooter className="gap-2">
-            <Button 
-              variant="destructive" 
-              onClick={() => setIsEditDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSaveEdit}
-              disabled={!editText.trim() || editPostMutation.isPending}
-            >
-              {editPostMutation.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditPostDialog 
+        isOpen={isEditDialogOpen} 
+        onOpenChange={setIsEditDialogOpen} 
+        post={data} 
+      />
 
       {/* Delete Post Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

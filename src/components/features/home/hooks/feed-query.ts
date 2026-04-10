@@ -726,19 +726,29 @@ export const useCreatePost = () => {
 
 // ===============================|| EDIT POST ||============================== //
 export interface EditPostPayload {
-  text: string;
+  text?: string;
+  privacy?: string;
+  backgroundUrl?: string;
+  textStyle?: {
+    color: string;
+    fontSize: number;
+    fontWeight?: string;
+    align?: string;
+  };
+  layout?: string;
 }
 
 export const useEditPost = () => {
   const queryClient = useQueryClient();
   
   const editPostMutation = useMutation({
-    mutationFn: async ({ postId, text }: { postId: string; text: string }) => {
-      const { data } = await axiosClient.patch(`/posts/${postId}`, { text });
+    mutationFn: async ({ postId, payload }: { postId: string; payload: EditPostPayload }) => {
+      const { data } = await axiosClient.patch(`/users/me/posts/${postId}`, payload);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["my-posts"] });
     },
   });
 
@@ -751,11 +761,12 @@ export const useDeletePost = () => {
   
   const deletePostMutation = useMutation({
     mutationFn: async (postId: string) => {
-      const { data } = await axiosClient.delete(`/posts/${postId}/delete`);
+      const { data } = await axiosClient.delete(`/users/me/posts/${postId}`);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["my-posts"] });
     },
   });
 

@@ -10,15 +10,34 @@ import {
   Bookmark,
   Image as ImageIcon,
   Video,
-  Loader2
+  Loader2,
+  MoreHorizontal,
+  Pencil,
+  Trash2
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Button } from "@/components/atoms/button";
 import { useSignedMedia } from "./media-image";
 import { Skeleton } from "@/components/atoms/skeleton";
-import { useGetMyPosts, useGetUserPostsById, type FeedPostData } from "@/components/features/home/hooks/feed-query";
+import { useGetMyPosts, useGetUserPostsById, type FeedPostData, useDeletePost } from "@/components/features/home/hooks/feed-query";
 import { MediaViewer } from "@/components/features/home/media-viewer";
+import { EditPostDialog } from "@/components/features/home/edit-post-dialog";
 import Link from "next/link";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/atoms/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/atoms/dialog";
 
 interface Post {
   id: number;
@@ -91,6 +110,13 @@ function ProfilePostCard({ post }: { post: Post }) {
 // My Post Card Component with Signed URL Support
 function MyPostCard({ post }: { post: FeedPostData }) {
   const { useSignedUrl } = useSignedMedia();
+  const { deletePostMutation } = useDeletePost();
+  
+  // Edit dialog state
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
+  // Delete dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   // Fetch signed URL for avatar
   const { data: signedAvatarUrl } = useSignedUrl(post.author.avatar?.key || null);
@@ -111,6 +137,19 @@ function MyPostCard({ post }: { post: FeedPostData }) {
       month: "short", 
       day: "numeric",
       year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined
+    });
+  };
+
+  // Handle delete post
+  const handleDeletePost = () => {
+    deletePostMutation.mutate(post._id, {
+      onSuccess: () => {
+        toast.success("Post deleted successfully");
+        setIsDeleteDialogOpen(false);
+      },
+      onError: () => {
+        toast.error("Failed to delete post");
+      },
     });
   };
 
@@ -179,34 +218,97 @@ function MyPostCard({ post }: { post: FeedPostData }) {
   };
 
   return (
-    <Card className="border-none shadow-lg overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={finalAvatarUrl} alt={post.author.name} />
-            <AvatarFallback>{post.author.name[0]}</AvatarFallback>
-          </Avatar>
-          <div>
-            <h4 className="font-semibold text-sm">{post.author.name}</h4>
-            <p className="text-xs text-muted-foreground">@{post.author.username} • {formatRelativeTime(post.createdAt)}</p>
+    <>
+      <Card className="border-none shadow-lg overflow-hidden group">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={finalAvatarUrl} alt={post.author.name} />
+              <AvatarFallback>{post.author.name[0]}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <h4 className="font-semibold text-sm">{post.author.name}</h4>
+              <p className="text-xs text-muted-foreground">@{post.author.username} • {formatRelativeTime(post.createdAt)}</p>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)} className="cursor-pointer">
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit post
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => setIsDeleteDialogOpen(true)} 
+                  className="cursor-pointer text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete post
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        </div>
-        
-        {/* Text content */}
-        {renderTextPost()}
-        
-        {/* Media content */}
-        {renderMediaGrid()}
-        
-        <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3">
-          <span className="flex items-center gap-1">
-            <Heart className="w-4 h-4" /> {post.likeCount}
-          </span>
-          <span>{post.commentCount} comments</span>
-          <span>{post.shareCount} shares</span>
-        </div>
-      </CardContent>
-    </Card>
+          
+          {/* Text content */}
+          {renderTextPost()}
+          
+          {/* Media content */}
+          {renderMediaGrid()}
+          
+          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3">
+            <span className="flex items-center gap-1">
+              <Heart className="w-4 h-4" /> {post.likeCount}
+            </span>
+            <span>{post.commentCount} comments</span>
+            <span>{post.shareCount} shares</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Edit Post Dialog */}
+      <EditPostDialog 
+        isOpen={isEditDialogOpen} 
+        onOpenChange={setIsEditDialogOpen} 
+        post={post} 
+      />
+
+      {/* Delete Post Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Post</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-muted-foreground">
+              Are you sure you want to delete this post? This action cannot be undone.
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="secondary" 
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleDeletePost}
+              disabled={deletePostMutation.isPending}
+            >
+              {deletePostMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
