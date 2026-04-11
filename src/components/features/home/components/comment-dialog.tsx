@@ -26,10 +26,9 @@ import {
   useGetComments,
   useCreateComment,
   useGetReplies,
-  type Comment,
-} from "./hooks/comment-query";
-import { useSignedMedia } from "@/components/features/profile/media-image";
-import type { FeedItem, FeedMedia } from "./hooks/feed-query";
+} from "../hooks/comment-query";
+import { useSignedMedia } from "@/components/features/profile/components/media-image";
+import { Comment, FeedItem, FeedMedia } from "@/types";
 
 // Format relative time
 const formatRelativeTime = (dateString: string) => {

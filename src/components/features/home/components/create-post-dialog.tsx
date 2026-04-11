@@ -9,19 +9,18 @@ import {
 } from "@/components/atoms/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Button } from "@/components/atoms/button";
-import { useCreatePostStore, PostType } from "./stores/create-post-store";
-import { PrivacySelector } from "./create-post/privacy-selector";
-import { TextPostForm } from "./create-post/text-post-form";
-import { ImagePostForm } from "./create-post/image-post-form";
-import { VideoPostForm } from "./create-post/video-post-form";
-import { useCreatePost, CreatePostPayload } from "./hooks/feed-query";
-import { useUploadImage, useUploadVideo } from "./hooks/upload-query";
-import { useShowUserProfile } from "../auth/hooks/auth-query";
-import { useSignedMedia } from "../profile/media-image";
+import { useCreatePostStore, PostType } from "../stores/create-post-store";
+import { PrivacySelector } from "../create-post/privacy-selector";
+import { TextPostForm } from "../create-post/text-post-form";
+import { useCreatePost } from "../hooks/feed-query";
+import { useUploadImage, useUploadVideo } from "../hooks/upload-query";
+import { useShowUserProfile } from "../../auth/hooks/auth-query";
+import { useSignedMedia } from "../../profile";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Type, Image as ImageIcon, Video, Loader2, SmilePlus, X } from "lucide-react";
 import { useState } from "react";
+import { CreatePostPayload } from "@/types";
 
 const postTypeOptions: {
   type: PostType;

@@ -1,10 +1,10 @@
-export { FeedPost } from "./feed-post";
-export { CreatePost } from "./create-post";
-export { CreatePostDialog } from "./create-post-dialog";
-export { Suggestions } from "./suggestions";
-export { Sidebar } from "./sidebar";
-export { MediaViewer } from "./media-viewer";
-export { CommentDialog } from "./comment-dialog";
+export { FeedPost } from "./components/feed-post";
+export { CreatePost } from "./components/create-post";
+export { CreatePostDialog } from "./components/create-post-dialog";
+export { Suggestions } from "./components/suggestions";
+export { Sidebar } from "./components/sidebar";
+export { MediaViewer } from "./components/media-viewer";
+export { CommentDialog } from "./components/comment-dialog";
 
 // Store exports
 export {
@@ -22,7 +22,6 @@ export {
   useUploadImage,
   useUploadVideo,
   useUploadMultipleImages,
-  type UploadResponse,
 } from "./hooks/upload-query";
 export {
   useGetFeed,
@@ -36,26 +35,31 @@ export {
   useDeletePost,
   useGetMyPosts,
   useGetUserPostsById,
-  type FeedAuthor,
-  type FeedMedia,
-  type FeedPostData,
-  type FeedItem,
-  type FeedResponse,
-  type MyPostsResponse,
-  type CreateTextPostPayload,
-  type CreateImagePostPayload,
-  type CreateVideoPostPayload,
-  type CreatePostPayload,
-  type EditPostPayload,
 } from "./hooks/feed-query";
 
 export {
   useGetComments,
   useCreateComment,
   useGetReplies,
-  type Comment,
-  type CommentAuthor,
-  type CommentsResponse,
-  type CreateCommentPayload,
-  type CreateCommentResponse,
 } from "./hooks/comment-query";
+
+// Type re-exports for convenience
+export type {
+  FeedAuthor,
+  FeedMedia,
+  FeedPostData,
+  FeedItem,
+  FeedResponse,
+  MyPostsResponse,
+  CreateTextPostPayload,
+  CreateImagePostPayload,
+  CreateVideoPostPayload,
+  CreatePostPayload,
+  EditPostPayload,
+  Comment,
+  CommentAuthor,
+  CommentsResponse,
+  CreateCommentPayload,
+  CreateCommentResponse,
+  UploadResponse,
+} from "@/types";

@@ -7,12 +7,9 @@ import {
   ProfileTabs, 
   EditProfileDialog,
   ProfileSkeleton,
-  FollowListDialog,
-  useGetUserProfile,
-  useGetUserProfileById,
-  useFollowUser,
-  useUnfollowUser,
 } from "@/components/features/profile";
+import { useGetUserProfile, useGetUserProfileById } from "../hooks/profile-query";
+import { FollowListDialog, useFollowUser, useUnfollowUser } from "@/components/features/follow";
 import { isAxiosError } from "axios";
 import { toast } from "sonner";
 

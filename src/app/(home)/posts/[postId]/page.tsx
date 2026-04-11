@@ -1,4 +1,4 @@
-import { PostDetailContent } from "@/components/features/post-detail";
+import { PostDetailContent } from "@/components/features/post-detail/post-detail-content";
 
 interface PostDetailPageProps {
   params: Promise<{

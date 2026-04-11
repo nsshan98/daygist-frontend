@@ -14,8 +14,7 @@ import { Button } from "@/components/atoms/button";
 import { Skeleton } from "@/components/atoms/skeleton";
 import { Search, UserPlus, UserCheck } from "lucide-react";
 import Link from "next/link";
-import { useGetFollowersList, useGetFollowingList, useFollowUser, useUnfollowUser } from "./hooks/profile-query";
-import { useQueryClient } from "@tanstack/react-query";
+import { useGetFollowersList, useGetFollowingList, useFollowUser, useUnfollowUser } from "@/components/features/follow/hooks/follow-query";
 import { toast } from "sonner";
 
 interface FollowListDialogProps {
@@ -33,7 +32,6 @@ export function FollowListDialog({ open, onOpenChange, userId, initialTab = "fol
   const { followingQuery } = useGetFollowingList(userId, searchQuery);
   const { followUserMutation } = useFollowUser();
   const { unfollowUserMutation } = useUnfollowUser();
-  const queryClient = useQueryClient();
 
   const followers = followersQuery.data?.items || [];
   const following = followingQuery.data?.items || [];
@@ -44,28 +42,12 @@ export function FollowListDialog({ open, onOpenChange, userId, initialTab = "fol
   const handleFollowToggle = (targetUserId: string, isCurrentlyFollowing: boolean) => {
     if (isCurrentlyFollowing) {
       unfollowUserMutation.mutate(targetUserId, {
-        onSuccess: () => {
-          toast.success("Unfollowed successfully");
-          // Invalidate follow lists and profile
-          queryClient.invalidateQueries({ queryKey: ["followers-list", userId] });
-          queryClient.invalidateQueries({ queryKey: ["following-list", userId] });
-          queryClient.invalidateQueries({ queryKey: ["user-profile", userId] });
-          queryClient.invalidateQueries({ queryKey: ["user-profile"] });
-        },
         onError: () => {
           toast.error("Failed to unfollow");
         },
       });
     } else {
       followUserMutation.mutate(targetUserId, {
-        onSuccess: () => {
-          toast.success("Followed successfully");
-          // Invalidate follow lists and profile
-          queryClient.invalidateQueries({ queryKey: ["followers-list", userId] });
-          queryClient.invalidateQueries({ queryKey: ["following-list", userId] });
-          queryClient.invalidateQueries({ queryKey: ["user-profile", userId] });
-          queryClient.invalidateQueries({ queryKey: ["user-profile"] });
-        },
         onError: () => {
           toast.error("Failed to follow");
         },

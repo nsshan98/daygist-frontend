@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Play, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/atoms/button";
-import type { FeedMedia } from "./hooks/feed-query";
-import { useSignedMedia } from "@/components/features/profile/media-image";
+import { useSignedMedia } from "@/components/features/profile/components/media-image";
+import { FeedMedia } from "@/types";
 
 interface MediaViewerProps {
   media: FeedMedia;

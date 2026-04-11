@@ -21,13 +21,13 @@ import {
   DialogFooter,
 } from "@/components/atoms/dialog";
 import { Textarea } from "@/components/atoms/textarea";
-import type { FeedItem } from "./hooks/feed-query";
-import { useDeletePost, useSavePost, useUnsavePost, useLikePost, useUnlikePost, useSharePost } from "./hooks/feed-query";
+import { useDeletePost, useSavePost, useUnsavePost, useLikePost, useUnlikePost, useSharePost } from "../hooks/feed-query";
 import { MediaViewer } from "./media-viewer";
-import { useSignedMedia } from "@/components/features/profile/media-image";
+import { useSignedMedia } from "@/components/features/profile/components/media-image";
 import { toast } from "sonner";
-import { useFollowUser, useUnfollowUser } from "../profile";
+import { useFollowUser, useUnfollowUser } from "@/components/features/follow";
 import { EditPostDialog } from "./edit-post-dialog";
+import { FeedItem } from "@/types";
 
 interface FeedPostProps {
   post: FeedItem;

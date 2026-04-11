@@ -3,10 +3,10 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Button } from "@/components/atoms/button";
 import { Card, CardContent } from "@/components/atoms/card";
-import { useCreatePostStore } from "./stores/create-post-store";
+import { useCreatePostStore } from "../stores/create-post-store";
 import { CreatePostDialog } from "./create-post-dialog";
-import { useShowUserProfile } from "../auth/hooks/auth-query";
-import { useSignedMedia } from "../profile/media-image";
+import { useShowUserProfile } from "../../auth/hooks/auth-query";
+import { useSignedMedia } from "../../profile";
 import { ImageIcon, Video, Type } from "lucide-react";
 
 export function CreatePost() {

@@ -24,12 +24,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu";
-import { useUploadAvatar, useUploadCover, useGetSignedUrl } from "./hooks/profile-query";
+import { useUploadAvatar, useUploadCover, useGetSignedUrl } from "../hooks/profile-query";
 import { toast } from "sonner";
 import { isAxiosError } from "axios";
 import { ImageAdjustmentDialog } from "./image-adjustment-dialog";
 import { Skeleton } from "@/components/atoms/skeleton";
-import { FollowListDialog } from "./follow-list-dialog";
+import { FollowListDialog } from "@/components/features/follow";
 
 interface UserProfile {
   _id: string;

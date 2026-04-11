@@ -19,10 +19,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Button } from "@/components/atoms/button";
 import { useSignedMedia } from "./media-image";
 import { Skeleton } from "@/components/atoms/skeleton";
-import { useGetMyPosts, useGetUserPostsById, type FeedPostData, useDeletePost } from "@/components/features/home/hooks/feed-query";
-import { MediaViewer } from "@/components/features/home/media-viewer";
-import { EditPostDialog } from "@/components/features/home/edit-post-dialog";
-import Link from "next/link";
+import { useGetMyPosts, useGetUserPostsById, useDeletePost } from "@/components/features/home/hooks/feed-query";
+import { MediaViewer } from "@/components/features/home/components/media-viewer";
+import { EditPostDialog } from "@/components/features/home/components/edit-post-dialog";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -38,6 +37,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/atoms/dialog";
+import { FeedPostData } from "@/types";
 
 interface Post {
   id: number;

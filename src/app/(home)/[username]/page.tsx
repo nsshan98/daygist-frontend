@@ -1,4 +1,4 @@
-import { ProfileContent } from "@/components/features/profile";
+import { ProfileContent } from "@/components/features/profile/components/profile-content";
 
 interface UserProfilePageProps {
   params: Promise<{

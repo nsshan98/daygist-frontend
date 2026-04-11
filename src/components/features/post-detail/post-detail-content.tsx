@@ -39,7 +39,7 @@ import { Textarea } from "@/components/atoms/textarea";
 import { Skeleton } from "@/components/atoms/skeleton";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { EditPostDialog } from "@/components/features/home/edit-post-dialog";
+import { EditPostDialog } from "@/components/features/home/components/edit-post-dialog";
 import {
   useGetPostDetail,
   useLikePost,
@@ -48,10 +48,10 @@ import {
   useUnsavePost,
   useDeletePost,
   useSharePost,
-  type FeedMedia,
 } from "@/components/features/home/hooks/feed-query";
-import { useSignedMedia } from "@/components/features/profile/media-image";
-import { useFollowUser, useUnfollowUser } from "@/components/features/profile";
+import { useSignedMedia } from "@/components/features/profile/components/media-image";
+import { useFollowUser, useUnfollowUser } from "@/components/features/follow";
+import { FeedMedia } from "@/types";
 
 // Media Item Component with Signed URL - defined outside to avoid closure issues
 function MediaItem({ 

@@ -7,8 +7,8 @@ import {
   Suggestions,
   Sidebar,
   CommentDialog,
+  FeedItem,
 } from "@/components/features/home";
-import type { FeedItem } from "@/components/features/home/hooks/feed-query";
 import { Card, CardContent } from "@/components/atoms/card";
 import { useGetFeed, useLikePost, useSavePost, useSharePost, useUnlikePost, useUnsavePost } from "@/components/features/home/hooks/feed-query";
 import { useGetUserProfile } from "@/components/features/profile/hooks/profile-query";

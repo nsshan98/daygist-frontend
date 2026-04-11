@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/atoms/select";
-import { useUpdateProfile } from "./hooks/profile-query";
+import { useUpdateProfile } from "../hooks/profile-query";
 import { toast } from "sonner";
 import { isAxiosError } from "axios";
 import { Spinner } from "@/components/atoms/spinner";

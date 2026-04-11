@@ -18,11 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/atoms/select";
-import { useEditPost, type FeedPostData, type EditPostPayload } from "./hooks/feed-query";
+import { useEditPost } from "../hooks/feed-query";
+import type { FeedPostData, EditPostPayload } from "@/types";
 import { toast } from "sonner";
 import { Globe, Users, Lock, AlignLeft, AlignCenter, AlignRight, Bold, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TEXT_BACKGROUNDS } from "./stores/create-post-store";
+import { TEXT_BACKGROUNDS } from "../stores/create-post-store";
 
 interface EditPostDialogProps {
   isOpen: boolean;

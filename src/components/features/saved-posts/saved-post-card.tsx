@@ -11,9 +11,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu";
-import type { SavedPost } from "@/components/features/home/hooks/feed-query";
+import type { SavedPost } from "@/types";
 import { useLikePost, useUnlikePost } from "@/components/features/home/hooks/feed-query";
-import { useSignedMedia } from "@/components/features/profile/media-image";
+import { useSignedMedia } from "@/components/features/profile/components/media-image";
 import { useState } from "react";
 import { Skeleton } from "@/components/atoms/skeleton";
 

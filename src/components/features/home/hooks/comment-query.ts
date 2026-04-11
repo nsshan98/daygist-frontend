@@ -1,53 +1,12 @@
 import { axiosClient } from "@/lib/axios-client";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-// ===============================|| TYPES ||============================== //
-
-export interface CommentAuthor {
-  _id: string;
-  name: string;
-  username: string;
-  avatar?: {
-    url: string;
-    key: string | null;
-    provider: string;
-  };
-}
-
-export interface Comment {
-  _id: string;
-  targetType: "post" | "groupPost";
-  postId: string;
-  author: CommentAuthor;
-  parentId: string | null;
-  text: string;
-  isDeleted: boolean;
-  likeCount: number;
-  replyCount: number;
-  createdAt: string;
-  updatedAt: string;
-  __v: number;
-}
-
-export interface CommentsResponse {
-  ok: boolean;
-  items: Comment[];
-  nextCursor?: {
-    createdAt: string;
-    _id: string;
-  };
-}
-
-export interface CreateCommentPayload {
-  text: string;
-  type: "post" | "groupPost";
-  parentId?: string;
-}
-
-export interface CreateCommentResponse {
-  ok: boolean;
-  comment: Comment;
-}
+import type { 
+  Comment,
+  CommentsResponse,
+  RepliesResponse,
+  CreateCommentPayload,
+  CreateCommentResponse,
+} from "@/types";
 
 // ===============================|| GET COMMENTS ||============================== //
 
@@ -210,15 +169,7 @@ export const useCreateComment = (postId: string) => {
 };
 
 // ===============================|| GET REPLIES ||============================== //
-
-export interface RepliesResponse {
-  ok: boolean;
-  items: Comment[];
-  nextCursor?: {
-    createdAt: string;
-    _id: string;
-  };
-}
+// RepliesResponse imported from @/types
 
 export const useGetReplies = (commentId: string, enabled: boolean = true) => {
   const repliesQuery = useInfiniteQuery<RepliesResponse>({

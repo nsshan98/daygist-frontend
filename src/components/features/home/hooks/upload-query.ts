@@ -1,11 +1,8 @@
 import { axiosClient } from "@/lib/axios-client";
 import { useMutation } from "@tanstack/react-query";
+import type { UploadResponse } from "@/types";
 
-export interface UploadResponse {
-  url: string;
-  key: string;
-  provider: string;
-}
+// UploadResponse type imported from @/types/api/upload.types.ts
 
 // ===============================|| UPLOAD IMAGE ||============================== //
 export const useUploadImage = () => {

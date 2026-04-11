@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useGetSignedUrl } from "./hooks/profile-query";
+import { useGetSignedUrl } from "../hooks/profile-query";
 import { Skeleton } from "@/components/atoms/skeleton";
 
 interface MediaImageProps {
