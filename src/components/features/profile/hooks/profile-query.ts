@@ -211,4 +211,67 @@ const useUnfollowUser = () => {
   return { unfollowUserMutation };
 };
 
-export { useGetUserProfile, useUpdateProfile, useUploadAvatar, useUploadCover, useGetSignedUrl, useGetUserProfileById, useGetUserProfileByUsername, useFollowUser, useUnfollowUser };
+// ===============================|| FOLLOW LIST TYPES ||============================== //
+export interface FollowListItem {
+  _id: string;
+  name: string;
+  username: string;
+  provider: string;
+  createdAt: string;
+  isFollowing: boolean;
+}
+
+export interface FollowListResponse {
+  success: boolean;
+  items: FollowListItem[];
+  nextCursor: {
+    createdAt: string;
+    _id: string;
+  } | null;
+}
+
+// ===============================|| GET FOLLOWERS LIST ||============================== //
+const useGetFollowersList = (userId: string, searchQuery?: string) => {
+  const followersQuery = useQuery({
+    queryKey: ["followers-list", userId, searchQuery],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set("limit", "50");
+      if (searchQuery) {
+        params.set("q", searchQuery);
+      }
+      
+      const { data } = await axiosClient.get<FollowListResponse>(
+        `/follow/${userId}/followers?${params.toString()}`
+      );
+      return data;
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+  return { followersQuery };
+};
+
+// ===============================|| GET FOLLOWING LIST ||============================== //
+const useGetFollowingList = (userId: string, searchQuery?: string) => {
+  const followingQuery = useQuery({
+    queryKey: ["following-list", userId, searchQuery],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set("limit", "50");
+      if (searchQuery) {
+        params.set("q", searchQuery);
+      }
+      
+      const { data } = await axiosClient.get<FollowListResponse>(
+        `/follow/${userId}/following?${params.toString()}`
+      );
+      return data;
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+  return { followingQuery };
+};
+
+export { useGetUserProfile, useUpdateProfile, useUploadAvatar, useUploadCover, useGetSignedUrl, useGetUserProfileById, useGetUserProfileByUsername, useFollowUser, useUnfollowUser, useGetFollowersList, useGetFollowingList };

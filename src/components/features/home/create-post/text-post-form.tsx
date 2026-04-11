@@ -14,7 +14,11 @@ export function TextPostForm() {
     setTextBackground,
     textStyle,
     setTextStyle,
+    mediaFiles,
+    videoFile,
   } = useCreatePostStore();
+
+  const hasMedia = mediaFiles.length > 0 || videoFile !== null;
 
   const handleFontSizeChange = (delta: number) => {
     const newSize = Math.max(12, Math.min(48, textStyle.fontSize + delta));
@@ -26,8 +30,8 @@ export function TextPostForm() {
       {/* Text Input Area */}
       <div
         className={cn(
-          "relative min-h-[200px] rounded-xl overflow-hidden transition-all duration-300",
-          textBackground ? "bg-cover bg-center" : "bg-muted/30"
+          "relative min-h-[150px] rounded-xl overflow-hidden transition-all duration-300",
+          textBackground ? "bg-cover bg-center" : "bg-transparent"
         )}
         style={
           textBackground
@@ -42,20 +46,24 @@ export function TextPostForm() {
           value={textContent}
           onChange={(e) => setTextContent(e.target.value)}
           className={cn(
-            "min-h-[200px] border-0 resize-none bg-transparent focus-visible:ring-0 text-center placeholder:text-muted-foreground/70",
-            !textBackground && "text-foreground"
+            "min-h-[150px] border-0 resize-none bg-transparent focus-visible:ring-0 placeholder:text-muted-foreground/70 text-base",
+            textBackground 
+              ? "text-center" 
+              : "text-left"
           )}
           style={{
             color: textBackground ? textStyle.color : undefined,
-            fontSize: `${textStyle.fontSize}px`,
-            fontWeight: textStyle.fontWeight,
-            textAlign: textStyle.align,
+            fontSize: textBackground ? `${textStyle.fontSize}px` : '16px',
+            fontWeight: textBackground ? textStyle.fontWeight : '400',
+            textAlign: textBackground ? textStyle.align : 'left',
           }}
         />
-        {/* Character count */}
-        <div className="absolute bottom-2 right-3 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full">
-          {textContent.length} chars
-        </div>
+        {/* Character count - only show if background selected */}
+        {textBackground && (
+          <div className="absolute bottom-2 right-3 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full">
+            {textContent.length} chars
+          </div>
+        )}
       </div>
 
       {/* Text Style Controls */}
@@ -125,44 +133,46 @@ export function TextPostForm() {
         </div>
       )}
 
-      {/* Background Selector */}
-      <div className="space-y-2">
-        <span className="text-sm text-muted-foreground">Background</span>
-        <div className="flex gap-2 flex-wrap">
-          {/* No background option */}
-          <button
-            onClick={() => setTextBackground(null)}
-            className={cn(
-              "w-16 h-16 rounded-xl border-2 transition-all duration-200 flex items-center justify-center bg-muted/30",
-              textBackground === null
-                ? "border-primary ring-2 ring-primary/20"
-                : "border-border hover:border-muted-foreground"
-            )}
-          >
-            <span className="text-xs text-muted-foreground">None</span>
-          </button>
-          
-          {/* Background options */}
-          {TEXT_BACKGROUNDS.map((bg) => (
+      {/* Background Selector - Only show if no media */}
+      {!hasMedia && (
+        <div className="space-y-2">
+          <span className="text-sm text-muted-foreground">Background</span>
+          <div className="flex gap-2 flex-wrap">
+            {/* No background option */}
             <button
-              key={bg.url}
-              onClick={() => setTextBackground(bg.url)}
+              onClick={() => setTextBackground(null)}
               className={cn(
-                "w-16 h-16 rounded-xl border-2 transition-all duration-200 overflow-hidden",
-                textBackground === bg.url
+                "w-16 h-16 rounded-xl border-2 transition-all duration-200 flex items-center justify-center bg-muted/30",
+                textBackground === null
                   ? "border-primary ring-2 ring-primary/20"
                   : "border-border hover:border-muted-foreground"
               )}
             >
-              <img
-                src={bg.url}
-                alt={bg.name}
-                className="w-full h-full object-cover"
-              />
+              <span className="text-xs text-muted-foreground">None</span>
             </button>
-          ))}
+            
+            {/* Background options */}
+            {TEXT_BACKGROUNDS.map((bg) => (
+              <button
+                key={bg.url}
+                onClick={() => setTextBackground(bg.url)}
+                className={cn(
+                  "w-16 h-16 rounded-xl border-2 transition-all duration-200 overflow-hidden",
+                  textBackground === bg.url
+                    ? "border-primary ring-2 ring-primary/20"
+                    : "border-border hover:border-muted-foreground"
+                )}
+              >
+                <img
+                  src={bg.url}
+                  alt={bg.name}
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

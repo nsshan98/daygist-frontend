@@ -247,7 +247,14 @@ export function FeedPost({
               </AvatarFallback>
             </Avatar>
             <div className="space-y-0.5">
-              <h3 className="font-semibold text-base group-hover:text-primary transition-colors duration-300">{data.author.name}</h3>
+              <h3 className="font-semibold text-base group-hover:text-primary transition-colors duration-300">
+                {data.author.name}
+                {data.feeling && (
+                  <span className="font-normal text-muted-foreground text-sm">
+                    {" "}is feeling {data.feeling.toLowerCase()}
+                  </span>
+                )}
+              </h3>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <span>@{data.author.username}</span>
                 <span>•</span>

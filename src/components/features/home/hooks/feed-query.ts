@@ -34,6 +34,7 @@ export interface FeedPostData {
   type: "image" | "video" | "text";
   privacy: string;
   text: string;
+  feeling: string | null;
   backgroundUrl: string | null;
   textStyle: {
     color: string;
@@ -657,6 +658,7 @@ export interface CreateTextPostPayload {
   type: "text";
   privacy: string;
   text: string;
+  feeling?: string | null;
   backgroundUrl?: string;
   textStyle?: {
     color: string;
@@ -728,6 +730,7 @@ export const useCreatePost = () => {
 export interface EditPostPayload {
   text?: string;
   privacy?: string;
+  feeling?: string | null;
   backgroundUrl?: string;
   textStyle?: {
     color: string;
@@ -808,6 +811,7 @@ export interface SavedPost {
   type: "image" | "video" | "text";
   privacy: string;
   text: string;
+  feeling: string | null;
   description: string;
   backgroundUrl: string | null;
   textStyle: {

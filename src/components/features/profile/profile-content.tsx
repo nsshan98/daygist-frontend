@@ -7,6 +7,7 @@ import {
   ProfileTabs, 
   EditProfileDialog,
   ProfileSkeleton,
+  FollowListDialog,
   useGetUserProfile,
   useGetUserProfileById,
   useFollowUser,
@@ -22,6 +23,8 @@ interface ProfileContentProps {
 
 export function ProfileContent({ username, userId }: ProfileContentProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isFollowListOpen, setIsFollowListOpen] = useState(false);
+  const [followListTab, setFollowListTab] = useState<"followers" | "following">("followers");
   
   // Use different hooks based on whether we're viewing our own profile or someone else's
   const { showUserProfileQuery } = useGetUserProfile();
@@ -62,6 +65,17 @@ export function ProfileContent({ username, userId }: ProfileContentProps) {
         toast.error(message);
       },
     });
+  };
+
+  // Handle showing followers/following list
+  const handleShowFollowers = () => {
+    setFollowListTab("followers");
+    setIsFollowListOpen(true);
+  };
+
+  const handleShowFollowing = () => {
+    setFollowListTab("following");
+    setIsFollowListOpen(true);
   };
 
 
@@ -108,6 +122,8 @@ export function ProfileContent({ username, userId }: ProfileContentProps) {
               onFollow={handleFollow}
               onUnfollow={handleUnfollow}
               isFollowLoading={followUserMutation.isPending || unfollowUserMutation.isPending}
+              onShowFollowers={handleShowFollowers}
+              onShowFollowing={handleShowFollowing}
             />
 
             {/* Profile Tabs (Posts, Media, Likes, Saved) */}
@@ -131,6 +147,14 @@ export function ProfileContent({ username, userId }: ProfileContentProps) {
           onOpenChange={setIsEditDialogOpen}
         />
       )}
+
+      {/* Followers/Following List Dialog */}
+      <FollowListDialog
+        open={isFollowListOpen}
+        onOpenChange={setIsFollowListOpen}
+        userId={profile.data._id}
+        initialTab={followListTab}
+      />
     </div>
   );
 }

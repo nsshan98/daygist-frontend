@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { isAxiosError } from "axios";
 import { ImageAdjustmentDialog } from "./image-adjustment-dialog";
 import { Skeleton } from "@/components/atoms/skeleton";
+import { FollowListDialog } from "./follow-list-dialog";
 
 interface UserProfile {
   _id: string;
@@ -53,6 +54,8 @@ interface ProfileHeaderProps {
   onFollow?: () => void;
   onUnfollow?: () => void;
   isFollowLoading?: boolean;
+  onShowFollowers?: () => void;
+  onShowFollowing?: () => void;
 }
 
 interface ImageAdjustments {
@@ -61,7 +64,7 @@ interface ImageAdjustments {
   offsetY: number;
 }
 
-export function ProfileHeader({ profile, onEditProfile, onFollow, onUnfollow, isFollowLoading }: ProfileHeaderProps) {
+export function ProfileHeader({ profile, onEditProfile, onFollow, onUnfollow, isFollowLoading, onShowFollowers, onShowFollowing }: ProfileHeaderProps) {
   // Use 'key' for signed URL fetching, fallback to 'url' if key is not available
   const [coverKey, setCoverKey] = useState<string | null>(profile.cover.key || profile.cover.url);
   const [avatarKey, setAvatarKey] = useState<string>(profile.avatar.key || profile.avatar.url);
@@ -461,11 +464,17 @@ export function ProfileHeader({ profile, onEditProfile, onFollow, onUnfollow, is
 
         {/* Stats */}
         <div className="flex items-center gap-6 sm:gap-8 py-5 mt-6 border-t border-b border-border/40">
-          <div className="text-center sm:text-left cursor-pointer hover:text-primary transition-colors">
+          <div 
+            className="text-center sm:text-left cursor-pointer hover:text-primary transition-colors"
+            onClick={onShowFollowing}
+          >
             <p className="text-2xl sm:text-3xl font-bold">{formatNumber(profile.followingCount)}</p>
             <p className="text-sm sm:text-base text-muted-foreground mt-0.5">Following</p>
           </div>
-          <div className="text-center sm:text-left cursor-pointer hover:text-primary transition-colors">
+          <div 
+            className="text-center sm:text-left cursor-pointer hover:text-primary transition-colors"
+            onClick={onShowFollowers}
+          >
             <p className="text-2xl sm:text-3xl font-bold">{formatNumber(profile.followerCount)}</p>
             <p className="text-sm sm:text-base text-muted-foreground mt-0.5">Followers</p>
           </div>

@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 export type PostType = "text" | "image" | "video" | null;
 export type PrivacyType = "public" | "friends" | "private";
+export type VideoModeType = "standard" | "reels" | null;
 
 export interface TextStyle {
   color: string;
@@ -20,6 +21,7 @@ export interface CreatePostState {
   // Common fields
   privacy: PrivacyType;
   caption: string;
+  feeling: string | null;
   
   // Text post fields
   textContent: string;
@@ -32,7 +34,7 @@ export interface CreatePostState {
   
   // Video post fields
   videoFile: File | null;
-  videoMode: "standard" | "reels";
+  videoMode: VideoModeType;
   videoCategory: string;
   videoSubCategory: string;
   mutedByDefault: boolean;
@@ -54,6 +56,7 @@ export interface CreatePostActions {
   // Common actions
   setPrivacy: (privacy: PrivacyType) => void;
   setCaption: (caption: string) => void;
+  setFeeling: (feeling: string | null) => void;
   
   // Text post actions
   setTextContent: (content: string) => void;
@@ -68,7 +71,7 @@ export interface CreatePostActions {
   
   // Video post actions
   setVideoFile: (file: File | null) => void;
-  setVideoMode: (mode: "standard" | "reels") => void;
+  setVideoMode: (mode: VideoModeType) => void;
   setVideoCategory: (category: string) => void;
   setVideoSubCategory: (subCategory: string) => void;
   setMutedByDefault: (muted: boolean) => void;
@@ -91,16 +94,17 @@ const initialTextStyle: TextStyle = {
 
 const initialState: CreatePostState = {
   isOpen: false,
-  postType: null,
+  postType: "text", // Default to text
   privacy: "public",
   caption: "",
+  feeling: null,
   textContent: "",
   textBackground: null,
   textStyle: initialTextStyle,
   mediaFiles: [],
   imageLayout: "single",
   videoFile: null,
-  videoMode: "standard",
+  videoMode: null,
   videoCategory: "general",
   videoSubCategory: "",
   mutedByDefault: false,
@@ -122,6 +126,7 @@ export const useCreatePostStore = create<CreatePostState & CreatePostActions>((s
   // Common actions
   setPrivacy: (privacy) => set({ privacy }),
   setCaption: (caption) => set({ caption }),
+  setFeeling: (feeling) => set({ feeling }),
   
   // Text post actions
   setTextContent: (content) => set({ textContent: content }),

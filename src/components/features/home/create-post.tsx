@@ -20,8 +20,7 @@ export function CreatePost() {
   const { data: signedAvatarUrl } = useSignedUrl(user?.avatar?.key || null);
   const avatarUrl = signedAvatarUrl || user?.avatar?.url;
 
-  const handleOpenModal = (type: "text" | "image" | "video") => {
-    setPostType(type);
+  const handleOpenModal = () => {
     openModal();
   };
 
@@ -42,7 +41,7 @@ export function CreatePost() {
             <div className="flex-1 space-y-4">
               {/* Clickable input area */}
               <button
-                onClick={() => handleOpenModal("text")}
+                onClick={() => handleOpenModal()}
                 className="w-full text-left"
               >
                 <div className="min-h-14 px-4 flex items-center text-base border-none bg-muted/30 hover:bg-muted/50 rounded-2xl transition-all duration-300 text-muted-foreground">
@@ -55,7 +54,7 @@ export function CreatePost() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleOpenModal("text")}
+                    onClick={() => handleOpenModal()}
                     className="hover:bg-blue-500/10 hover:text-blue-500 transition-all duration-300 rounded-xl gap-2"
                   >
                     <Type className="w-5 h-5" />
@@ -64,7 +63,7 @@ export function CreatePost() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleOpenModal("image")}
+                    onClick={() => handleOpenModal()}
                     className="hover:bg-green-500/10 hover:text-green-500 transition-all duration-300 rounded-xl gap-2"
                   >
                     <ImageIcon className="w-5 h-5" />
@@ -73,7 +72,7 @@ export function CreatePost() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleOpenModal("video")}
+                    onClick={() => handleOpenModal()}
                     className="hover:bg-red-500/10 hover:text-red-500 transition-all duration-300 rounded-xl gap-2"
                   >
                     <Video className="w-5 h-5" />
@@ -81,7 +80,7 @@ export function CreatePost() {
                   </Button>
                 </div>
                 <Button
-                  onClick={() => handleOpenModal("text")}
+                  onClick={() => handleOpenModal()}
                   className="gap-2 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
                 >
                   <span>Post</span>
