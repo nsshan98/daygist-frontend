@@ -6,4 +6,5 @@ export { ProfileSkeleton } from "./components/profile-skeleton";
 export { ProfileContent } from "./components/profile-content";
 export { ImageAdjustmentDialog } from "./components/image-adjustment-dialog";
 export { MediaImage, useSignedMedia } from "./components/media-image";
+export { MediaPreviewDialog } from "./components/media-preview-dialog";
 export { useGetUserProfile, useUpdateProfile, useUploadAvatar, useUploadCover, useGetSignedUrl, useGetUserProfileById, useGetUserProfileByUsername } from "./hooks/profile-query";

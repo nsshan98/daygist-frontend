@@ -20,6 +20,7 @@ import { Button } from "@/components/atoms/button";
 import { useSignedMedia } from "./media-image";
 import { Skeleton } from "@/components/atoms/skeleton";
 import { useGetMyPosts, useGetUserPostsById, useDeletePost, useGetMyPhotos, useGetUserPhotosById } from "@/components/features/home/hooks/feed-query";
+import { useGetUserProfile } from "../hooks/profile-query";
 import { MediaViewer } from "@/components/features/home/components/media-viewer";
 import { EditPostDialog } from "@/components/features/home/components/edit-post-dialog";
 import { toast } from "sonner";
@@ -38,6 +39,7 @@ import {
   DialogFooter,
 } from "@/components/atoms/dialog";
 import { FeedPostData } from "@/types";
+import { MediaPreviewDialog } from "./media-preview-dialog";
 
 interface Post {
   id: number;
@@ -316,6 +318,11 @@ function MyPostCard({ post }: { post: FeedPostData }) {
 function MediaGridItem({ item }: { item: FeedPostData }) {
   const { useSignedUrl } = useSignedMedia();
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  
+  // Get current user profile for MediaPreviewDialog
+  const { showUserProfileQuery } = useGetUserProfile();
+  const currentUser = showUserProfileQuery.data?.data;
   
   // Get the first media item from the post
   const media = item.medias?.[0];
@@ -329,46 +336,61 @@ function MediaGridItem({ item }: { item: FeedPostData }) {
   if (!media) return null;
 
   return (
-    <div 
-      className="relative aspect-square group cursor-pointer overflow-hidden rounded-lg"
-    >
-      {!isLoaded && (
-        <Skeleton className="absolute inset-0 w-full h-full" />
-      )}
-      
-      {media.type === 'image' ? (
-        <img
-          src={displayUrl}
-          alt="Media"
-          className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-          onLoad={() => setIsLoaded(true)}
-        />
-      ) : (
-        <>
+    <>
+      <div 
+        className="relative aspect-square group cursor-pointer overflow-hidden rounded-lg"
+        onClick={() => setIsPreviewOpen(true)}
+      >
+        {!isLoaded && (
+          <Skeleton className="absolute inset-0 w-full h-full" />
+        )}
+        
+        {media.type === 'image' ? (
           <img
-            src={media.thumbnailUrl || displayUrl}
-            alt="Video thumbnail"
+            src={displayUrl}
+            alt="Media"
             className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
             onLoad={() => setIsLoaded(true)}
           />
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Video className="w-12 h-12 text-white" />
-          </div>
-        </>
-      )}
-      
-      {/* Overlay with stats */}
-      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white">
-        <span className="flex items-center gap-1">
-          <Heart className="w-4 h-4 fill-white" />
-          {item.likeCount}
-        </span>
-        <span className="flex items-center gap-1">
-          <ImageIcon className="w-4 h-4" />
-          {item.commentCount}
-        </span>
+        ) : (
+          <>
+            <img
+              src={media.thumbnailUrl || displayUrl}
+              alt="Video thumbnail"
+              className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+              onLoad={() => setIsLoaded(true)}
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Video className="w-12 h-12 text-white" />
+            </div>
+          </>
+        )}
+        
+        {/* Overlay with stats */}
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white">
+          <span className="flex items-center gap-1">
+            <Heart className="w-4 h-4 fill-white" />
+            {item.likeCount}
+          </span>
+          <span className="flex items-center gap-1">
+            <ImageIcon className="w-4 h-4" />
+            {item.commentCount}
+          </span>
+        </div>
       </div>
-    </div>
+
+      {/* Media Preview Dialog */}
+      <MediaPreviewDialog
+        post={item}
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        initialMediaIndex={0}
+        currentUser={currentUser ? {
+          name: currentUser.name,
+          avatar: currentUser.avatar
+        } : null}
+      />
+    </>
   );
 }
 
