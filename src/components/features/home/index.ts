@@ -35,6 +35,8 @@ export {
   useDeletePost,
   useGetMyPosts,
   useGetUserPostsById,
+  useGetMyPhotos,
+  useGetUserPhotosById,
 } from "./hooks/feed-query";
 
 export {
@@ -51,6 +53,7 @@ export type {
   FeedItem,
   FeedResponse,
   MyPostsResponse,
+  PhotosResponse,
   CreateTextPostPayload,
   CreateImagePostPayload,
   CreateVideoPostPayload,

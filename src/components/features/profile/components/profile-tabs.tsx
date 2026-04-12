@@ -19,7 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Button } from "@/components/atoms/button";
 import { useSignedMedia } from "./media-image";
 import { Skeleton } from "@/components/atoms/skeleton";
-import { useGetMyPosts, useGetUserPostsById, useDeletePost } from "@/components/features/home/hooks/feed-query";
+import { useGetMyPosts, useGetUserPostsById, useDeletePost, useGetMyPhotos, useGetUserPhotosById } from "@/components/features/home/hooks/feed-query";
 import { MediaViewer } from "@/components/features/home/components/media-viewer";
 import { EditPostDialog } from "@/components/features/home/components/edit-post-dialog";
 import { toast } from "sonner";
@@ -313,28 +313,30 @@ function MyPostCard({ post }: { post: FeedPostData }) {
 }
 
 // Media Item Component with Signed URL
-function MediaGridItem({ item }: { item: MediaItem }) {
+function MediaGridItem({ item }: { item: FeedPostData }) {
   const { useSignedUrl } = useSignedMedia();
   const [isLoaded, setIsLoaded] = useState(false);
   
-  // Fetch signed URLs
-  const { data: signedUrl } = useSignedUrl(item.key || null);
-  const { data: signedThumbnailUrl } = useSignedUrl(item.thumbnailKey || null);
+  // Get the first media item from the post
+  const media = item.medias?.[0];
+  
+  // Fetch signed URLs for media
+  const { data: signedUrl } = useSignedUrl(media?.key || null);
   
   // Determine final URLs
-  const displayUrl = signedUrl || item.url;
-  const thumbnailDisplayUrl = signedThumbnailUrl || item.thumbnail || item.url;
+  const displayUrl = signedUrl || media?.url;
+
+  if (!media) return null;
 
   return (
     <div 
-      key={item.id} 
       className="relative aspect-square group cursor-pointer overflow-hidden rounded-lg"
     >
       {!isLoaded && (
         <Skeleton className="absolute inset-0 w-full h-full" />
       )}
       
-      {item.type === 'image' ? (
+      {media.type === 'image' ? (
         <img
           src={displayUrl}
           alt="Media"
@@ -344,7 +346,7 @@ function MediaGridItem({ item }: { item: MediaItem }) {
       ) : (
         <>
           <img
-            src={thumbnailDisplayUrl}
+            src={media.thumbnailUrl || displayUrl}
             alt="Video thumbnail"
             className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
             onLoad={() => setIsLoaded(true)}
@@ -357,18 +359,14 @@ function MediaGridItem({ item }: { item: MediaItem }) {
       
       {/* Overlay with stats */}
       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white">
-        {(item.likes !== undefined) && (
-          <span className="flex items-center gap-1">
-            <Heart className="w-4 h-4 fill-white" />
-            {item.likes}
-          </span>
-        )}
-        {(item.comments !== undefined) && (
-          <span className="flex items-center gap-1">
-            <ImageIcon className="w-4 h-4" />
-            {item.comments}
-          </span>
-        )}
+        <span className="flex items-center gap-1">
+          <Heart className="w-4 h-4 fill-white" />
+          {item.likeCount}
+        </span>
+        <span className="flex items-center gap-1">
+          <ImageIcon className="w-4 h-4" />
+          {item.commentCount}
+        </span>
       </div>
     </div>
   );
@@ -401,6 +399,22 @@ export function ProfileTabs({
   const isPostsFetchingNextPage = activeQuery.isFetchingNextPage;
   const hasNextPage = activeQuery.hasNextPage;
   const fetchNextPage = activeQuery.fetchNextPage;
+
+  // Fetch my photos (own profile)
+  const { myPhotosQuery } = useGetMyPhotos();
+  
+  // Fetch user photos by ID (other user's profile)
+  const { userPhotosQuery } = useGetUserPhotosById(userId || "");
+  
+  // Use the appropriate query for photos
+  const activePhotosQuery = isOwnProfile ? myPhotosQuery : userPhotosQuery;
+  
+  // Flatten all pages of photos
+  const photosList = activePhotosQuery.data?.pages.flatMap(page => page.items || []) || [];
+  const isPhotosLoading = activePhotosQuery.isLoading;
+  const isPhotosFetchingNextPage = activePhotosQuery.isFetchingNextPage;
+  const hasPhotosNextPage = activePhotosQuery.hasNextPage;
+  const fetchPhotosNextPage = activePhotosQuery.fetchNextPage;
 
   // Mock data for demonstration (replace with actual data fetching)
   const mockPosts: Post[] = posts.length > 0 ? posts : [];
@@ -507,17 +521,46 @@ export function ProfileTabs({
 
       {/* Media Tab */}
       <TabsContent value="media" className="mt-6">
-        {mockMedia.length > 0 ? (
+        {isPhotosLoading ? (
+          // Loading skeleton
           <div className="grid grid-cols-3 gap-2 sm:gap-4">
-            {mockMedia.map((item) => (
-              <MediaGridItem key={item.id} item={item} />
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Skeleton key={i} className="aspect-square rounded-lg" />
             ))}
           </div>
+        ) : photosList.length > 0 ? (
+          <>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+              {photosList.map((photo: FeedPostData) => (
+                <MediaGridItem key={photo._id} item={photo} />
+              ))}
+            </div>
+            
+            {/* Load More Button */}
+            {hasPhotosNextPage && (
+              <div className="flex justify-center mt-6">
+                <Button
+                  onClick={() => fetchPhotosNextPage()}
+                  disabled={isPhotosFetchingNextPage}
+                  variant="secondary"
+                >
+                  {isPhotosFetchingNextPage ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Load More Photos'
+                  )}
+                </Button>
+              </div>
+            )}
+          </>
         ) : (
           <EmptyState 
             icon={Grid3x3} 
             title="No Media" 
-            description="Photos and videos you've shared will appear here."
+            description={isOwnProfile ? "Photos and videos you've shared will appear here." : "This user hasn't shared any media yet."}
           />
         )}
       </TabsContent>

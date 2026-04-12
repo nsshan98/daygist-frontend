@@ -110,6 +110,12 @@ export interface MyPostsResponse {
   nextCursor?: { createdAt: string; _id: string };
 }
 
+export interface PhotosResponse {
+  success: boolean;
+  items: FeedPostData[];
+  nextCursor?: { createdAt: string; _id: string };
+}
+
 export interface SavedPostsResponse {
   success: boolean;
   page: number;

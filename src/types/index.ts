@@ -12,6 +12,7 @@ export type {
   SavedPost,
   FeedResponse,
   MyPostsResponse,
+  PhotosResponse,
   SavedPostsResponse,
   PostDetailResponse,
   LikeResponse,

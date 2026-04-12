@@ -7,6 +7,7 @@ import type {
   PostDetailResponse,
   SavedPostsResponse,
   MyPostsResponse,
+  PhotosResponse,
   CreatePostPayload,
   EditPostPayload,
 } from "@/types";
@@ -735,4 +736,61 @@ export const useGetSavedPosts = () => {
   });
 
   return { savedPostsQuery };
+};
+
+// ===============================|| GET MY PHOTOS ||============================== //
+
+export const useGetMyPhotos = () => {
+  const myPhotosQuery = useInfiniteQuery<PhotosResponse>({
+    queryKey: ["my-photos"],
+    queryFn: async ({ pageParam }) => {
+      const limit = 20;
+      let cursor = "";
+      if (pageParam) {
+        if (typeof pageParam === 'object') {
+          cursor = `&cursor=${encodeURIComponent(JSON.stringify(pageParam))}`;
+        }
+      }
+      const url = `/users/me/photos?limit=${limit}${cursor}`;
+      const { data } = await axiosClient.get(url);
+      return data;
+    },
+    getNextPageParam: (lastPage) => {
+      return lastPage.nextCursor || undefined;
+    },
+    initialPageParam: undefined as { createdAt: string; _id: string } | undefined,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 2,
+  });
+
+  return { myPhotosQuery };
+};
+
+// ===============================|| GET USER PHOTOS BY ID ||============================== //
+
+export const useGetUserPhotosById = (userId: string) => {
+  const userPhotosQuery = useInfiniteQuery<PhotosResponse>({
+    queryKey: ["user-photos", userId],
+    queryFn: async ({ pageParam }) => {
+      const limit = 20;
+      let cursor = "";
+      if (pageParam) {
+        if (typeof pageParam === 'object') {
+          cursor = `&cursor=${encodeURIComponent(JSON.stringify(pageParam))}`;
+        }
+      }
+      const url = `/users/${userId}/photos?limit=${limit}${cursor}`;
+      const { data } = await axiosClient.get(url);
+      return data;
+    },
+    getNextPageParam: (lastPage) => {
+      return lastPage.nextCursor || undefined;
+    },
+    initialPageParam: undefined as { createdAt: string; _id: string } | undefined,
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 2,
+  });
+
+  return { userPhotosQuery };
 };
