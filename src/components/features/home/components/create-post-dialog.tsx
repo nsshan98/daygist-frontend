@@ -30,7 +30,7 @@ const postTypeOptions: {
 }[] = [
   { type: "text", label: "Text", icon: Type, color: "text-blue-500" },
   { type: "image", label: "Photo", icon: ImageIcon, color: "text-green-500" },
-  { type: "video", label: "Video", icon: Video, color: "text-red-500" },
+  { type: "video", label: "Reels", icon: Video, color: "text-red-500" },
 ];
 
 export function CreatePostDialog() {
@@ -173,14 +173,14 @@ export function CreatePostDialog() {
       else if (videoFile) {
         // Upload video
         const videoResult = await uploadVideoMutation.mutateAsync(videoFile);
-        const finalVideoMode = videoMode || "standard";
+        const finalVideoMode = videoMode || "reels";
 
         payload = {
           type: "video",
           privacy,
           caption: textContent, // Use textContent as caption
           videoMode: finalVideoMode,
-          category: finalVideoMode === "reels" ? "reels" : "video",
+          category: "reels",
           subCategory: "general",
           mutedByDefault,
           loop,
@@ -270,7 +270,7 @@ export function CreatePostDialog() {
                   </button>
                   <button
                     onClick={() => {
-                      setVideoMode("standard");
+                      setVideoMode("reels");
                       // Trigger file input for video
                       const input = document.getElementById('video-upload-inline');
                       if (input) input.click();
@@ -278,7 +278,7 @@ export function CreatePostDialog() {
                     className="flex-1 min-w-[100px] flex items-center justify-center gap-2 p-3 rounded-lg border border-border hover:border-red-500/50 hover:bg-red-500/5 transition-all"
                   >
                     <Video className="w-5 h-5 text-red-500" />
-                    <span className="text-sm">Video</span>
+                    <span className="text-sm">Reels</span>
                   </button>
                   <button
                     onClick={() => setShowFeelingPicker(!showFeelingPicker)}
@@ -426,7 +426,7 @@ export function CreatePostDialog() {
         {postType === "text" && videoFile && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">Video</p>
+              <p className="text-sm font-medium">Reels</p>
               <button
                 onClick={() => {
                   useCreatePostStore.getState().setVideoFile(null);
@@ -478,12 +478,12 @@ export function CreatePostDialog() {
               size="lg"
             >
               {isUploading ? (
-                <>
+                <>  
                   <Loader2 className="w-4 h-4 animate-spin" />
                   {mediaFiles.length > 0
                     ? `Uploading ${mediaFiles.length} image${mediaFiles.length > 1 ? 's' : ''}...`
                     : videoFile
-                    ? "Uploading video..."
+                    ? "Uploading reels..."
                     : "Creating post..."}
                 </>
               ) : (

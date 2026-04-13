@@ -105,7 +105,7 @@ const initialState: CreatePostState = {
   imageLayout: "single",
   videoFile: null,
   videoMode: null,
-  videoCategory: "general",
+  videoCategory: "reels",
   videoSubCategory: "",
   mutedByDefault: false,
   loop: true,

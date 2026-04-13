@@ -116,11 +116,18 @@ export interface PhotosResponse {
   nextCursor?: { createdAt: string; _id: string };
 }
 
+export interface ReelsResponse {
+  success: boolean;
+  items: FeedPostData[];
+  nextCursor?: { createdAt: string; _id: string };
+}
+
 export interface SavedPostsResponse {
   success: boolean;
   page: number;
   limit: number;
   posts: SavedPost[];
+  nextCursor?: string | { createdAt: string; _id: string } | null;
 }
 
 export interface PostDetailResponse {

@@ -8,6 +8,7 @@ import type {
   SavedPostsResponse,
   MyPostsResponse,
   PhotosResponse,
+  ReelsResponse,
   CreatePostPayload,
   EditPostPayload,
 } from "@/types";
@@ -67,6 +68,8 @@ interface LikeContext {
   previousFeed: unknown;
   previousSaved: unknown;
   previousDetail: unknown;
+  previousMyReels: unknown;
+  previousUserReels: unknown;
 }
 
 export const useLikePost = () => {
@@ -82,11 +85,15 @@ export const useLikePost = () => {
       await queryClient.cancelQueries({ queryKey: ["feed"] });
       await queryClient.cancelQueries({ queryKey: ["saved-posts"] });
       await queryClient.cancelQueries({ queryKey: ["post-detail", postId] });
+      await queryClient.cancelQueries({ queryKey: ["my-reels"] });
+      await queryClient.cancelQueries({ queryKey: ["user-reels"] });
 
       // Snapshot previous values
       const previousFeed = queryClient.getQueryData(["feed"]);
       const previousSaved = queryClient.getQueryData(["saved-posts"]);
       const previousDetail = queryClient.getQueryData(["post-detail", postId]);
+      const previousMyReels = queryClient.getQueryData(["my-reels"]);
+      const previousUserReels = queryClient.getQueryData(["user-reels"]);
 
       // Optimistically update feed
       queryClient.setQueryData(["feed"], (old: any) => {
@@ -146,7 +153,49 @@ export const useLikePost = () => {
         };
       });
 
-      return { previousFeed, previousSaved, previousDetail };
+      // Optimistically update my reels
+      queryClient.setQueryData(["my-reels"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map((item: any) => {
+              if (item._id === postId) {
+                return {
+                  ...item,
+                  isLiked: true,
+                  likeCount: item.likeCount + 1,
+                };
+              }
+              return item;
+            }),
+          })),
+        };
+      });
+
+      // Optimistically update user reels (all userIds)
+      queryClient.setQueryData(["user-reels"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map((item: any) => {
+              if (item._id === postId) {
+                return {
+                  ...item,
+                  isLiked: true,
+                  likeCount: item.likeCount + 1,
+                };
+              }
+              return item;
+            }),
+          })),
+        };
+      });
+
+      return { previousFeed, previousSaved, previousDetail, previousMyReels, previousUserReels };
     },
     onError: (err, postId, context) => {
       // Rollback on error
@@ -158,6 +207,12 @@ export const useLikePost = () => {
       }
       if (context?.previousDetail) {
         queryClient.setQueryData(["post-detail", postId], context.previousDetail);
+      }
+      if (context?.previousMyReels) {
+        queryClient.setQueryData(["my-reels"], context.previousMyReels);
+      }
+      if (context?.previousUserReels) {
+        queryClient.setQueryData(["user-reels"], context.previousUserReels);
       }
     },
     onSettled: (data, error, postId) => {
@@ -219,6 +274,46 @@ export const useLikePost = () => {
             },
           };
         });
+
+        queryClient.setQueryData(["my-reels"], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              items: page.items.map((item: any) => {
+                if (item._id === postId) {
+                  return {
+                    ...item,
+                    isLiked,
+                    likeCount,
+                  };
+                }
+                return item;
+              }),
+            })),
+          };
+        });
+
+        const userReelsQueries = queryClient.getQueryData(["user-reels"]);
+        if (userReelsQueries) {
+          queryClient.setQueryData(["user-reels"], {
+            ...userReelsQueries,
+            pages: (userReelsQueries as any).pages.map((page: any) => ({
+              ...page,
+              items: page.items.map((item: any) => {
+                if (item._id === postId) {
+                  return {
+                    ...item,
+                    isLiked,
+                    likeCount,
+                  };
+                }
+                return item;
+              }),
+            })),
+          });
+        }
       }
     },
   });
@@ -239,10 +334,14 @@ export const useUnlikePost = () => {
       await queryClient.cancelQueries({ queryKey: ["feed"] });
       await queryClient.cancelQueries({ queryKey: ["saved-posts"] });
       await queryClient.cancelQueries({ queryKey: ["post-detail", postId] });
+      await queryClient.cancelQueries({ queryKey: ["my-reels"] });
+      await queryClient.cancelQueries({ queryKey: ["user-reels"] });
 
       const previousFeed = queryClient.getQueryData(["feed"]);
       const previousSaved = queryClient.getQueryData(["saved-posts"]);
       const previousDetail = queryClient.getQueryData(["post-detail", postId]);
+      const previousMyReels = queryClient.getQueryData(["my-reels"]);
+      const previousUserReels = queryClient.getQueryData(["user-reels"]);
 
       // Optimistically update feed
       queryClient.setQueryData(["feed"], (old: any) => {
@@ -302,7 +401,49 @@ export const useUnlikePost = () => {
         };
       });
 
-      return { previousFeed, previousSaved, previousDetail };
+      // Optimistically update my reels
+      queryClient.setQueryData(["my-reels"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map((item: any) => {
+              if (item._id === postId) {
+                return {
+                  ...item,
+                  isLiked: false,
+                  likeCount: Math.max(0, item.likeCount - 1),
+                };
+              }
+              return item;
+            }),
+          })),
+        };
+      });
+
+      // Optimistically update user reels
+      queryClient.setQueryData(["user-reels"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map((item: any) => {
+              if (item._id === postId) {
+                return {
+                  ...item,
+                  isLiked: false,
+                  likeCount: Math.max(0, item.likeCount - 1),
+                };
+              }
+              return item;
+            }),
+          })),
+        };
+      });
+
+      return { previousFeed, previousSaved, previousDetail, previousMyReels, previousUserReels };
     },
     onError: (err, postId, context) => {
       if (context?.previousFeed) {
@@ -313,6 +454,12 @@ export const useUnlikePost = () => {
       }
       if (context?.previousDetail) {
         queryClient.setQueryData(["post-detail", postId], context.previousDetail);
+      }
+      if (context?.previousMyReels) {
+        queryClient.setQueryData(["my-reels"], context.previousMyReels);
+      }
+      if (context?.previousUserReels) {
+        queryClient.setQueryData(["user-reels"], context.previousUserReels);
       }
     },
     onSettled: (data, error, postId) => {
@@ -373,6 +520,46 @@ export const useUnlikePost = () => {
             },
           };
         });
+
+        queryClient.setQueryData(["my-reels"], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              items: page.items.map((item: any) => {
+                if (item._id === postId) {
+                  return {
+                    ...item,
+                    isLiked,
+                    likeCount,
+                  };
+                }
+                return item;
+              }),
+            })),
+          };
+        });
+
+        const userReelsData = queryClient.getQueryData(["user-reels"]);
+        if (userReelsData) {
+          queryClient.setQueryData(["user-reels"], {
+            ...userReelsData,
+            pages: (userReelsData as any).pages.map((page: any) => ({
+              ...page,
+              items: page.items.map((item: any) => {
+                if (item._id === postId) {
+                  return {
+                    ...item,
+                    isLiked,
+                    likeCount,
+                  };
+                }
+                return item;
+              }),
+            })),
+          });
+        }
       }
     },
   });
@@ -719,18 +906,25 @@ export const useGetSavedPosts = () => {
     queryKey: ["saved-posts"],
     queryFn: async ({ pageParam }) => {
       const limit = 20;
-      const page = pageParam ? (typeof pageParam === 'number' ? pageParam : 1) : 1;
-      const url = `/posts/me/saved/list?page=${page}&limit=${limit}`;
+      let cursor = "";
+      if (pageParam) {
+        const cursorValue = typeof pageParam === 'string' 
+          ? pageParam 
+          : JSON.stringify(pageParam);
+        cursor = `&cursor=${encodeURIComponent(cursorValue)}`;
+      }
+      const url = `/posts/me/saved/list?limit=${limit}${cursor}`;
       const { data } = await axiosClient.get(url);
       return data;
     },
     getNextPageParam: (lastPage) => {
-      if (lastPage.posts.length < lastPage.limit) {
+      // Use nextCursor from API response to determine if there are more pages
+      if (!lastPage.nextCursor || lastPage.posts.length === 0) {
         return undefined;
       }
-      return lastPage.page + 1;
+      return lastPage.nextCursor;
     },
-    initialPageParam: 1,
+    initialPageParam: undefined as string | undefined,
     staleTime: 1000 * 60 * 5,
     retry: 2,
   });
@@ -793,4 +987,61 @@ export const useGetUserPhotosById = (userId: string) => {
   });
 
   return { userPhotosQuery };
+};
+
+// ===============================|| GET MY REELS ||============================== //
+
+export const useGetMyReels = () => {
+  const myReelsQuery = useInfiniteQuery<ReelsResponse>({
+    queryKey: ["my-reels"],
+    queryFn: async ({ pageParam }) => {
+      const limit = 20;
+      let cursor = "";
+      if (pageParam) {
+        if (typeof pageParam === 'object') {
+          cursor = `&cursor=${encodeURIComponent(JSON.stringify(pageParam))}`;
+        }
+      }
+      const url = `/users/me/reels?limit=${limit}${cursor}`;
+      const { data } = await axiosClient.get(url);
+      return data;
+    },
+    getNextPageParam: (lastPage) => {
+      return lastPage.nextCursor || undefined;
+    },
+    initialPageParam: undefined as { createdAt: string; _id: string } | undefined,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 2,
+  });
+
+  return { myReelsQuery };
+};
+
+// ===============================|| GET USER REELS BY ID ||============================== //
+
+export const useGetUserReelsById = (userId: string) => {
+  const userReelsQuery = useInfiniteQuery<ReelsResponse>({
+    queryKey: ["user-reels", userId],
+    queryFn: async ({ pageParam }) => {
+      const limit = 20;
+      let cursor = "";
+      if (pageParam) {
+        if (typeof pageParam === 'object') {
+          cursor = `&cursor=${encodeURIComponent(JSON.stringify(pageParam))}`;
+        }
+      }
+      const url = `/users/${userId}/reels?limit=${limit}${cursor}`;
+      const { data } = await axiosClient.get(url);
+      return data;
+    },
+    getNextPageParam: (lastPage) => {
+      return lastPage.nextCursor || undefined;
+    },
+    initialPageParam: undefined as { createdAt: string; _id: string } | undefined,
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 2,
+  });
+
+  return { userReelsQuery };
 };

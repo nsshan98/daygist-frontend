@@ -13,13 +13,14 @@ import {
   Loader2,
   MoreHorizontal,
   Pencil,
-  Trash2
+  Trash2,
+  Clapperboard
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Button } from "@/components/atoms/button";
 import { useSignedMedia } from "./media-image";
 import { Skeleton } from "@/components/atoms/skeleton";
-import { useGetMyPosts, useGetUserPostsById, useDeletePost, useGetMyPhotos, useGetUserPhotosById } from "@/components/features/home/hooks/feed-query";
+import { useGetMyPosts, useGetUserPostsById, useDeletePost, useGetMyPhotos, useGetUserPhotosById, useGetMyReels, useGetUserReelsById } from "@/components/features/home/hooks/feed-query";
 import { useGetUserProfile } from "../hooks/profile-query";
 import { MediaViewer } from "@/components/features/home/components/media-viewer";
 import { EditPostDialog } from "@/components/features/home/components/edit-post-dialog";
@@ -40,6 +41,7 @@ import {
 } from "@/components/atoms/dialog";
 import { FeedPostData } from "@/types";
 import { MediaPreviewDialog } from "./media-preview-dialog";
+import { ReelsViewer } from "./reels-viewer";
 
 interface Post {
   id: number;
@@ -394,6 +396,79 @@ function MediaGridItem({ item }: { item: FeedPostData }) {
   );
 }
 
+// Reel Grid Item Component
+function ReelGridItem({ reel, onClick }: { reel: FeedPostData; onClick: () => void }) {
+  const { useSignedUrl } = useSignedMedia();
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  
+  // Get the first media item from the reel
+  const media = reel.medias?.[0];
+  
+  // Fetch signed URLs for media
+  const { data: signedUrl } = useSignedUrl(media?.key || null);
+  const { data: signedThumbnailUrl } = useSignedUrl(
+    media?.thumbnailUrl ? media.key + "_thumb" : null
+  );
+  
+  // Determine final URLs
+  const displayUrl = signedUrl || media?.url;
+  const thumbnailUrl = signedThumbnailUrl || media?.thumbnailUrl;
+  const hasThumbnail = !!thumbnailUrl;
+
+  if (!media) return null;
+
+  return (
+    <div 
+      className="relative aspect-9/16 group cursor-pointer overflow-hidden rounded-lg bg-black"
+      onClick={onClick}
+    >
+      {(!isLoaded && !videoLoaded) && (
+        <Skeleton className="absolute inset-0 w-full h-full z-0" />
+      )}
+      
+      {/* Show thumbnail if available, otherwise show video */}
+      {hasThumbnail ? (
+        <img
+          src={thumbnailUrl}
+          alt="Reel thumbnail"
+          className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+          onLoad={() => setIsLoaded(true)}
+        />
+      ) : (
+        <video
+          src={displayUrl}
+          className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
+          muted
+          preload="metadata"
+          onLoadedData={() => setVideoLoaded(true)}
+        />
+      )}
+      
+      {/* Play Icon Overlay */}
+      <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors z-10">
+        <div className="p-3 rounded-full bg-black/50 group-hover:bg-black/70 transition-colors">
+          <Video className="w-8 h-8 text-white" />
+        </div>
+      </div>
+      
+      {/* Overlay with stats */}
+      <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/80 to-transparent p-3 z-20">
+        <div className="flex items-center gap-3 text-white text-xs">
+          <span className="flex items-center gap-1">
+            <Heart className="w-3 h-3 fill-white" />
+            {reel.likeCount}
+          </span>
+          <span className="flex items-center gap-1">
+            <ImageIcon className="w-3 h-3" />
+            {reel.commentCount}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ProfileTabs({ 
   posts = [], 
   media = [],
@@ -402,6 +477,8 @@ export function ProfileTabs({
   userId
 }: ProfileTabsProps) {
   const [activeTab, setActiveTab] = useState("posts");
+  const [isReelsViewerOpen, setIsReelsViewerOpen] = useState(false);
+  const [selectedReelIndex, setSelectedReelIndex] = useState(0);
   
   // Determine if we're viewing own profile or another user's profile
   const isOwnProfile = !userId;
@@ -438,6 +515,28 @@ export function ProfileTabs({
   const hasPhotosNextPage = activePhotosQuery.hasNextPage;
   const fetchPhotosNextPage = activePhotosQuery.fetchNextPage;
 
+  // Fetch my reels (own profile)
+  const { myReelsQuery } = useGetMyReels();
+  
+  // Fetch user reels by ID (other user's profile)
+  const { userReelsQuery } = useGetUserReelsById(userId || "");
+  
+  // Use the appropriate query for reels
+  const activeReelsQuery = isOwnProfile ? myReelsQuery : userReelsQuery;
+  
+  // Flatten all pages of reels
+  const reelsList = activeReelsQuery.data?.pages.flatMap(page => page.items || []) || [];
+  const isReelsLoading = activeReelsQuery.isLoading;
+  const isReelsFetchingNextPage = activeReelsQuery.isFetchingNextPage;
+  const hasReelsNextPage = activeReelsQuery.hasNextPage;
+  const fetchReelsNextPage = activeReelsQuery.fetchNextPage;
+
+  // Handle reel click
+  const handleReelClick = (index: number) => {
+    setSelectedReelIndex(index);
+    setIsReelsViewerOpen(true);
+  };
+
   // Mock data for demonstration (replace with actual data fetching)
   const mockPosts: Post[] = posts.length > 0 ? posts : [];
   const mockMedia: MediaItem[] = media.length > 0 ? media : [];
@@ -464,11 +563,11 @@ export function ProfileTabs({
               Media
             </TabsTrigger>
             <TabsTrigger
-              value="likes"
+              value="reels"
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground px-6 py-4 transition-all"
             >
-              <Heart className="w-4 h-4 mr-2" />
-              Likes
+              <Clapperboard className="w-4 h-4 mr-2" />
+              Reels
             </TabsTrigger>
             <TabsTrigger
               value="saved"
@@ -587,20 +686,52 @@ export function ProfileTabs({
         )}
       </TabsContent>
 
-      {/* Likes Tab */}
-      <TabsContent value="likes" className="mt-6 space-y-6">
-        {mockLikedPosts.length > 0 ? (
-          mockLikedPosts.map((post) => (
-            <ProfilePostCard
-              key={post.id}
-              post={post}
-            />
-          ))
+      {/* Reels Tab */}
+      <TabsContent value="reels" className="mt-6">
+        {isReelsLoading ? (
+          // Loading skeleton
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Skeleton key={i} className="aspect-9/16 rounded-lg" />
+            ))}
+          </div>
+        ) : reelsList.length > 0 ? (
+          <>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+              {reelsList.map((reel: FeedPostData, index: number) => (
+                <ReelGridItem 
+                  key={reel._id} 
+                  reel={reel} 
+                  onClick={() => handleReelClick(index)}
+                />
+              ))}
+            </div>
+            
+            {/* Load More Button */}
+            {hasReelsNextPage && (
+              <div className="flex justify-center mt-6">
+                <Button
+                  onClick={() => fetchReelsNextPage()}
+                  disabled={isReelsFetchingNextPage}
+                  variant="secondary"
+                >
+                  {isReelsFetchingNextPage ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Load More Reels'
+                  )}
+                </Button>
+              </div>
+            )}
+          </>
         ) : (
           <EmptyState 
-            icon={Heart} 
-            title="No Liked Posts" 
-            description="Posts you like will appear here."
+            icon={Clapperboard} 
+            title="No Reels" 
+            description={isOwnProfile ? "Your reels will appear here." : "This user hasn't shared any reels yet."}
           />
         )}
       </TabsContent>
@@ -622,6 +753,16 @@ export function ProfileTabs({
           />
         )}
       </TabsContent>
+
+      {/* Reels Viewer Dialog */}
+      {reelsList.length > 0 && (
+        <ReelsViewer
+          reels={reelsList}
+          initialIndex={selectedReelIndex}
+          open={isReelsViewerOpen}
+          onOpenChange={setIsReelsViewerOpen}
+        />
+      )}
     </Tabs>
   );
 }

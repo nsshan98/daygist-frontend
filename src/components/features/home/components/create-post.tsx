@@ -76,7 +76,7 @@ export function CreatePost() {
                     className="hover:bg-red-500/10 hover:text-red-500 transition-all duration-300 rounded-xl gap-2"
                   >
                     <Video className="w-5 h-5" />
-                    <span className="hidden sm:inline">Video</span>
+                    <span className="hidden sm:inline">Reels</span>
                   </Button>
                 </div>
                 <Button
