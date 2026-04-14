@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/atoms/card";
 import { Badge } from "@/components/atoms/badge";
 import {
   Home,
+  SquarePlay,
   Compass,
   Bell,
   Mail,
@@ -19,6 +20,7 @@ import {
 
 const navItems = [
   { label: "Home", icon: Home, active: true },
+  { label: "Reels", icon: SquarePlay, active: false },
   { label: "Explore", icon: Compass, active: false },
   { label: "Saved", icon: Bookmark, active: false, href: "/saved-posts" },
   { label: "Profile", icon: User, active: false, href: "/profile" },
