@@ -247,7 +247,6 @@ export function CreatePostDialog() {
 
         {/* Feelings Selector - Removed from top, moved to add section */}
 
-        {/* Form Content - Unified Facebook-style layout */}
         {postType === "text" && (
           <div className="space-y-4">
             <TextPostForm />

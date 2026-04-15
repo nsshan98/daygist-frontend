@@ -70,6 +70,9 @@ interface LikeContext {
   previousDetail: unknown;
   previousMyReels: unknown;
   previousUserReels: unknown;
+  previousAllReels: unknown;
+  previousReelsVideos: unknown;
+  previousGeneralVideos: unknown;
 }
 
 export const useLikePost = () => {
@@ -87,6 +90,9 @@ export const useLikePost = () => {
       await queryClient.cancelQueries({ queryKey: ["post-detail", postId] });
       await queryClient.cancelQueries({ queryKey: ["my-reels"] });
       await queryClient.cancelQueries({ queryKey: ["user-reels"] });
+      await queryClient.cancelQueries({ queryKey: ["all-reels"] });
+      await queryClient.cancelQueries({ queryKey: ["reels-videos"] });
+      await queryClient.cancelQueries({ queryKey: ["general-videos"] });
 
       // Snapshot previous values
       const previousFeed = queryClient.getQueryData(["feed"]);
@@ -94,6 +100,9 @@ export const useLikePost = () => {
       const previousDetail = queryClient.getQueryData(["post-detail", postId]);
       const previousMyReels = queryClient.getQueryData(["my-reels"]);
       const previousUserReels = queryClient.getQueryData(["user-reels"]);
+      const previousAllReels = queryClient.getQueryData(["all-reels"]);
+      const previousReelsVideos = queryClient.getQueryData(["reels-videos"]);
+      const previousGeneralVideos = queryClient.getQueryData(["general-videos"]);
 
       // Optimistically update feed
       queryClient.setQueryData(["feed"], (old: any) => {
@@ -195,7 +204,70 @@ export const useLikePost = () => {
         };
       });
 
-      return { previousFeed, previousSaved, previousDetail, previousMyReels, previousUserReels };
+      // Optimistically update all reels
+      queryClient.setQueryData(["all-reels"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map((item: any) => {
+              if (item._id === postId) {
+                return {
+                  ...item,
+                  isLiked: true,
+                  likeCount: item.likeCount + 1,
+                };
+              }
+              return item;
+            }),
+          })),
+        };
+      });
+
+      // Optimistically update reels videos
+      queryClient.setQueryData(["reels-videos"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map((item: any) => {
+              if (item._id === postId) {
+                return {
+                  ...item,
+                  isLiked: true,
+                  likeCount: item.likeCount + 1,
+                };
+              }
+              return item;
+            }),
+          })),
+        };
+      });
+
+      // Optimistically update general videos
+      queryClient.setQueryData(["general-videos"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map((item: any) => {
+              if (item._id === postId) {
+                return {
+                  ...item,
+                  isLiked: true,
+                  likeCount: item.likeCount + 1,
+                };
+              }
+              return item;
+            }),
+          })),
+        };
+      });
+
+      return { previousFeed, previousSaved, previousDetail, previousMyReels, previousUserReels, previousAllReels, previousReelsVideos, previousGeneralVideos };
     },
     onError: (err, postId, context) => {
       // Rollback on error
@@ -213,6 +285,15 @@ export const useLikePost = () => {
       }
       if (context?.previousUserReels) {
         queryClient.setQueryData(["user-reels"], context.previousUserReels);
+      }
+      if (context?.previousAllReels) {
+        queryClient.setQueryData(["all-reels"], context.previousAllReels);
+      }
+      if (context?.previousReelsVideos) {
+        queryClient.setQueryData(["reels-videos"], context.previousReelsVideos);
+      }
+      if (context?.previousGeneralVideos) {
+        queryClient.setQueryData(["general-videos"], context.previousGeneralVideos);
       }
     },
     onSettled: (data, error, postId) => {
@@ -314,6 +395,69 @@ export const useLikePost = () => {
             })),
           });
         }
+
+        // Update all reels
+        const allReelsQueries = queryClient.getQueryData(["all-reels"]);
+        if (allReelsQueries) {
+          queryClient.setQueryData(["all-reels"], {
+            ...allReelsQueries,
+            pages: (allReelsQueries as any).pages.map((page: any) => ({
+              ...page,
+              items: page.items.map((item: any) => {
+                if (item._id === postId) {
+                  return {
+                    ...item,
+                    isLiked,
+                    likeCount,
+                  };
+                }
+                return item;
+              }),
+            })),
+          });
+        }
+
+        // Update reels videos
+        const reelsVideosQueries = queryClient.getQueryData(["reels-videos"]);
+        if (reelsVideosQueries) {
+          queryClient.setQueryData(["reels-videos"], {
+            ...reelsVideosQueries,
+            pages: (reelsVideosQueries as any).pages.map((page: any) => ({
+              ...page,
+              items: page.items.map((item: any) => {
+                if (item._id === postId) {
+                  return {
+                    ...item,
+                    isLiked,
+                    likeCount,
+                  };
+                }
+                return item;
+              }),
+            })),
+          });
+        }
+
+        // Update general videos
+        const generalVideosQueries = queryClient.getQueryData(["general-videos"]);
+        if (generalVideosQueries) {
+          queryClient.setQueryData(["general-videos"], {
+            ...generalVideosQueries,
+            pages: (generalVideosQueries as any).pages.map((page: any) => ({
+              ...page,
+              items: page.items.map((item: any) => {
+                if (item._id === postId) {
+                  return {
+                    ...item,
+                    isLiked,
+                    likeCount,
+                  };
+                }
+                return item;
+              }),
+            })),
+          });
+        }
       }
     },
   });
@@ -336,12 +480,18 @@ export const useUnlikePost = () => {
       await queryClient.cancelQueries({ queryKey: ["post-detail", postId] });
       await queryClient.cancelQueries({ queryKey: ["my-reels"] });
       await queryClient.cancelQueries({ queryKey: ["user-reels"] });
+      await queryClient.cancelQueries({ queryKey: ["all-reels"] });
+      await queryClient.cancelQueries({ queryKey: ["reels-videos"] });
+      await queryClient.cancelQueries({ queryKey: ["general-videos"] });
 
       const previousFeed = queryClient.getQueryData(["feed"]);
       const previousSaved = queryClient.getQueryData(["saved-posts"]);
       const previousDetail = queryClient.getQueryData(["post-detail", postId]);
       const previousMyReels = queryClient.getQueryData(["my-reels"]);
       const previousUserReels = queryClient.getQueryData(["user-reels"]);
+      const previousAllReels = queryClient.getQueryData(["all-reels"]);
+      const previousReelsVideos = queryClient.getQueryData(["reels-videos"]);
+      const previousGeneralVideos = queryClient.getQueryData(["general-videos"]);
 
       // Optimistically update feed
       queryClient.setQueryData(["feed"], (old: any) => {
@@ -443,7 +593,70 @@ export const useUnlikePost = () => {
         };
       });
 
-      return { previousFeed, previousSaved, previousDetail, previousMyReels, previousUserReels };
+      // Optimistically update all reels
+      queryClient.setQueryData(["all-reels"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map((item: any) => {
+              if (item._id === postId) {
+                return {
+                  ...item,
+                  isLiked: false,
+                  likeCount: Math.max(0, item.likeCount - 1),
+                };
+              }
+              return item;
+            }),
+          })),
+        };
+      });
+
+      // Optimistically update reels videos
+      queryClient.setQueryData(["reels-videos"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map((item: any) => {
+              if (item._id === postId) {
+                return {
+                  ...item,
+                  isLiked: false,
+                  likeCount: Math.max(0, item.likeCount - 1),
+                };
+              }
+              return item;
+            }),
+          })),
+        };
+      });
+
+      // Optimistically update general videos
+      queryClient.setQueryData(["general-videos"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map((item: any) => {
+              if (item._id === postId) {
+                return {
+                  ...item,
+                  isLiked: false,
+                  likeCount: Math.max(0, item.likeCount - 1),
+                };
+              }
+              return item;
+            }),
+          })),
+        };
+      });
+
+      return { previousFeed, previousSaved, previousDetail, previousMyReels, previousUserReels, previousAllReels, previousReelsVideos, previousGeneralVideos };
     },
     onError: (err, postId, context) => {
       if (context?.previousFeed) {
@@ -460,6 +673,15 @@ export const useUnlikePost = () => {
       }
       if (context?.previousUserReels) {
         queryClient.setQueryData(["user-reels"], context.previousUserReels);
+      }
+      if (context?.previousAllReels) {
+        queryClient.setQueryData(["all-reels"], context.previousAllReels);
+      }
+      if (context?.previousReelsVideos) {
+        queryClient.setQueryData(["reels-videos"], context.previousReelsVideos);
+      }
+      if (context?.previousGeneralVideos) {
+        queryClient.setQueryData(["general-videos"], context.previousGeneralVideos);
       }
     },
     onSettled: (data, error, postId) => {
@@ -546,6 +768,69 @@ export const useUnlikePost = () => {
           queryClient.setQueryData(["user-reels"], {
             ...userReelsData,
             pages: (userReelsData as any).pages.map((page: any) => ({
+              ...page,
+              items: page.items.map((item: any) => {
+                if (item._id === postId) {
+                  return {
+                    ...item,
+                    isLiked,
+                    likeCount,
+                  };
+                }
+                return item;
+              }),
+            })),
+          });
+        }
+
+        // Update all reels
+        const allReelsData = queryClient.getQueryData(["all-reels"]);
+        if (allReelsData) {
+          queryClient.setQueryData(["all-reels"], {
+            ...allReelsData,
+            pages: (allReelsData as any).pages.map((page: any) => ({
+              ...page,
+              items: page.items.map((item: any) => {
+                if (item._id === postId) {
+                  return {
+                    ...item,
+                    isLiked,
+                    likeCount,
+                  };
+                }
+                return item;
+              }),
+            })),
+          });
+        }
+
+        // Update reels videos
+        const reelsVideosData = queryClient.getQueryData(["reels-videos"]);
+        if (reelsVideosData) {
+          queryClient.setQueryData(["reels-videos"], {
+            ...reelsVideosData,
+            pages: (reelsVideosData as any).pages.map((page: any) => ({
+              ...page,
+              items: page.items.map((item: any) => {
+                if (item._id === postId) {
+                  return {
+                    ...item,
+                    isLiked,
+                    likeCount,
+                  };
+                }
+                return item;
+              }),
+            })),
+          });
+        }
+
+        // Update general videos
+        const generalVideosData = queryClient.getQueryData(["general-videos"]);
+        if (generalVideosData) {
+          queryClient.setQueryData(["general-videos"], {
+            ...generalVideosData,
+            pages: (generalVideosData as any).pages.map((page: any) => ({
               ...page,
               items: page.items.map((item: any) => {
                 if (item._id === postId) {

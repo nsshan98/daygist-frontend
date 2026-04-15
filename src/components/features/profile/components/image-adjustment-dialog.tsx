@@ -132,7 +132,7 @@ export function ImageAdjustmentDialog({
         canvas.height = AVATAR_SIZE;
         console.log('Avatar canvas set to:', AVATAR_SIZE, 'x', AVATAR_SIZE);
       } else {
-        // Cover: FIXED wide rectangle with 3:1 aspect ratio (like Facebook/Twitter)
+        // Cover: FIXED wide rectangle with 3:1 aspect ratio
         // Canvas height matches the display height, width calculated from aspect ratio
         const outputHeight = COVER_MAX_HEIGHT; // 600px - standard height
         const outputWidth = Math.round(outputHeight * 3); // 1800px - 3:1 ratio
@@ -391,7 +391,7 @@ export function ImageAdjustmentDialog({
                   <li><strong>Fixed frame size:</strong> 3:1 aspect ratio (wide banner format)</li>
                   <li><strong>Bright clear area</strong> shows your crop within the fixed frame</li>
                   <li><strong>Ring border</strong> shows the edges of your cover photo</li>
-                  <li><strong>Output:</strong> ~1800×600px wide banner (like Facebook/Twitter)</li>
+                  <li><strong>Output:</strong> ~1800×600px wide banner</li>
                   <li>Image will be cropped to fit the fixed frame - position to keep important parts visible</li>
                 </>
               )}
@@ -650,7 +650,7 @@ export function ImageAdjustmentDialog({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Aspect Ratio:</span>
-                      <span>3:1 (Width:Height) - Like Facebook/Twitter</span>
+                      <span>3:1 (Width:Height)</span>
                     </div>
                     <div className="bg-primary/5 border border-primary/20 rounded p-2 text-xs">
                       <p className="font-medium mb-1">How it works:</p>

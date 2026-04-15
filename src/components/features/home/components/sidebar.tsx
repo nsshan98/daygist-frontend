@@ -20,7 +20,7 @@ import {
 
 const navItems = [
   { label: "Home", icon: Home, active: true },
-  { label: "Reels", icon: SquarePlay, active: false },
+  { label: "Reels", icon: SquarePlay, active: false, href: "/reels" },
   { label: "Explore", icon: Compass, active: false },
   { label: "Saved", icon: Bookmark, active: false, href: "/saved-posts" },
   { label: "Profile", icon: User, active: false, href: "/profile" },
