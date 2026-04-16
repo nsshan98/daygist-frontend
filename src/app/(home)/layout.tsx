@@ -1,23 +1,14 @@
 import type { Metadata } from "next";
-import { Gabarito } from "next/font/google";
-import "../globals.css";
 import Navbar from "@/components/organisms/navbar";
 import Providers from "../providers";
 import { getSession } from "@/lib/session";
-
-
-const gabarito = Gabarito({
-  variable: "--font-gabarito",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-});
 
 export const metadata: Metadata = {
   title: "Daygist",
   description: "Daygist",
 };
 
-export default async function RootLayout({
+export default async function HomeLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -33,15 +24,9 @@ export default async function RootLayout({
     : undefined;
 
   return (
-    <html lang="en">
-      <body
-        className={`${gabarito.variable} antialiased`}
-      >
-        <Providers>
-          <Navbar user={user} />
-          {children}
-        </Providers>
-      </body>
-    </html>
+    <Providers>
+      <Navbar user={user} />
+      {children}
+    </Providers>
   );
 }

@@ -24,6 +24,8 @@ import Image from "next/image";
 import { signIn, googleSignIn } from "@/lib/auth";
 import { Spinner } from "@/components/atoms/spinner";
 
+import authIllustration from '../../../../../public/login-illustration.png'
+
 const LoginForm = () => {
   const router = useRouter();
   const loginForm = useForm<LoginSchemaType>({
@@ -187,7 +189,7 @@ const LoginForm = () => {
         <div className="relative z-10 flex flex-col items-center gap-8 text-center">
           <div className="rounded-2xl overflow-hidden shadow-xl">
             <Image
-              src="/login-illustration.png"
+              src={authIllustration}
               alt="Social media illustration"
               width={500}
               height={500}

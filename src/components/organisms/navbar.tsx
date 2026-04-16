@@ -10,7 +10,8 @@ import {
   PlusSquare, 
   Menu,
   X,
-  Bookmark
+  Bookmark,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
@@ -191,6 +192,7 @@ const Navbar = ({ user }: NavbarProps) => {
             {[
               { label: "Home", icon: Home, href: "/" },
               { label: "Explore", icon: Compass, href: "/explore" },
+              { label: "Groups", icon: Users, href: "/groups" },
               { label: "Saved Posts", icon: Bookmark, href: "/saved-posts" },
               { label: "Notifications", icon: Bell, href: "/notifications", badge: 3 },
               { label: "Messages", icon: Mail, href: "/messages", badge: 12 },

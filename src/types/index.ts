@@ -53,6 +53,20 @@ export type {
   UploadResponse,
 } from "@/types/upload.types";
 
+// Group Types
+export type {
+  Group,
+  ForYouGroup,
+  MyGroupMembership,
+  GroupDetails,
+  GroupDetailsResponse,
+  ForYouGroupsResponse,
+  MyGroupsResponse,
+  CreateGroupPayload,
+  CreateGroupResponse,
+  JoinGroupResponse,
+} from "@/types/group.types";
+
 // Component Types (from stores)
 export type {
   PostType,
