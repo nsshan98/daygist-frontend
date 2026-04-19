@@ -1,13 +1,9 @@
-"use client";
-
-import { useParams } from "next/navigation";
-import { GroupDetails } from "@/components/features/group";
+import { GroupDetails, GroupContent } from "@/components/features/group";
 import { Sidebar } from "@/components/features/home";
 import { BackButton } from "@/components/molecules/back-button";
 
-export default function GroupDetailPage() {
-  const params = useParams();
-  const groupId = params.groupId as string;
+export default async function GroupDetailPage({ params }: { params: Promise<{ groupId: string }> }) {
+  const { groupId } = await params;
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
@@ -24,6 +20,9 @@ export default function GroupDetailPage() {
 
           {/* Group Details */}
           <GroupDetails groupId={groupId} />
+
+          {/* Tabs Section with Client Components */}
+          <GroupContent groupId={groupId} />
         </div>
       </div>
     </div>

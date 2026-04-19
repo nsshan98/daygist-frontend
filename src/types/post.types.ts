@@ -53,6 +53,12 @@ export interface FeedPostData {
   commentCount: number;
   saveCount: number;
   shareCount: number;
+  counts?: {
+    likeCount: number;
+    commentCount: number;
+    shareCount: number;
+    saveCount?: number;
+  };
   createdAt: string;
   updatedAt: string;
   feedType: "post";

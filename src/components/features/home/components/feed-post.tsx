@@ -371,7 +371,7 @@ export function FeedPost({
                 </div>
               </div>
               <span className="font-medium hover:text-foreground transition-colors cursor-pointer">
-                {data.likeCount.toLocaleString()}
+                {(data.counts?.likeCount ?? data.likeCount ?? 0).toLocaleString()}
               </span>
             </div>
             <div className="flex gap-3">
@@ -379,10 +379,10 @@ export function FeedPost({
                 className="hover:text-foreground transition-colors cursor-pointer"
                 onClick={() => onComment?.(data._id)}
               >
-                {data.commentCount} comments
+                {data.counts?.commentCount ?? data.commentCount ?? 0} comments
               </span>
-              <span className="hover:text-foreground transition-colors cursor-pointer">{data.shareCount} shares</span>
-              <span className="hover:text-foreground transition-colors cursor-pointer">{data.saveCount} saves</span>
+              <span className="hover:text-foreground transition-colors cursor-pointer">{data.counts?.shareCount ?? data.shareCount ?? 0} shares</span>
+              <span className="hover:text-foreground transition-colors cursor-pointer">{data.counts?.saveCount ?? data.saveCount ?? 0} saves</span>
             </div>
           </div>
         </div>

@@ -22,9 +22,10 @@ import { formatDistanceToNow } from "date-fns";
 
 interface GroupDetailsProps {
   groupId: string;
+  showOnlyAbout?: boolean;
 }
 
-export function GroupDetails({ groupId }: GroupDetailsProps) {
+export function GroupDetails({ groupId, showOnlyAbout = false }: GroupDetailsProps) {
   const { groupDetailsQuery } = useGetGroupDetails(groupId);
   const { joinGroupMutation } = useJoinGroup();
 
@@ -77,6 +78,58 @@ export function GroupDetails({ groupId }: GroupDetailsProps) {
     joinGroupMutation.mutate(group._id);
   };
 
+  // If showOnlyAbout is true, only render the about section
+  if (showOnlyAbout) {
+    return (
+      <Card className="border-none shadow-lg">
+        <CardContent className="p-6 space-y-6">
+          {/* About */}
+          {group.about && (
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold">About</h3>
+              <p className="text-muted-foreground whitespace-pre-wrap">{group.about}</p>
+            </div>
+          )}
+
+          {/* Location */}
+          {group.location?.country || group.location?.city ? (
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold">Location</h3>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <MapPin className="w-4 h-4" />
+                <span>
+                  {group.location.city && group.location.country
+                    ? `${group.location.city}, ${group.location.country}`
+                    : group.location.city || group.location.country}
+                </span>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Rules */}
+          {group.rules && group.rules.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold">Group Rules</h3>
+              <div className="space-y-2">
+                {group.rules.map((rule, index) => (
+                  <div
+                    key={index}
+                    className="flex items-start gap-3 p-3 rounded-lg bg-muted/30"
+                  >
+                    <div className="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
+                      {index + 1}
+                    </div>
+                    <p className="text-sm">{rule}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Cover Image */}
@@ -125,16 +178,18 @@ export function GroupDetails({ groupId }: GroupDetailsProps) {
                 <p className="text-muted-foreground">{group.category}</p>
               </div>
 
-              {/* Join Button */}
-              {!isMember && (
-                <Button
-                  onClick={handleJoin}
-                  disabled={joinGroupMutation.isPending}
-                  size="lg"
-                >
-                  {joinGroupMutation.isPending ? "Joining..." : "Join Group"}
-                </Button>
-              )}
+              <div className="flex gap-2">
+                {/* Join Button */}
+                {!isMember && (
+                  <Button
+                    onClick={handleJoin}
+                    disabled={joinGroupMutation.isPending}
+                    size="lg"
+                  >
+                    {joinGroupMutation.isPending ? "Joining..." : "Join Group"}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -147,13 +202,24 @@ export function GroupDetails({ groupId }: GroupDetailsProps) {
                 <p className="text-xs text-muted-foreground">Members</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <p className="text-2xl font-bold">{group.counts?.posts || 0}</p>
-                <p className="text-xs text-muted-foreground">Posts</p>
+            {isMember && (
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="text-2xl font-bold">{group.counts?.posts || 0}</p>
+                  <p className="text-xs text-muted-foreground">Posts</p>
+                </div>
               </div>
-            </div>
+            )}
+            {!isMember && (
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="text-2xl font-bold">{group.counts?.posts || 0}</p>
+                  <p className="text-xs text-muted-foreground">Posts</p>
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-muted-foreground" />
               <div>

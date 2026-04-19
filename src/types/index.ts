@@ -67,6 +67,25 @@ export type {
   JoinGroupResponse,
 } from "@/types/group.types";
 
+// Group Post Types
+export type {
+  GroupPostAuthor,
+  GroupPostGroup,
+  GroupPostTextStyle,
+  GroupPostMedia,
+  GroupPostCounts,
+  GroupPostData,
+  GroupPostsResponse,
+  GroupPostDetailResponse,
+  GroupPostLikeResponse,
+  GroupPostShareResponse,
+  CreateGroupTextPostPayload,
+  CreateGroupImagePostPayload,
+  CreateGroupVideoPostPayload,
+  CreateGroupPostPayload,
+  EditGroupPostPayload,
+} from "@/types/group-post.types";
+
 // Component Types (from stores)
 export type {
   PostType,
