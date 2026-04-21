@@ -23,6 +23,7 @@ import {
 import { useDeleteGroupPost, useLikeGroupPost, useUnlikeGroupPost, useShareGroupPost } from "../hooks/group-post-query";
 import { useSignedMedia } from "@/components/features/profile/components/media-image";
 import { EditGroupPostDialog } from "./edit-group-post-dialog";
+import { GroupCommentDialog } from "./group-comment-dialog";
 import { toast } from "sonner";
 import { GroupPostData } from "@/types";
 
@@ -46,6 +47,7 @@ export function GroupPostCard({
   const { useSignedUrl } = useSignedMedia();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false);
 
   const { likeGroupPostMutation } = useLikeGroupPost(groupId);
   const { unlikeGroupPostMutation } = useUnlikeGroupPost(groupId);
@@ -56,6 +58,8 @@ export function GroupPostCard({
   const author = post.author || post.authorId;
   const { data: signedAvatarUrl } = useSignedUrl(author?.avatar?.key || null);
   const avatarUrl = signedAvatarUrl || author?.avatar?.url;
+  const { data: signedCurrentUserAvatar } = useSignedUrl(author?.avatar?.key || null);
+  const currentUserAvatarUrl = signedCurrentUserAvatar || author?.avatar?.url;
 
   const handleLikeToggle = () => {
     const isLiked = (post as any).isLiked || false;
@@ -247,7 +251,7 @@ export function GroupPostCard({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onComment?.(post._id)}
+            onClick={() => setIsCommentDialogOpen(true)}
             className="rounded-xl transition-all duration-300 hover:scale-110 hover:bg-primary/10 hover:text-primary"
           >
             <MessageCircle className="w-5 h-5" />
@@ -301,6 +305,14 @@ export function GroupPostCard({
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         post={post}
+      />
+
+      {/* Comment Dialog */}
+      <GroupCommentDialog
+        post={post}
+        open={isCommentDialogOpen}
+        onOpenChange={setIsCommentDialogOpen}
+        currentUser={author ? { name: author.name, avatar: author.avatar } : null}
       />
     </Card>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/atoms/button";
 import { Card, CardContent } from "@/components/atoms/card";
@@ -21,12 +22,12 @@ import {
 import { logout } from "@/lib/logout";
 
 const navItems = [
-  { label: "Home", icon: Home, active: true },
-  { label: "Reels", icon: SquarePlay, active: false, href: "/reels" },
-  { label: "Explore", icon: Compass, active: false },
-  { label: "Groups", icon: Users, active: false, href: "/groups" },
-  { label: "Saved", icon: Bookmark, active: false, href: "/saved-posts" },
-  { label: "Profile", icon: User, active: false, href: "/profile" },
+  { label: "Home", icon: Home, href: "/" },
+  { label: "Reels", icon: SquarePlay, href: "/reels" },
+  { label: "Explore", icon: Compass, href: "/explore" },
+  { label: "Groups", icon: Users, href: "/groups" },
+  { label: "Saved", icon: Bookmark, href: "/saved-posts" },
+  { label: "Profile", icon: User, href: "/profile" },
 ];
 
 const trendingTopics = [
@@ -38,6 +39,8 @@ const trendingTopics = [
 ];
 
 export function Sidebar() {
+  const pathname = usePathname();
+
   return (
     <div className="sticky top-8 space-y-6 max-h-[calc(100vh-4rem)] overflow-y-auto pr-1">
       {/* Main Navigation */}
@@ -47,25 +50,26 @@ export function Sidebar() {
           <nav className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
+              const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
               return (
                 <Button
                   key={item.label}
-                  variant={item.active ? "default" : "ghost"}
+                  variant={isActive ? "default" : "ghost"}
                   className={`w-full justify-start text-base font-medium transition-all duration-300 rounded-xl h-12 relative group ${
-                    item.active 
+                    isActive 
                       ? 'shadow-lg hover:shadow-xl hover:scale-[1.02] bg-linear-to-r from-primary/90 to-primary' 
                       : 'hover:bg-primary/10 hover:text-primary'
                   }`}
                   asChild
                 >
-                  <Link href={item.href || "#"}>
+                  <Link href={item.href}>
                     {/* Active indicator line */}
-                    {item.active && (
+                    {isActive && (
                       <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-linear-to-b from-secondary to-primary rounded-r-full" />
                     )}
                                   
                     <Icon className={`w-5 h-5 mr-3 transition-transform duration-300 ${
-                      item.active ? 'scale-110' : 'group-hover:scale-110'
+                      isActive ? 'scale-110' : 'group-hover:scale-110'
                     }`} />
                                   
                     <span className="flex-1 text-left">{item.label}</span>

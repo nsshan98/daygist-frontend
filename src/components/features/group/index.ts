@@ -10,6 +10,7 @@ export { GroupContent } from "./components/group-content";
 export { GroupsContent } from "./components/groups-content";
 export { GroupTextPostForm } from "./components/group-text-post-form";
 export { EditGroupPostDialog } from "./components/edit-group-post-dialog";
+export { GroupCommentDialog } from "./components/group-comment-dialog";
 
 // Hook exports
 export {
@@ -30,6 +31,12 @@ export {
   useUnlikeGroupPost,
   useShareGroupPost,
 } from "./hooks/group-post-query";
+
+export {
+  useGetGroupPostComments,
+  useCreateGroupPostComment,
+  useGetGroupPostReplies,
+} from "./hooks/group-comment-query";
 
 // Store exports
 export {
