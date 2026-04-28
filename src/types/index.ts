@@ -86,6 +86,17 @@ export type {
   EditGroupPostPayload,
 } from "@/types/group-post.types";
 
+// Monetization Types
+export type {
+  MonetizationUser,
+  MonetizationWallet,
+  MonetizationApp,
+  MonetizationData,
+  MonetizationResponse,
+  ApplyMonetizationPayload,
+  ApplyMonetizationResponse,
+} from "@/types/monetization.types";
+
 // Component Types (from stores)
 export type {
   PostType,

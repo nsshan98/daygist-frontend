@@ -18,6 +18,7 @@ import {
   TrendingUp,
   Hash,
   Users,
+  DollarSign,
 } from "lucide-react";
 import { logout } from "@/lib/logout";
 
@@ -27,6 +28,7 @@ const navItems = [
   { label: "Explore", icon: Compass, href: "/explore" },
   { label: "Groups", icon: Users, href: "/groups" },
   { label: "Saved", icon: Bookmark, href: "/saved-posts" },
+  { label: "Monetization", icon: DollarSign, href: "/monetization" },
   { label: "Profile", icon: User, href: "/profile" },
 ];
 
