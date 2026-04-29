@@ -34,7 +34,20 @@ export const useApplyMonetization = () => {
     ApplyMonetizationPayload
   >({
     mutationFn: async (payload: ApplyMonetizationPayload) => {
-      const { data } = await axiosClient.post("/monetization/apply", payload);
+      const formData = new FormData();
+      
+      // Append address as JSON string
+      formData.append("fullAddress", JSON.stringify(payload.fullAddress));
+      
+      // Append NID images
+      formData.append("nidFront", payload.nidFront);
+      formData.append("nidBack", payload.nidBack);
+
+      const { data } = await axiosClient.post("/monetization/apply", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       return data;
     },
     onSuccess: () => {

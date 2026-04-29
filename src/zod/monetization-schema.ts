@@ -1,9 +1,12 @@
 import { z } from "zod";
 
 export const applyMonetizationSchema = z.object({
-  reason: z.string().min(50, "Reason must be at least 50 characters").max(500, "Reason must be at most 500 characters"),
-  paymentMethod: z.enum(["bank", "paypal", "stripe"]),
-  paymentDetails: z.string().min(1, "Payment details are required").max(200, "Payment details must be at most 200 characters"),
+  country: z.string().min(1, "Country is required"),
+  city: z.string().min(1, "City is required"),
+  area: z.string().min(1, "Area is required"),
+  postalCode: z.string().min(1, "Postal code is required"),
+  nidFront: z.instanceof(File, { message: "NID front image is required" }),
+  nidBack: z.instanceof(File, { message: "NID back image is required" }),
 });
 
 export type ApplyMonetizationSchemaType = z.infer<typeof applyMonetizationSchema>;

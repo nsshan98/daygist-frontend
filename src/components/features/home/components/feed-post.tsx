@@ -106,7 +106,7 @@ export function FeedPost({
   
   // Handle save/unsave
   const handleSaveToggle = () => {
-    if (data.isSaved) {
+    if (data.isSave) {
       unsavePostMutation.mutate(data._id, {
         onSuccess: () => {
           toast.success("Post removed from saved");
@@ -356,9 +356,9 @@ export function FeedPost({
               variant="ghost"
               size="icon"
               onClick={handleSaveToggle}
-              className={`rounded-xl transition-all duration-300 hover:scale-110 ${data.isSaved ? 'text-primary' : 'hover:bg-primary/10 hover:text-primary'}`}
+              className={`rounded-xl transition-all duration-300 hover:scale-110 ${data.isSave ? 'text-primary' : 'hover:bg-primary/10 hover:text-primary'}`}
             >
-              <Bookmark className={`h-5 w-5 transition-all duration-300 ${data.isSaved ? 'fill-current scale-110' : ''}`} />
+              <Bookmark className={`h-5 w-5 transition-all duration-300 ${data.isSave ? 'fill-current scale-110' : ''}`} />
             </Button>
           </div>
 

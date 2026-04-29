@@ -162,7 +162,11 @@ function PendingState({ data }: { data: MonetizationData }) {
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground">
-            Applied on: {new Date(data.app!.appliedAt).toLocaleDateString()}
+            Applied on: {new Date(data.app!.createdAt).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
           </div>
         </CardContent>
       </Card>

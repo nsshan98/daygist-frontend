@@ -577,7 +577,7 @@ export function CommentDialog({
             onLikeToggle={() => onLikeToggle(postId)}
             onSaveToggle={() => onSaveToggle(postId)}
             isLiked={post.data.isLiked}
-            isSaved={post.data.isSaved}
+            isSaved={post.data.isSave}
             isLiking={isLiking}
             isSaving={isSaving}
           />

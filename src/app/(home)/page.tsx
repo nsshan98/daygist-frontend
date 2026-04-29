@@ -158,7 +158,7 @@ export default function Home() {
   const handleSaveToggle = (postId: string) => {
     const post = posts.find((item: FeedItem) => item.data._id === postId);
     if (post) {
-      if (post.data.isSaved) {
+      if (post.data.isSave) {
         unsavePostMutation.mutate(postId);
       } else {
         savePostMutation.mutate(postId);

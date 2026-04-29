@@ -21,20 +21,13 @@ import {
   FormMessage,
 } from "@/components/atoms/form";
 import { Input } from "@/components/atoms/input";
-import { Textarea } from "@/components/atoms/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/atoms/select";
 import { Spinner } from "@/components/atoms/spinner";
 import {
   applyMonetizationSchema,
   ApplyMonetizationSchemaType,
 } from "@/zod/monetization-schema";
 import { useApplyMonetization } from "../hooks/monetization-query";
+import { Camera, Upload } from "lucide-react";
 
 interface ApplyMonetizationDialogProps {
   open: boolean;
@@ -47,24 +40,65 @@ export function ApplyMonetizationDialog({
 }: ApplyMonetizationDialogProps) {
   const { applyMonetizationMutation } = useApplyMonetization();
   const [globalError, setGlobalError] = useState<string>("");
+  const [frontImagePreview, setFrontImagePreview] = useState<string | null>(null);
+  const [backImagePreview, setBackImagePreview] = useState<string | null>(null);
 
   const form = useForm<ApplyMonetizationSchemaType>({
     resolver: zodResolver(applyMonetizationSchema),
     defaultValues: {
-      reason: "",
-      paymentMethod: undefined,
-      paymentDetails: "",
+      country: "",
+      city: "",
+      area: "",
+      postalCode: "",
+      nidFront: undefined,
+      nidBack: undefined,
     },
   });
 
   const { isSubmitting } = form.formState;
 
+  const handleImageUpload = (
+    field: { onChange: (file: File) => void },
+    setPreview: (url: string) => void
+  ) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        field.onChange(file);
+        const url = URL.createObjectURL(file);
+        setPreview(url);
+      }
+    };
+    
+    input.click();
+  };
+
   const onSubmit = async (data: ApplyMonetizationSchemaType) => {
     setGlobalError("");
 
     try {
-      await applyMonetizationMutation.mutateAsync(data);
+      await applyMonetizationMutation.mutateAsync({
+        fullAddress: {
+          country: data.country,
+          city: data.city,
+          area: data.area,
+          postalCode: data.postalCode,
+        },
+        nidFront: data.nidFront,
+        nidBack: data.nidBack,
+      });
+      
+      // Clean up previews
+      if (frontImagePreview) URL.revokeObjectURL(frontImagePreview);
+      if (backImagePreview) URL.revokeObjectURL(backImagePreview);
+      
       form.reset();
+      setFrontImagePreview(null);
+      setBackImagePreview(null);
       onOpenChange(false);
     } catch (error: any) {
       console.error("Apply monetization error:", error);
@@ -76,12 +110,11 @@ export function ApplyMonetizationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Apply for Monetization</DialogTitle>
           <DialogDescription>
-            Fill out the form below to apply for the monetization program. We'll
-            review your application and get back to you.
+            Fill out the form below and upload your NID (National ID) images to apply for the monetization program.
           </DialogDescription>
         </DialogHeader>
 
@@ -96,79 +129,168 @@ export function ApplyMonetizationDialog({
               </div>
             )}
 
-            <FormField
-              control={form.control}
-              name="reason"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Why do you want to join the monetization program?</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Tell us about your content and why you'd be a great fit for monetization..."
-                      className="min-h-[120px] resize-none"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Address Section */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-foreground">Address Information</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="area"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Area</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Area Name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name="paymentMethod"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Payment Method</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select payment method" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="bank">Bank Transfer</SelectItem>
-                      <SelectItem value="paypal">PayPal</SelectItem>
-                      <SelectItem value="stripe">Stripe</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City</FormLabel>
+                      <FormControl>
+                        <Input placeholder="City Name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-            <FormField
-              control={form.control}
-              name="paymentDetails"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Payment Details</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={
-                        form.watch("paymentMethod") === "bank"
-                          ? "Enter your bank account number"
-                          : form.watch("paymentMethod") === "paypal"
-                          ? "Enter your PayPal email"
-                          : form.watch("paymentMethod") === "stripe"
-                          ? "Enter your Stripe account ID"
-                          : "Enter payment details"
-                      }
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Country Name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="postalCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Postal Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Postal Code" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* NID Images Section */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-foreground">NID Images</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {/* Front Image */}
+                <FormField
+                  control={form.control}
+                  name="nidFront"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>NID Front</FormLabel>
+                      <FormControl>
+                        <div className="space-y-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full h-32 border-dashed hover:border-primary hover:bg-primary/5 p-2"
+                            onClick={() =>
+                              handleImageUpload(field, setFrontImagePreview)
+                            }
+                          >
+                            <div className="w-full h-full flex items-center justify-center">
+                              {frontImagePreview ? (
+                                <div className="relative w-full h-full flex items-center justify-center">
+                                  <img
+                                    src={frontImagePreview}
+                                    alt="NID Front"
+                                    className="max-w-full max-h-full object-contain rounded"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="flex flex-col items-center gap-2">
+                                  <Upload className="h-8 w-8 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground">
+                                    Upload Front
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Back Image */}
+                <FormField
+                  control={form.control}
+                  name="nidBack"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>NID Back</FormLabel>
+                      <FormControl>
+                        <div className="space-y-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full h-32 border-dashed hover:border-primary hover:bg-primary/5 p-2"
+                            onClick={() =>
+                              handleImageUpload(field, setBackImagePreview)
+                            }
+                          >
+                            <div className="w-full h-full flex items-center justify-center">
+                              {backImagePreview ? (
+                                <div className="relative w-full h-full flex items-center justify-center">
+                                  <img
+                                    src={backImagePreview}
+                                    alt="NID Back"
+                                    className="max-w-full max-h-full object-contain rounded"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="flex flex-col items-center gap-2">
+                                  <Upload className="h-8 w-8 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground">
+                                    Upload Back
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
 
             <DialogFooter>
               <Button
                 type="button"
-                variant="outline"
+                variant="destructive"
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
               >

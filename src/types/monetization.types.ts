@@ -15,7 +15,7 @@ export interface MonetizationWallet {
 export interface MonetizationApp {
   _id: string;
   status: string;
-  appliedAt: string;
+  createdAt: string;
   approvedAt?: string;
   rejectedReason?: string;
 }
@@ -33,9 +33,14 @@ export interface MonetizationResponse {
 }
 
 export interface ApplyMonetizationPayload {
-  reason: string;
-  paymentMethod: "bank" | "paypal" | "stripe";
-  paymentDetails: string;
+  fullAddress: {
+    country: string;
+    city: string;
+    area: string;
+    postalCode: string;
+  };
+  nidFront: File;
+  nidBack: File;
 }
 
 export interface ApplyMonetizationResponse {

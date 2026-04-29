@@ -64,6 +64,7 @@ export interface FeedPostData {
   feedType: "post";
   isFollowingAuthor: boolean;
   isLiked: boolean;
+  isSave: boolean;
   isSaved: boolean;
   isShared: boolean;
 }
