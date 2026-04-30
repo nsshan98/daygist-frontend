@@ -20,7 +20,6 @@ import {
   Users,
   DollarSign,
 } from "lucide-react";
-import { logout } from "@/lib/logout";
 
 const navItems = [
   { label: "Home", icon: Home, href: "/" },
@@ -29,7 +28,6 @@ const navItems = [
   { label: "Groups", icon: Users, href: "/groups" },
   { label: "Saved", icon: Bookmark, href: "/saved-posts" },
   { label: "Monetization", icon: DollarSign, href: "/monetization" },
-  { label: "Profile", icon: User, href: "/profile" },
 ];
 
 const trendingTopics = [
@@ -81,27 +79,6 @@ export function Sidebar() {
               );
             })}
           </nav>
-
-          {/* Bottom actions */}
-          <div className="pt-4 mt-4 border-t border-border/30">
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-base font-medium hover:bg-destructive/10 hover:text-destructive rounded-xl h-12"
-            >
-              <Settings className="w-5 h-5 mr-3" />
-              <span className="flex-1 text-left">Settings</span>
-            </Button>
-            <Button
-              variant="destructive"
-              className="w-full justify-start text-base font-medium hover:bg-destructive/10 hover:text-destructive rounded-xl h-12 cursor-pointer"
-              onClick={async () => {
-                await logout();
-              }}
-            >
-              <LogOut className="w-5 h-5 mr-3" />
-              <span className="flex-1 text-left">Logout</span>
-            </Button>
-          </div>
         </CardContent>
       </Card>
 

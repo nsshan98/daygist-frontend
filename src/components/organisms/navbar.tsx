@@ -11,7 +11,13 @@ import {
   Menu,
   X,
   Bookmark,
-  Users
+  Users,
+  User,
+  Settings,
+  LogOut,
+  HelpCircle,
+  MessageSquare,
+  Moon
 } from "lucide-react";
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
@@ -20,6 +26,16 @@ import Link from "next/link";
 import { ThemeToggle } from "./theme-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Badge } from "@/components/atoms/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/atoms/dropdown-menu";
+import { logout } from "@/lib/logout";
 
 interface NavbarProps {
   user?: {
@@ -128,16 +144,74 @@ const Navbar = ({ user }: NavbarProps) => {
 
             {/* User Profile or Login */}
             {user ? (
-              <Button variant="ghost" asChild className="rounded-full p-1 hover:bg-primary/10">
-                <Link href="/profile">
-                  <Avatar className="w-9 h-9 border-2 border-primary/20">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {user.name.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </Link>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="rounded-full p-1 hover:bg-primary/10">
+                    <Avatar className="w-9 h-9 border-2 border-primary/20">
+                      <AvatarImage src={user.avatar} alt={user.name} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {user.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-72 mt-2 rounded-2xl p-0 shadow-xl border border-border">
+                  <DropdownMenuLabel className="p-4 pb-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage src={user.avatar} alt={user.name} />
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {user.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-base">{user.name}</span>
+                        <span className="text-muted-foreground text-sm">@{user.username}</span>
+                      </div>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup className="px-2 py-2">
+                    <DropdownMenuItem asChild className="flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-accent cursor-pointer">
+                      <Link href="/profile">
+                        <User className="w-5 h-5" />
+                        <span className="font-medium">Profile</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-accent cursor-pointer">
+                      <Link href="/settings">
+                        <Settings className="w-5 h-5" />
+                        <span className="font-medium">Settings & Privacy</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-accent cursor-pointer">
+                      <HelpCircle className="w-5 h-5" />
+                      <span className="font-medium">Help & Support</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-accent cursor-pointer">
+                      <MessageSquare className="w-5 h-5" />
+                      <span className="font-medium">Report a Problem</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-accent cursor-pointer">
+                      <Moon className="w-5 h-5" />
+                      <span className="font-medium">Display & Accessibility</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup className="px-2 py-2">
+                    <DropdownMenuItem
+                    variant="destructive"
+                      onClick={async () => {
+                        await logout();
+                      }} 
+                      className="flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      <span className="font-medium">Log Out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <Button asChild className="rounded-full px-6 hidden sm:inline-flex">
                 <Link href="/auth/login">

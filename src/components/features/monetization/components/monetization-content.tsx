@@ -237,10 +237,7 @@ function ApprovedState({ data }: { data: MonetizationData }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg border bg-muted/50 p-4">
-            <div className="text-sm font-medium">Status</div>
-            <div className="text-sm text-muted-foreground">
-              Approved on: {data.app?.approvedAt ? new Date(data.app.approvedAt).toLocaleDateString() : "N/A"}
-            </div>
+            <div className="text-sm font-medium capitalize">Status : {data?.app?.status}</div>
           </div>
 
           {data.lastWithdraw && (
