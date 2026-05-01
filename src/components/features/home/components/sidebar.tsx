@@ -19,7 +19,9 @@ import {
   Hash,
   Users,
   DollarSign,
+  Video,
 } from "lucide-react";
+import { useGetMonetizationStatus } from "@/components/features/monetization";
 
 const navItems = [
   { label: "Home", icon: Home, href: "/" },
@@ -40,6 +42,9 @@ const trendingTopics = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { monetizationQuery } = useGetMonetizationStatus();
+  
+  const isMonetizationApproved = monetizationQuery.data?.data?.user?.monetizationStatus === "approved";
 
   return (
     <div className="sticky top-8 space-y-6 max-h-[calc(100vh-4rem)] overflow-y-auto pr-1">
@@ -78,6 +83,32 @@ export function Sidebar() {
                 </Button>
               );
             })}
+            
+            {/* Long Video Upload (only show if monetization approved */}
+            {isMonetizationApproved && (
+              <Button
+                variant={pathname === "/video-upload" ? "default" : "ghost"}
+                className={`w-full justify-start text-base font-medium transition-all duration-300 rounded-xl h-12 relative group ${
+                  pathname === "/video-upload"
+                    ? 'shadow-lg hover:shadow-xl hover:scale-[1.02] bg-linear-to-r from-primary/90 to-primary' 
+                    : 'hover:bg-primary/10 hover:text-primary'
+                }`}
+                asChild
+              >
+                <Link href="/video-upload">
+                  {pathname === "/video-upload" && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-linear-to-b from-secondary to-primary rounded-r-full" />
+                  )}
+                                  
+                  <Video className={`w-5 h-5 mr-3 transition-transform duration-300 ${
+                    pathname === "/video-upload" ? 'scale-110' : 'group-hover:scale-110'
+                  }`} />
+                                  
+                  <span className="flex-1 text-left">Long Video</span>
+                                  
+                </Link>
+              </Button>
+            )}
           </nav>
         </CardContent>
       </Card>

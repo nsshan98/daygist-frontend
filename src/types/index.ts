@@ -97,6 +97,12 @@ export type {
   ApplyMonetizationResponse,
 } from "@/types/monetization.types";
 
+// Video Types
+export type {
+  UploadLongVideoPayload,
+  UploadLongVideoResponse,
+} from "@/types/video.types";
+
 // Component Types (from stores)
 export type {
   PostType,
