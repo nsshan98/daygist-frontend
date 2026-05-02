@@ -100,25 +100,6 @@ const Navbar = ({ user }: NavbarProps) => {
               </Link>
             </Button>
 
-            {/* Explore */}
-            <Button variant="ghost" size="icon" asChild className="hidden sm:inline-flex rounded-full hover:bg-primary/10 hover:text-primary">
-              <Link href="/explore">
-                <Compass className="w-6 h-6" />
-              </Link>
-            </Button>
-
-            {/* Saved Posts */}
-            <Button variant="ghost" size="icon" asChild className="hidden sm:inline-flex rounded-full hover:bg-primary/10 hover:text-primary">
-              <Link href="/saved-posts">
-                <Bookmark className="w-6 h-6" />
-              </Link>
-            </Button>
-
-            {/* Create Post */}
-            <Button variant="ghost" size="icon" className="hidden sm:inline-flex rounded-full hover:bg-primary/10 hover:text-primary">
-              <PlusSquare className="w-6 h-6" />
-            </Button>
-
             {/* Notifications */}
             <Button variant="ghost" size="icon" asChild className="relative rounded-full hover:bg-primary/10 hover:text-primary">
               <Link href="/notifications">
@@ -130,14 +111,14 @@ const Navbar = ({ user }: NavbarProps) => {
             </Button>
 
             {/* Messages */}
-            <Button variant="ghost" size="icon" asChild className="relative rounded-full hover:bg-primary/10 hover:text-primary hidden sm:inline-flex">
+            {/* <Button variant="ghost" size="icon" asChild className="relative rounded-full hover:bg-primary/10 hover:text-primary hidden sm:inline-flex">
               <Link href="/messages">
                 <Mail className="w-6 h-6" />
                 <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs font-bold rounded-full border-2 border-card">
                   12
                 </Badge>
               </Link>
-            </Button>
+            </Button> */}
 
             {/* Theme Toggle */}
             <ThemeToggle />

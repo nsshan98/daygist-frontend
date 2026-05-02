@@ -21,21 +21,17 @@ export const useUploadLongVideo = () => {
       if (payload.thumbnail) {
         formData.append("thumbnail", payload.thumbnail);
       }
-      if (payload.title) {
-        formData.append("title", payload.title);
+      if (payload.title && payload.title.trim()) {
+        formData.append("title", payload.title.trim());
       }
-      if (payload.description) {
-        formData.append("description", payload.description);
+      if (payload.description && payload.description.trim()) {
+        formData.append("description", payload.description.trim());
       }
-      if (payload.subCategory) {
-        formData.append("subCategory", payload.subCategory);
+      if (payload.subCategory && payload.subCategory.trim()) {
+        formData.append("subCategory", payload.subCategory.trim());
       }
 
-      const { data } = await axiosClient.post("/videos/video/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const { data } = await axiosClient.post("/videos/video/upload", formData);
       return data;
     },
     onSuccess: () => {
