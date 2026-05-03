@@ -42,6 +42,8 @@ import {
 import { FeedPostData } from "@/types";
 import { MediaPreviewDialog } from "./media-preview-dialog";
 import { ReelsViewer } from "./reels-viewer";
+import { ProfileStories } from "@/components/features/story";
+import { BookOpen } from "lucide-react";
 
 interface Post {
   id: number;
@@ -489,6 +491,10 @@ export function ProfileTabs({
   // Fetch user posts by ID (other user's profile)
   const { userPostsQuery } = useGetUserPostsById(userId || "");
   
+  // Fetch user profile for stories owner info
+  const { showUserProfileQuery } = useGetUserProfile();
+  const userProfile = showUserProfileQuery.data?.data;
+  
   // Use the appropriate query based on whether we're viewing our own profile or another user's
   const activeQuery = isOwnProfile ? myPostsQuery : userPostsQuery;
   
@@ -570,12 +576,13 @@ export function ProfileTabs({
               Reels
             </TabsTrigger>
             <TabsTrigger
-              value="saved"
+              value="stories"
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground px-6 py-4 transition-all"
             >
-              <Bookmark className="w-4 h-4 mr-2" />
-              Saved
+              <BookOpen className="w-4 h-4 mr-2" />
+              Stories
             </TabsTrigger>
+
           </TabsList>
         </CardContent>
       </Card>
@@ -736,23 +743,23 @@ export function ProfileTabs({
         )}
       </TabsContent>
 
-      {/* Saved Tab */}
-      <TabsContent value="saved" className="mt-6 space-y-6">
-        {mockSavedPosts.length > 0 ? (
-          mockSavedPosts.map((post) => (
-            <ProfilePostCard
-              key={post.id}
-              post={post}
-            />
-          ))
-        ) : (
-          <EmptyState 
-            icon={Bookmark} 
-            title="No Saved Posts" 
-            description="Posts you save will appear here."
+      {/* Stories Tab */}
+      <TabsContent value="stories" className="mt-6">
+        {userProfile && (
+          <ProfileStories
+            userId={userId || userProfile._id}
+            isMyProfile={isOwnProfile}
+            owner={{
+              _id: userProfile._id,
+              name: userProfile.name,
+              username: userProfile.username,
+              avatar: userProfile.avatar,
+            }}
           />
         )}
       </TabsContent>
+
+
 
       {/* Reels Viewer Dialog */}
       {reelsList.length > 0 && (

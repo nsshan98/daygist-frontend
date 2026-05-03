@@ -9,6 +9,10 @@ import {
   CommentDialog,
   FeedItem,
 } from "@/components/features/home";
+import {
+  StoryFeed,
+  CreateStoryDialog,
+} from "@/components/features/story";
 import { Card, CardContent } from "@/components/atoms/card";
 import { useGetFeed, useLikePost, useSavePost, useSharePost, useUnlikePost, useUnsavePost } from "@/components/features/home/hooks/feed-query";
 import { useGetUserProfile } from "@/components/features/profile/hooks/profile-query";
@@ -231,6 +235,11 @@ export default function Home() {
           {/* Center Feed */}
           <div className="xl:col-span-6 col-span-1">
 
+            {/* Stories Feed */}
+            <div className="mb-8">
+              <StoryFeed />
+            </div>
+
             {/* Create Post */}
             <div className="mb-8">
               <CreatePost />
@@ -305,6 +314,9 @@ export default function Home() {
               avatar: currentUser.avatar
             } : null}
           />
+
+          {/* Create Story Dialog */}
+          <CreateStoryDialog />
 
           {/* Right Sidebar - Suggestions (Hidden on mobile/tablet) */}
           <div className="hidden xl:block xl:col-span-3">

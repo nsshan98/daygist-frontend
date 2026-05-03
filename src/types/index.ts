@@ -103,6 +103,25 @@ export type {
   UploadLongVideoResponse,
 } from "@/types/video.types";
 
+// Story Types
+export type {
+  StoryMedia,
+  StoryTextStyle,
+  Story,
+  StoryFeedItemOwner,
+  StoryFeedItemLastStory,
+  StoryFeedItem,
+  CreateStoryResponse,
+  StoryFeedResponse,
+  UserStoriesResponse,
+  DeleteStoryResponse,
+  MarkStorySeenResponse,
+  CreateTextStoryPayload,
+  CreateImageStoryPayload,
+  CreateVideoStoryPayload,
+  CreateStoryPayload,
+} from "@/types/story.types";
+
 // Component Types (from stores)
 export type {
   PostType,
