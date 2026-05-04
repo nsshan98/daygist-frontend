@@ -1,6 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/atoms/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Button } from "@/components/atoms/button";
 import { useGetUserStories, useDeleteStory } from "../hooks/story-query";
@@ -21,16 +29,67 @@ export function ProfileStories({ userId, isMyProfile, owner }: ProfileStoriesPro
   const { deleteStoryMutation } = useDeleteStory();
   const { useSignedUrl } = useSignedMedia();
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [storyToDelete, setStoryToDelete] = useState<Story | null>(null);
 
   const stories = userStoriesQuery.data?.pages.flatMap((page) => page.items) || [];
 
-  const handleDelete = async (storyId: string, e: React.MouseEvent) => {
+  const handleDeleteClick = (story: Story, e: React.MouseEvent) => {
     e.stopPropagation();
+    setStoryToDelete(story);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!storyToDelete) return;
     try {
-      await deleteStoryMutation.mutateAsync(storyId);
+      await deleteStoryMutation.mutateAsync(storyToDelete._id);
+      setShowDeleteConfirm(false);
+      setStoryToDelete(null);
     } catch (error) {
       console.error("Error deleting story:", error);
     }
+  };
+
+  const ProfileStoryMedia = ({ story }: { story: Story }) => {
+    const { useSignedUrl } = useSignedMedia();
+    const { data: signedUrl } = useSignedUrl(story.media?.key || null);
+    const { data: signedThumbnailUrl } = useSignedUrl(
+      story.media?.thumbnailUrl ? story.media.key + "_thumb" : null
+    );
+    const finalUrl = signedUrl || story.media?.url;
+    const finalThumbnailUrl = signedThumbnailUrl || story.media?.thumbnailUrl;
+
+    if (story.type === "image") {
+      return (
+        <img
+          src={finalThumbnailUrl || finalUrl}
+          alt="Story"
+          className="w-full h-full object-cover"
+        />
+      );
+    }
+
+    if (story.type === "video") {
+      return (
+        <div className="w-full h-full relative">
+          <img
+            src={finalThumbnailUrl || finalUrl}
+            alt="Story"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center">
+              <svg className="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
   };
 
   const renderStoryContent = (story: Story) => {
@@ -53,32 +112,11 @@ export function ProfileStories({ userId, isMyProfile, owner }: ProfileStoriesPro
     }
 
     if (story.type === "image" && story.media) {
-      return (
-        <img
-          src={story.media.thumbnailUrl || story.media.url}
-          alt="Story"
-          className="w-full h-full object-cover"
-        />
-      );
+      return <ProfileStoryMedia story={story} />;
     }
 
     if (story.type === "video" && story.media) {
-      return (
-        <div className="w-full h-full relative">
-          <img
-            src={story.media.thumbnailUrl || story.media.url}
-            alt="Story"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center">
-              <svg className="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      );
+      return <ProfileStoryMedia story={story} />;
     }
 
     return null;
@@ -131,7 +169,7 @@ export function ProfileStories({ userId, isMyProfile, owner }: ProfileStoriesPro
         {stories.map((story) => (
           <div
             key={story._id}
-            className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group"
+            className="relative aspect-square rounded-xl overflow-hidden cursor-pointer group border-2 border-primary/20 hover:border-primary/50 transition-all"
             onClick={() => setSelectedStory(story)}
           >
             {renderStoryContent(story)}
@@ -142,9 +180,14 @@ export function ProfileStories({ userId, isMyProfile, owner }: ProfileStoriesPro
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 bg-black/50 hover:bg-black/70 text-white"
-                  onClick={(e) => handleDelete(story._id, e)}
+                  onClick={(e) => handleDeleteClick(story, e)}
+                  disabled={deleteStoryMutation.isPending}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  {deleteStoryMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
                 </Button>
               )}
             </div>
@@ -162,8 +205,44 @@ export function ProfileStories({ userId, isMyProfile, owner }: ProfileStoriesPro
         <StoryViewer
           storyGroup={storyGroupForViewer}
           onClose={() => setSelectedStory(null)}
+          singleStory={selectedStory}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Story</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this story? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="ghost"
+              onClick={() => setShowDeleteConfirm(false)}
+              disabled={deleteStoryMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={deleteStoryMutation.isPending}
+            >
+              {deleteStoryMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
