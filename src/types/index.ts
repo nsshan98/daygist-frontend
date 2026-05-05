@@ -122,6 +122,14 @@ export type {
   CreateStoryPayload,
 } from "@/types/story.types";
 
+// Notification Types
+export type {
+  Notification,
+  NotificationData,
+  NotificationsResponse,
+  MarkAllSeenResponse,
+} from "@/types/notification.types";
+
 // Component Types (from stores)
 export type {
   PostType,

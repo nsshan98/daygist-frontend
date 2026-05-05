@@ -36,6 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu";
 import { logout } from "@/lib/logout";
+import NotificationDropdown from "@/components/features/notification/components/notification-dropdown";
 
 interface NavbarProps {
   user?: {
@@ -101,14 +102,7 @@ const Navbar = ({ user }: NavbarProps) => {
             </Button>
 
             {/* Notifications */}
-            <Button variant="ghost" size="icon" asChild className="relative rounded-full hover:bg-primary/10 hover:text-primary">
-              <Link href="/notifications">
-                <Bell className="w-6 h-6" />
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs font-bold rounded-full border-2 border-card">
-                  3
-                </Badge>
-              </Link>
-            </Button>
+            <NotificationDropdown />
 
             {/* Messages */}
             {/* <Button variant="ghost" size="icon" asChild className="relative rounded-full hover:bg-primary/10 hover:text-primary hidden sm:inline-flex">
