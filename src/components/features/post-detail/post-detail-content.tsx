@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import {
   Heart,
   MessageCircle,
@@ -49,9 +49,146 @@ import {
   useDeletePost,
   useSharePost,
 } from "@/components/features/home/hooks/feed-query";
+import { useGetComments, useCreateComment } from "@/components/features/home/hooks/comment-query";
 import { useSignedMedia } from "@/components/features/profile/components/media-image";
 import { useFollowUser, useUnfollowUser } from "@/components/features/follow";
-import { FeedMedia } from "@/types";
+import { FeedMedia, Comment } from "@/types";
+
+// Format relative time
+const formatRelativeTime = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return "Just now";
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+  });
+};
+
+// Comment Item Component
+function CommentItem({
+  comment,
+  isHighlighted,
+  onReply,
+  replyToId,
+  replyText,
+  onReplyTextChange,
+  onSendReply,
+  isSendingReply,
+}: {
+  comment: Comment;
+  isHighlighted?: boolean;
+  onReply: (commentId: string) => void;
+  replyToId: string | null;
+  replyText: string;
+  onReplyTextChange: (text: string) => void;
+  onSendReply: (parentId: string) => void;
+  isSendingReply: boolean;
+}) {
+  const { useSignedUrl } = useSignedMedia();
+  const { data: signedAvatarUrl } = useSignedUrl(comment.author.avatar?.key || null);
+  const finalAvatarUrl = signedAvatarUrl || comment.author.avatar?.url;
+  const isReplying = replyToId === comment._id;
+  const commentRef = useRef<HTMLDivElement>(null);
+  const [showHighlight, setShowHighlight] = useState(isHighlighted);
+
+  useEffect(() => {
+    if (isHighlighted && commentRef.current) {
+      commentRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [isHighlighted]);
+
+  useEffect(() => {
+    if (isHighlighted) {
+      const timeout = setTimeout(() => {
+        setShowHighlight(false);
+      }, 600);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [isHighlighted]);
+
+  return (
+    <div
+      ref={commentRef}
+      className={`flex gap-3 py-3 rounded-xl transition-all duration-300 ${
+        showHighlight ? "bg-yellow-50 dark:bg-yellow-950/30 border-2 border-yellow-400" : ""
+      }`}
+    >
+      <Link href={`/${comment.author.username}?id=${comment.author._id}`}>
+        <Avatar className="h-9 w-9 cursor-pointer hover:opacity-80 transition-opacity">
+          <AvatarImage src={finalAvatarUrl} alt={comment.author.name} />
+          <AvatarFallback className="text-xs">
+            {comment.author.name[0]}
+          </AvatarFallback>
+        </Avatar>
+      </Link>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start gap-2">
+          <div className="flex-1">
+            <div className="bg-muted/50 rounded-2xl px-3 py-2">
+              <Link
+                href={`/${comment.author.username}?id=${comment.author._id}`}
+                className="font-semibold text-sm hover:underline"
+              >
+                {comment.author.name}
+              </Link>
+              <p className="text-sm text-foreground/90 wrap-break-word">{comment.text}</p>
+            </div>
+            <div className="flex items-center gap-3 mt-1 px-2">
+              <span className="text-xs text-muted-foreground">
+                {formatRelativeTime(comment.createdAt)}
+              </span>
+              <button
+                className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                onClick={() => onReply(comment._id)}
+              >
+                Reply
+              </button>
+              {comment.likeCount > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {comment.likeCount} likes
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Reply Input */}
+        {isReplying && (
+          <div className="flex gap-2 mt-2 ml-2">
+            <Textarea
+              value={replyText}
+              onChange={(e) => onReplyTextChange(e.target.value)}
+              placeholder={`Reply to ${comment.author.name}...`}
+              className="min-h-10 resize-none text-sm"
+              rows={1}
+            />
+            <Button
+              size="sm"
+              className="shrink-0"
+              disabled={!replyText.trim() || isSendingReply}
+              onClick={() => onSendReply(comment._id)}
+            >
+              {isSendingReply ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // Media Item Component with Signed URL - defined outside to avoid closure issues
 function MediaItem({ 
@@ -104,13 +241,17 @@ function MediaItem({
 
 export function PostDetailContent() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const postId = params.postId as string;
+  const commentId = searchParams.get("commentId");
   const queryClient = useQueryClient();
   const { useSignedUrl } = useSignedMedia();
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [replyToId, setReplyToId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
 
   // Queries and mutations
   const { postDetailQuery } = useGetPostDetail(postId);
@@ -122,31 +263,18 @@ export function PostDetailContent() {
   const { followUserMutation } = useFollowUser();
   const { unfollowUserMutation } = useUnfollowUser();
   const { sharePostMutation } = useSharePost();
+  const { commentsQuery } = useGetComments(postId, true);
+  const { createCommentMutation } = useCreateComment(postId);
 
   const { data, isLoading, isError, error } = postDetailQuery;
   const post = data?.post;
 
+  // Flatten comments
+  const comments = commentsQuery.data?.pages.flatMap((page) => page.items) || [];
+
   // Fetch signed URL for avatar
   const { data: signedAvatarUrl } = useSignedUrl(post?.author?.avatar?.key || null);
   const finalAvatarUrl = signedAvatarUrl || post?.author?.avatar?.url;
-
-  // Format relative time
-  const formatRelativeTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    if (diffInSeconds < 60) return "Just now";
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
-    });
-  };
 
   // Handle like/unlike with optimistic updates
   const handleLikeToggle = () => {
@@ -238,6 +366,48 @@ export function PostDetailContent() {
         toast.error("Failed to share post");
       },
     });
+  };
+
+  // Handle create comment
+  const handleSendComment = () => {
+    if (!commentText.trim() || createCommentMutation.isPending) return;
+
+    createCommentMutation.mutate(
+      {
+        text: commentText.trim(),
+        type: "post",
+      },
+      {
+        onSuccess: () => {
+          setCommentText("");
+        },
+        onError: () => {
+          toast.error("Failed to post comment");
+        },
+      }
+    );
+  };
+
+  // Handle reply
+  const handleSendReply = (parentId: string) => {
+    if (!replyText.trim() || createCommentMutation.isPending) return;
+
+    createCommentMutation.mutate(
+      {
+        text: replyText.trim(),
+        type: "post",
+        parentId,
+      },
+      {
+        onSuccess: () => {
+          setReplyText("");
+          setReplyToId(null);
+        },
+        onError: () => {
+          toast.error("Failed to post reply");
+        },
+      }
+    );
   };
 
   // Loading state
@@ -547,7 +717,7 @@ export function PostDetailContent() {
           </CardFooter>
         </Card>
 
-        {/* Comments Section Placeholder */}
+        {/* Comments Section */}
         <Card className="border-none shadow-lg mt-6">
           <CardHeader>
             <h3 className="text-lg font-semibold">Comments</h3>
@@ -568,18 +738,43 @@ export function PostDetailContent() {
                 <Button
                   size="icon"
                   className="rounded-full h-10 w-10"
-                  disabled={!commentText.trim()}
+                  disabled={!commentText.trim() || createCommentMutation.isPending}
+                  onClick={handleSendComment}
                 >
-                  <Send className="h-4 w-4" />
+                  {createCommentMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
 
-            {/* Empty State */}
-            <div className="text-center py-8 text-muted-foreground">
-              <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No comments yet. Be the first to comment!</p>
-            </div>
+            {/* Comments List */}
+            {commentsQuery.isLoading ? (
+              <div className="text-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-3" />
+              </div>
+            ) : comments.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No comments yet. Be the first to comment!</p>
+              </div>
+            ) : (
+              comments.map((comment) => (
+                <CommentItem
+                  key={comment._id}
+                  comment={comment}
+                  isHighlighted={commentId === comment._id}
+                  onReply={setReplyToId}
+                  replyToId={replyToId}
+                  replyText={replyText}
+                  onReplyTextChange={setReplyText}
+                  onSendReply={handleSendReply}
+                  isSendingReply={createCommentMutation.isPending}
+                />
+              ))
+            )}
           </CardContent>
         </Card>
       </div>

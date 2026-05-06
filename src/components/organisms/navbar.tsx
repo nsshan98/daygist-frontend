@@ -252,7 +252,7 @@ const Navbar = ({ user }: NavbarProps) => {
                 <Button
                   key={item.label}
                   variant="ghost"
-                  className="w-full justify-start text-base font-medium py-4 px-4 rounded-xl hover:bg-primary/10 hover:text-primary"
+                  className="w-full justify-start text-base font-medium py-4 px-4 rounded-xl hover:bg-primary/10 hover:text-primary cursor-pointer"
                   asChild
                   onClick={() => setIsMenuOpen(false)}
                 >

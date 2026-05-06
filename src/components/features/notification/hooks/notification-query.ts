@@ -40,4 +40,20 @@ const useMarkAllSeen = () => {
   return { markAllSeenMutation };
 };
 
-export { useGetNotifications, useMarkAllSeen };
+// ===============================|| MARK NOTIFICATION SEEN ||============================== //
+const useMarkNotificationSeen = () => {
+  const queryClient = useQueryClient();
+  
+  const markNotificationSeenMutation = useMutation({
+    mutationFn: async (notificationId: string) => {
+      const { data } = await axiosClient.post(`/notification/${notificationId}/seen`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+  return { markNotificationSeenMutation };
+};
+
+export { useGetNotifications, useMarkAllSeen, useMarkNotificationSeen };

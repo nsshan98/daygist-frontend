@@ -61,7 +61,7 @@ export function GroupPostsFeed({ groupId }: GroupPostsFeedProps) {
   
   return (
     <div className="space-y-6">
-      {/* Create Post Box - Facebook Style */}
+      {/* Create Post Box */}
       <Card className="border-none shadow-2xl overflow-hidden backdrop-blur-sm bg-linear-to-br from-card/80 to-card/50">
         {/* Decorative border line */}
         <div className="h-1 w-full bg-linear-to-r from-primary via-secondary to-primary animate-linear" />
