@@ -37,6 +37,8 @@ import {
 } from "@/components/atoms/dropdown-menu";
 import { logout } from "@/lib/logout";
 import NotificationDropdown from "@/components/features/notification/components/notification-dropdown";
+import { useGetUserProfile } from "@/components/features/profile/hooks/profile-query";
+import { Skeleton } from "@/components/atoms/skeleton";
 
 interface NavbarProps {
   user?: {
@@ -46,9 +48,10 @@ interface NavbarProps {
   };
 }
 
-const Navbar = ({ user }: NavbarProps) => {
+const Navbar = ({ user: initialUser }: NavbarProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  const { showUserProfileQuery } = useGetUserProfile();
 
   return (
     <>
@@ -118,14 +121,16 @@ const Navbar = ({ user }: NavbarProps) => {
             <ThemeToggle />
 
             {/* User Profile or Login */}
-            {user ? (
+            {showUserProfileQuery.isLoading ? (
+              <Skeleton className="w-9 h-9 rounded-full" />
+            ) : showUserProfileQuery.data?.data ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="rounded-full p-1 hover:bg-primary/10">
                     <Avatar className="w-9 h-9 border-2 border-primary/20">
-                      <AvatarImage src={user.avatar} alt={user.name} />
+                      <AvatarImage src={showUserProfileQuery.data.data.avatar?.url} alt={showUserProfileQuery.data.data.name} />
                       <AvatarFallback className="bg-primary text-primary-foreground">
-                        {user.name.charAt(0).toUpperCase()}
+                        {showUserProfileQuery.data.data.name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -134,14 +139,14 @@ const Navbar = ({ user }: NavbarProps) => {
                   <DropdownMenuLabel className="p-4 pb-3">
                     <div className="flex items-center gap-3">
                       <Avatar className="w-12 h-12">
-                        <AvatarImage src={user.avatar} alt={user.name} />
+                        <AvatarImage src={showUserProfileQuery.data.data.avatar?.url} alt={showUserProfileQuery.data.data.name} />
                         <AvatarFallback className="bg-primary text-primary-foreground">
-                          {user.name.charAt(0).toUpperCase()}
+                          {showUserProfileQuery.data.data.name.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col">
-                        <span className="font-semibold text-base">{user.name}</span>
-                        <span className="text-muted-foreground text-sm">@{user.username}</span>
+                        <span className="font-semibold text-base">{showUserProfileQuery.data.data.name}</span>
+                        <span className="text-muted-foreground text-sm">@{showUserProfileQuery.data.data.username}</span>
                       </div>
                     </div>
                   </DropdownMenuLabel>
@@ -269,16 +274,6 @@ const Navbar = ({ user }: NavbarProps) => {
               );
             })}
 
-            {/* Auth Buttons */}
-            {!user && (
-              <div className="pt-4 mt-4 border-t border-border">
-                <Button asChild className="w-full rounded-full py-6 text-base">
-                  <Link href="/auth/login">
-                    Login
-                  </Link>
-                </Button>
-              </div>
-            )}
           </nav>
         </div>
       </div>

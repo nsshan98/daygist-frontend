@@ -127,7 +127,7 @@ function EducationFields({ register, errors, setValue, watch }: EducationFieldPr
 
       <Button
         type="button"
-        variant="outline"
+        variant="secondary"
         onClick={addEducation}
         className="w-full gap-2"
       >
@@ -309,7 +309,7 @@ export function EditProfileDialog({ profile, open, onOpenChange }: EditProfileDi
 
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
-                <Input id="username" {...register("username")} />
+                <Input id="username" disabled {...register("username")} />
                 {errors.username && (
                   <p className="text-sm text-destructive">{errors.username.message}</p>
                 )}
@@ -362,7 +362,7 @@ export function EditProfileDialog({ profile, open, onOpenChange }: EditProfileDi
                   value={watch("relationship") || "NOT_SPECIFIED"} 
                   onValueChange={(value) => setValue("relationship", value === "NOT_SPECIFIED" ? null : (value as any))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -485,7 +485,7 @@ export function EditProfileDialog({ profile, open, onOpenChange }: EditProfileDi
           <DialogFooter>
             <Button 
               type="button" 
-              variant="outline" 
+              variant="destructive" 
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >

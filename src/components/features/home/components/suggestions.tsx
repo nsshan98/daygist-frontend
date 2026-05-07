@@ -32,7 +32,7 @@ export function Suggestions({ suggestions }: SuggestionsProps) {
         {suggestions.map((suggestion, index) => (
           <div 
             key={suggestion.id} 
-            className="group flex items-center justify-between p-3 rounded-2xl transition-all duration-300 hover:bg-muted/50 hover:shadow-md"
+            className="group flex flex-col items-center justify-between rounded-2xl transition-all duration-300 hover:bg-muted/50 hover:shadow-md"
             style={{ animationDelay: `${index * 100}ms` }}
           >
             <div className="flex items-center gap-3">
@@ -45,13 +45,12 @@ export function Suggestions({ suggestions }: SuggestionsProps) {
               <div>
                 <p className="text-sm font-semibold group-hover:text-primary transition-colors duration-300">{suggestion.name}</p>
                 <p className="text-xs text-muted-foreground">@{suggestion.username}</p>
-                <p className="text-xs text-primary/80 font-medium mt-0.5">{suggestion.mutual}</p>
               </div>
             </div>
             <Button 
-              variant="outline" 
+              variant="secondary" 
               size="sm"
-              className="rounded-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg hover:bg-primary hover:text-primary-foreground hover:border-primary"
+              className="rounded-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg hover:bg-primary hover:text-primary-foreground hover:border-primary w-full mt-4"
             >
               Follow
             </Button>
