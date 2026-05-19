@@ -37,6 +37,7 @@ import {
 } from "@/components/atoms/dropdown-menu";
 import { logout } from "@/lib/logout";
 import NotificationDropdown from "@/components/features/notification/components/notification-dropdown";
+import ChatDropdown from "@/components/features/chat/components/chat-dropdown";
 import { useGetUserProfile } from "@/components/features/profile/hooks/profile-query";
 import { Skeleton } from "@/components/atoms/skeleton";
 
@@ -108,14 +109,7 @@ const Navbar = ({ user: initialUser }: NavbarProps) => {
             <NotificationDropdown />
 
             {/* Messages */}
-            {/* <Button variant="ghost" size="icon" asChild className="relative rounded-full hover:bg-primary/10 hover:text-primary hidden sm:inline-flex">
-              <Link href="/messages">
-                <Mail className="w-6 h-6" />
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs font-bold rounded-full border-2 border-card">
-                  12
-                </Badge>
-              </Link>
-            </Button> */}
+            <ChatDropdown />
 
             {/* Theme Toggle */}
             <ThemeToggle />

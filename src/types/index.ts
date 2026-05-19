@@ -130,6 +130,14 @@ export type {
   MarkAllSeenResponse,
 } from "@/types/notification.types";
 
+// Chat Types
+export type {
+  ChatParticipant,
+  Conversation,
+  ChatPagination,
+  ConversationsResponse,
+} from "@/types/chat.types";
+
 // Component Types (from stores)
 export type {
   PostType,
