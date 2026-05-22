@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Navbar from "@/components/organisms/navbar";
 import Providers from "../providers";
 import { getSession } from "@/lib/session";
+import ChatWindowManager from "@/components/features/chat/components/chat-window-manager";
 
 export const metadata: Metadata = {
   title: "Daygist",
@@ -27,6 +28,7 @@ export default async function HomeLayout({
     <Providers>
       <Navbar user={user} />
       {children}
+      <ChatWindowManager />
     </Providers>
   );
 }

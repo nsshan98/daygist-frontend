@@ -136,6 +136,9 @@ export type {
   Conversation,
   ChatPagination,
   ConversationsResponse,
+  MessageReaction,
+  ChatMessage,
+  MessagesResponse,
 } from "@/types/chat.types";
 
 // Component Types (from stores)

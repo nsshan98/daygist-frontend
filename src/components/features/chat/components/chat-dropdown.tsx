@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu";
 import { useGetConversations } from "../hooks/chat-query";
+import { useChatStore } from "../stores/chat-store";
 import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
@@ -21,7 +22,7 @@ import type { Conversation } from "@/types";
 
 const ChatDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"all" | "approved" | "rejected">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "general" | "marketplace" | "pending" | "requested">("all");
   const {
     data,
     fetchNextPage,
@@ -31,6 +32,7 @@ const ChatDropdown = () => {
   } = useGetConversations(activeTab);
 
   const router = useRouter();
+  const { addWindow } = useChatStore();
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -59,7 +61,7 @@ const ChatDropdown = () => {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handleConversationClick = (conversation: Conversation) => {
-    router.push(`/messages/${conversation._id}`);
+    addWindow(conversation);
     setIsOpen(false);
   };
 
@@ -103,8 +105,10 @@ const ChatDropdown = () => {
           <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
             {[
               { id: "all", label: "All" },
-              { id: "approved", label: "Approved" },
-              { id: "rejected", label: "Rejected" },
+              { id: "general", label: "General" },
+              { id: "marketplace", label: "Marketplace" },
+              { id: "pending", label: "Pending" },
+              { id: "requested", label: "Requested" },
             ].map((tab) => (
               <Button
                 key={tab.id}
@@ -151,7 +155,7 @@ const ChatDropdown = () => {
                     onClick={() => handleConversationClick(conversation)}
                     className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer text-left relative group"
                   >
-                    <div className="relative flex-shrink-0">
+                    <div className="relative shrink-0">
                       <Avatar className="w-14 h-14 border border-border">
                         <AvatarImage src={participant.avatar?.url || ""} />
                         <AvatarFallback className="bg-primary/10 text-primary font-bold text-lg">
@@ -182,7 +186,7 @@ const ChatDropdown = () => {
                           {conversation.lastMessage || (conversation.status === 'requested' ? "Sent a message request" : "No messages yet")}
                         </p>
                         {conversation.myUnreadCount > 0 && (
-                          <div className="flex-shrink-0 w-2.5 h-2.5 rounded-full bg-blue-500" />
+                          <div className="shrink-0 w-2.5 h-2.5 rounded-full bg-blue-500" />
                         )}
                       </div>
                     </div>
