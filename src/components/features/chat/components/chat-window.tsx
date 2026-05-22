@@ -6,11 +6,12 @@ import { Button } from "@/components/atoms/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Input } from "@/components/atoms/input";
 import { useGetMessages, useSendMessage, useEditMessage, useDeleteMessage, useReactToMessage } from "../hooks/chat-query";
-import { useUploadImage } from "@/components/features/home/hooks/upload-query";
+import { useUploadImage, useUploadVoice } from "@/components/features/home/hooks/upload-query";
 import { useChatStore } from "../stores/chat-store";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ChatMessageItem } from "./chat-message-item";
+import { VoiceRecorder } from "./voice-recorder";
 import { toast } from "sonner";
 import type { Conversation, ChatMessage } from "@/types";
 
@@ -23,6 +24,7 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { removeWindow, minimizeWindow, isMinimized } = useChatStore();
@@ -41,6 +43,7 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
   const deleteMessageMutation = useDeleteMessage();
   const reactToMessageMutation = useReactToMessage();
   const { uploadImageMutation } = useUploadImage();
+  const { uploadVoiceMutation } = useUploadVoice();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -185,6 +188,45 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
     }
   };
 
+  const handleVoiceUpload = async (blob: Blob, duration: number) => {
+    setIsUploading(true);
+    try {
+      const file = new File([blob], `voice_${Date.now()}.m4a`, { type: "audio/m4a" });
+      const uploadResult = await uploadVoiceMutation.mutateAsync(file);
+      
+      const payload: any = {
+        conversationId: conversation._id,
+        messageType: 'voice',
+        media: {
+          url: uploadResult.url,
+          key: uploadResult.key,
+          provider: uploadResult.provider,
+        },
+        mediaMeta: {
+          duration,
+          size: file.size,
+          mimeType: file.type
+        }
+      };
+
+      if (replyingTo) {
+        payload.replyTo = {
+          message: replyingTo._id,
+          text: replyingTo.text || (replyingTo.messageType === 'voice' ? 'Voice message' : 'Media'),
+          sender: replyingTo.sender._id
+        };
+      }
+
+      await sendMessageMutation.mutateAsync(payload);
+      setReplyingTo(null);
+      setIsRecording(false);
+    } catch (error) {
+      toast.error("Failed to upload/send voice message");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   if (minimized) {
     return (
       <div className="w-48 bg-card border border-border rounded-t-lg shadow-2xl flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-accent transition-colors"
@@ -231,12 +273,12 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
         </div>
         
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10">
+          {/* <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10">
             <Phone className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10">
             <Video className="h-4 w-4" />
-          </Button>
+          </Button> */}
           <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => minimizeWindow(conversation._id)}>
             <Minus className="h-4 w-4" />
           </Button>
@@ -338,45 +380,61 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
         )}
 
         <div className="flex items-center gap-1">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-primary hover:bg-primary/10"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-          >
-            {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageIcon className="h-5 w-5" />}
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10">
-            <Smile className="h-5 w-5" />
-          </Button>
-          <div className="flex-1 relative">
-            <Input 
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Aa"
-              className="h-9 rounded-full bg-muted/50 border-none focus-visible:ring-1 pr-10"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && message.trim()) {
-                  handleSend();
-                }
-              }}
-              disabled={isUploading}
+          {isRecording ? (
+            <VoiceRecorder 
+              onStop={handleVoiceUpload} 
+              onCancel={() => setIsRecording(false)} 
+              isUploading={isUploading}
             />
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-7 w-7 absolute right-1 top-1/2 -translate-y-1/2 text-primary hover:bg-transparent"
-              disabled={!message.trim() || isUploading}
-              onClick={handleSend}
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-          {!message.trim() && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10">
-              <Mic className="h-5 w-5" />
-            </Button>
+          ) : (
+            <>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-primary hover:bg-primary/10"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+              >
+                {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageIcon className="h-5 w-5" />}
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10">
+                <Smile className="h-5 w-5" />
+              </Button>
+              <div className="flex-1 relative">
+                <Input 
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Aa"
+                  className="h-9 rounded-full bg-muted/50 border-none focus-visible:ring-1 pr-10"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && message.trim()) {
+                      handleSend();
+                    }
+                  }}
+                  disabled={isUploading}
+                />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7 absolute right-1 top-1/2 -translate-y-1/2 text-primary hover:bg-transparent"
+                  disabled={!message.trim() || isUploading}
+                  onClick={handleSend}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+              {!message.trim() && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-primary hover:bg-primary/10"
+                  onClick={() => setIsRecording(true)}
+                  disabled={isUploading}
+                >
+                  <Mic className="h-5 w-5" />
+                </Button>
+              )}
+            </>
           )}
         </div>
       </div>

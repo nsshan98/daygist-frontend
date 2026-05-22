@@ -42,6 +42,25 @@ export const useUploadVideo = () => {
   return { uploadVideoMutation };
 };
 
+// ===============================|| UPLOAD VOICE ||============================== //
+export const useUploadVoice = () => {
+  const uploadVoiceMutation = useMutation({
+    mutationFn: async (file: File): Promise<UploadResponse> => {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const { data } = await axiosClient.post("/upload/voice", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return data;
+    },
+  });
+
+  return { uploadVoiceMutation };
+};
+
 // ===============================|| UPLOAD MULTIPLE IMAGES ||============================== //
 export const useUploadMultipleImages = () => {
   const uploadMultipleImagesMutation = useMutation({
