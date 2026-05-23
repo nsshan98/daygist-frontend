@@ -18,6 +18,9 @@ export const createGroupSchema = z.object({
     })
     .optional(),
   rules: z.array(z.string()).optional(),
+  memberApprovalRequired: z.boolean(),
+  postApprovalRequired: z.boolean(),
+  allowMemberInvites: z.boolean(),
 });
 
 export type CreateGroupSchemaType = z.infer<typeof createGroupSchema>;

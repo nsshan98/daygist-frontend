@@ -133,3 +133,38 @@ export const useReactToMessage = () => {
     },
   });
 };
+
+export const useCreateConversation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ otherUserId, type = "general" }: { otherUserId: string; type?: string }) => {
+      const { data } = await axiosClient.post<{ success: boolean; data: any }>(
+        `/chat/conversations/create-or-get`,
+        { otherUserId, type }
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+};
+
+export const useCheckExistingConversation = (userId: string) => {
+  return useInfiniteQuery({
+    queryKey: ["check-existing-conversation", userId],
+    queryFn: async () => {
+      const { data } = await axiosClient.get<{
+        success: boolean;
+        exists: boolean;
+        message: string;
+        conversationId?: string;
+      }>(`/chat/conversations/${userId}/checkExisting`);
+      return data;
+    },
+    initialPageParam: 1,
+    getNextPageParam: () => undefined,
+    enabled: !!userId,
+  });
+};

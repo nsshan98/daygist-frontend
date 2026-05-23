@@ -30,6 +30,8 @@ import { isAxiosError } from "axios";
 import { ImageAdjustmentDialog } from "./image-adjustment-dialog";
 import { Skeleton } from "@/components/atoms/skeleton";
 import { FollowListDialog } from "@/components/features/follow";
+import { MessageCircle } from "lucide-react";
+import { MessageRequestDialog } from "@/components/features/chat/components/message-request-dialog";
 
 interface UserProfile {
   _id: string;
@@ -76,6 +78,7 @@ export function ProfileHeader({ profile, onEditProfile, onFollow, onUnfollow, is
   const [showAvatarAdjustmentDialog, setShowAvatarAdjustmentDialog] = useState(false);
   const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null);
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [isMessageRequestOpen, setIsMessageRequestOpen] = useState(false);
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -286,7 +289,7 @@ export function ProfileHeader({ profile, onEditProfile, onFollow, onUnfollow, is
 
   return (
     <>
-    <Card className="border-none shadow-2xl overflow-hidden">
+    <Card className="border-none p-0 shadow-2xl overflow-hidden">
       {/* Cover Photo */}
       <div className="relative h-48 sm:h-64 md:h-80 bg-linear-to-br from-primary/20 via-secondary/20 to-muted/20">
         {isLoadingCoverUrl ? (
@@ -398,60 +401,82 @@ export function ProfileHeader({ profile, onEditProfile, onFollow, onUnfollow, is
               </Button>
             )}
 
-            {/* Follow/Unfollow Button */}
+            {/* Follow/Unfollow and Message Buttons */}
             {!profile.isMe && (
-              profile.isFollowing ? (
-                /* Following Dropdown - shows options when already following */
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="secondary"
-                      className="gap-2 rounded-xl shrink-0"
-                      disabled={isFollowLoading}
-                    >
-                      {isFollowLoading ? (
-                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                      ) : (
-                        <>
-                          <UserCheck className="w-4 h-4" />
-                          Following
-                          <ChevronDown className="w-4 h-4" />
-                        </>
-                      )}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem
-                      onClick={onUnfollow}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <UserMinus className="w-4 h-4" />
-                      Unfollow
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                /* Follow Button - shown when not following */
+              <div className="flex items-center gap-2">
+                {/* Message Request Button */}
                 <Button
-                  variant="default"
+                  variant="secondary"
                   className="gap-2 rounded-xl shrink-0"
-                  onClick={onFollow}
-                  disabled={isFollowLoading}
+                  onClick={() => setIsMessageRequestOpen(true)}
                 >
-                  {isFollowLoading ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  ) : (
-                    <>
-                      <UserPlus className="w-4 h-4" />
-                      Follow
-                    </>
-                  )}
+                  <MessageCircle className="w-4 h-4" />
+                  Message
                 </Button>
-              )
+
+                {profile.isFollowing ? (
+                  /* Following Dropdown - shows options when already following */
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="secondary"
+                        className="gap-2 rounded-xl shrink-0"
+                        disabled={isFollowLoading}
+                      >
+                        {isFollowLoading ? (
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        ) : (
+                          <>
+                            <UserCheck className="w-4 h-4" />
+                            Following
+                            <ChevronDown className="w-4 h-4" />
+                          </>
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem
+                        onClick={onUnfollow}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <UserMinus className="w-4 h-4" />
+                        Unfollow
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  /* Follow Button - shown when not following */
+                  <Button
+                    variant="default"
+                    className="gap-2 rounded-xl shrink-0"
+                    onClick={onFollow}
+                    disabled={isFollowLoading}
+                  >
+                    {isFollowLoading ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : (
+                      <>
+                        <UserPlus className="w-4 h-4" />
+                        Follow
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         </div>
+
+        {/* Message Request Dialog */}
+        {!profile.isMe && (
+          <MessageRequestDialog
+            userId={profile._id}
+            userName={profile.name}
+            isOpen={isMessageRequestOpen}
+            onOpenChange={setIsMessageRequestOpen}
+          />
+        )}
 
         {/* Name and Bio */}
         <div className="mt-6 space-y-3">

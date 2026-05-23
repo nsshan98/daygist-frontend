@@ -29,7 +29,7 @@ export function GroupCard({ group, isForYou = false, isMyGroup = false }: GroupC
 
   return (
     <Link href={`/groups/${group._id}`}>
-      <Card className="group overflow-hidden border-none shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
+      <Card className="group overflow-hidden border-none shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer p-0">
         {/* Cover Image */}
         <div className="relative aspect-video w-full overflow-hidden bg-linear-to-br from-primary/20 to-secondary/20">
           {hasCover ? (

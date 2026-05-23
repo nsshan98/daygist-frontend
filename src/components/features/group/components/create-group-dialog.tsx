@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createGroupSchema, CreateGroupSchemaType } from "@/zod/group-schema";
@@ -26,8 +26,14 @@ import {
 import { useCreateGroup } from "../hooks/group-query";
 import { useUploadImage } from "@/components/features/home";
 import { MediaImage } from "@/components/features/profile";
-import { ImagePlus, X, Loader2, Globe, Lock } from "lucide-react";
+import { ImagePlus, X, Loader2, Globe, Lock, Info } from "lucide-react";
 import { Label } from "@/components/atoms/label";
+import { Switch } from "@/components/atoms/switch";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/atoms/tooltip";
 import { toast } from "sonner";
 
 interface CreateGroupDialogProps {
@@ -78,10 +84,19 @@ export function CreateGroupDialog({ trigger }: CreateGroupDialogProps) {
         city: "",
       },
       rules: [""],
+      memberApprovalRequired: false,
+      postApprovalRequired: false,
+      allowMemberInvites: true,
     },
   });
 
   const privacy = watch("privacy");
+
+  useEffect(() => {
+    if (privacy === "private") {
+      setValue("memberApprovalRequired", true);
+    }
+  }, [privacy, setValue]);
 
   const handleCoverSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -150,6 +165,9 @@ export function CreateGroupDialog({ trigger }: CreateGroupDialogProps) {
         coverUrl,
         location,
         rules: filteredRules,
+        memberApprovalRequired: data.memberApprovalRequired,
+        postApprovalRequired: data.postApprovalRequired,
+        allowMemberInvites: data.allowMemberInvites,
       };
 
       await createGroupMutation.mutateAsync(payload);
@@ -261,6 +279,66 @@ export function CreateGroupDialog({ trigger }: CreateGroupDialogProps) {
                   <p className="text-xs text-muted-foreground">Only invited members</p>
                 </div>
               </button>
+            </div>
+          </div>
+
+          {/* Group Settings */}
+          <div className="space-y-4 py-2">
+            <Label className="text-base font-semibold">Group Settings</Label>
+            
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="member-approval" className="cursor-pointer">Member Approval</Label>
+                  {privacy === "private" && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-4 h-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Member approval is always required for private groups
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  New members must be approved by an admin
+                </p>
+              </div>
+              <Switch
+                id="member-approval"
+                checked={watch("memberApprovalRequired")}
+                onCheckedChange={(checked) => setValue("memberApprovalRequired", checked)}
+                disabled={privacy === "private"}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="post-approval" className="cursor-pointer">Post Approval</Label>
+                <p className="text-xs text-muted-foreground">
+                  All posts must be approved by an admin
+                </p>
+              </div>
+              <Switch
+                id="post-approval"
+                checked={watch("postApprovalRequired")}
+                onCheckedChange={(checked) => setValue("postApprovalRequired", checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="member-invites" className="cursor-pointer">Member Invites</Label>
+                <p className="text-xs text-muted-foreground">
+                  Allow members to invite others to the group
+                </p>
+              </div>
+              <Switch
+                id="member-invites"
+                checked={watch("allowMemberInvites")}
+                onCheckedChange={(checked) => setValue("allowMemberInvites", checked)}
+              />
             </div>
           </div>
 

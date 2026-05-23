@@ -12,7 +12,10 @@ import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ChatMessageItem } from "./chat-message-item";
 import { VoiceRecorder } from "./voice-recorder";
+import { useSocket } from "../context/socket-context";
+import { useGetUserProfile } from "@/components/features/profile/hooks/profile-query";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Conversation, ChatMessage } from "@/types";
 
 interface ChatWindowProps {
@@ -25,8 +28,16 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [otherUserTyping, setOtherUserTyping] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const { socket, onlineUsers } = useSocket();
+  const queryClient = useQueryClient();
+  const { showUserProfileQuery } = useGetUserProfile();
+  const currentUser = showUserProfileQuery.data?.data;
+  
   const { removeWindow, minimizeWindow, isMinimized } = useChatStore();
   const minimized = isMinimized[conversation._id];
   
@@ -51,6 +62,99 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
 
   const messages = data?.pages ? [...data.pages].reverse().flatMap((page) => page.data) : [];
   const participant = conversation.participants[0];
+  const isOnline = participant ? onlineUsers.includes(participant._id) : false;
+
+  useEffect(() => {
+    if (!socket || !currentUser) return;
+
+    const handleReceiveMessage = (data: { conversationId: string; message: ChatMessage }) => {
+      if (data.conversationId === conversation._id) {
+        queryClient.setQueryData(["messages", conversation._id], (old: any) => {
+          if (!old) return old;
+          const newPages = [...old.pages];
+          const lastPageIndex = newPages.length - 1;
+          newPages[lastPageIndex] = {
+            ...newPages[lastPageIndex],
+            data: [...newPages[lastPageIndex].data, data.message],
+          };
+          return { ...old, pages: newPages };
+        });
+        
+        if (!minimized) {
+          socket.emit("mark-seen", {
+            senderId: participant?._id,
+            conversationId: conversation._id,
+            messageIds: [data.message._id],
+            seenBy: currentUser._id,
+          });
+        }
+      }
+    };
+
+    const handleTyping = (data: { conversationId: string; senderId: string }) => {
+      if (data.conversationId === conversation._id && data.senderId !== currentUser._id) {
+        setOtherUserTyping(true);
+      }
+    };
+
+    const handleStopTyping = (data: { conversationId: string; senderId: string }) => {
+      if (data.conversationId === conversation._id && data.senderId !== currentUser._id) {
+        setOtherUserTyping(false);
+      }
+    };
+
+    const handleMessageSeen = (data: { conversationId: string; messageIds: string[]; seenBy: string }) => {
+      if (data.conversationId === conversation._id) {
+        queryClient.invalidateQueries({ queryKey: ["messages", conversation._id] });
+      }
+    };
+
+    const handleReactionUpdated = (data: { conversationId: string; messageId: string; reactions: any[] }) => {
+      if (data.conversationId === conversation._id) {
+        queryClient.invalidateQueries({ queryKey: ["messages", conversation._id] });
+      }
+    };
+
+    socket.on("receive-message", handleReceiveMessage);
+    socket.on("typing", handleTyping);
+    socket.on("stop-typing", handleStopTyping);
+    socket.on("message-seen", handleMessageSeen);
+    socket.on("message-reaction-updated", handleReactionUpdated);
+
+    return () => {
+      socket.off("receive-message", handleReceiveMessage);
+      socket.off("typing", handleTyping);
+      socket.off("stop-typing", handleStopTyping);
+      socket.off("message-seen", handleMessageSeen);
+      socket.off("message-reaction-updated", handleReactionUpdated);
+    };
+  }, [socket, conversation._id, currentUser, queryClient, participant?._id, minimized]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMessage(e.target.value);
+    
+    if (!socket || !currentUser || !participant) return;
+
+    if (!isTyping) {
+      setIsTyping(true);
+      socket.emit("typing", {
+        receiverId: participant._id,
+        conversationId: conversation._id,
+        senderId: currentUser._id,
+      });
+    }
+
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      socket.emit("stop-typing", {
+        receiverId: participant._id,
+        conversationId: conversation._id,
+        senderId: currentUser._id,
+      });
+    }, 2000);
+  };
 
   useEffect(() => {
     if (observerRef.current) observerRef.current.disconnect();
@@ -73,7 +177,6 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
     };
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Scroll to bottom on first load
   useEffect(() => {
     if (!isLoading && scrollRef.current && !isFetchingNextPage) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -102,10 +205,19 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
 
   const handleReact = async (msgId: string, emoji: string) => {
     try {
-      await reactToMessageMutation.mutateAsync({
+      const response = await reactToMessageMutation.mutateAsync({
         messageId: msgId,
         emoji,
       });
+
+      if (socket && participant && response.success) {
+        socket.emit("message-reaction", {
+          conversationId: conversation._id,
+          messageId: msgId,
+          receiverId: participant._id,
+          reactions: response.data.reactions,
+        });
+      }
     } catch (error) {
       toast.error("Failed to react to message");
     }
@@ -136,7 +248,22 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
           };
         }
 
-        await sendMessageMutation.mutateAsync(payload);
+        const response = await sendMessageMutation.mutateAsync(payload);
+
+        if (socket && participant && response.success) {
+          socket.emit("send-message", {
+            receiverId: participant._id,
+            conversationId: conversation._id,
+            message: response.data,
+          });
+          
+          setIsTyping(false);
+          socket.emit("stop-typing", {
+            receiverId: participant._id,
+            conversationId: conversation._id,
+            senderId: currentUser?._id,
+          });
+        }
       }
 
       setMessage("");
@@ -177,7 +304,15 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
         };
       }
 
-      await sendMessageMutation.mutateAsync(payload);
+      const response = await sendMessageMutation.mutateAsync(payload);
+
+      if (socket && participant && response.success) {
+        socket.emit("send-message", {
+          receiverId: participant._id,
+          conversationId: conversation._id,
+          message: response.data,
+        });
+      }
       
       setReplyingTo(null);
     } catch (error) {
@@ -217,7 +352,16 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
         };
       }
 
-      await sendMessageMutation.mutateAsync(payload);
+      const response = await sendMessageMutation.mutateAsync(payload);
+
+      if (socket && participant && response.success) {
+        socket.emit("send-message", {
+          receiverId: participant._id,
+          conversationId: conversation._id,
+          message: response.data,
+        });
+      }
+
       setReplyingTo(null);
       setIsRecording(false);
     } catch (error) {
@@ -252,7 +396,6 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
 
   return (
     <div className="w-[360px] bg-card border border-border rounded-t-xl shadow-2xl flex flex-col h-[450px]">
-      {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-border bg-card rounded-t-xl shadow-sm">
         <div className="flex items-center gap-2 cursor-pointer hover:bg-accent/50 p-1 rounded-lg transition-colors flex-1 min-w-0">
           <div className="relative">
@@ -260,25 +403,18 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
               <AvatarImage src={participant?.avatar?.url || ""} />
               <AvatarFallback>{participant?.name?.charAt(0)}</AvatarFallback>
             </Avatar>
-            {participant?.isOnline && (
+            {isOnline && (
               <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-background rounded-full" />
             )}
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-bold truncate leading-tight">{participant?.name}</span>
             <span className="text-[10px] text-muted-foreground leading-tight">
-              {participant?.isOnline ? "Active now" : "Offline"}
+              {otherUserTyping ? "Typing..." : isOnline ? "Active now" : "Offline"}
             </span>
           </div>
         </div>
-        
         <div className="flex items-center gap-1">
-          {/* <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10">
-            <Phone className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10">
-            <Video className="h-4 w-4" />
-          </Button> */}
           <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => minimizeWindow(conversation._id)}>
             <Minus className="h-4 w-4" />
           </Button>
@@ -288,7 +424,6 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
         </div>
       </div>
 
-      {/* Messages List */}
       <div 
         ref={scrollRef}
         className="flex-1 overflow-y-auto p-3 space-y-4 no-scrollbar bg-accent/5"
@@ -306,7 +441,6 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
             const isMe = msg.sender._id !== participant?._id;
             const showAvatar = !isMe && (idx === 0 || messages[idx-1]?.sender._id !== msg.sender._id);
             
-            // Handle replyTo being either an ID or an object
             let repliedMessage: any = null;
             if (msg.replyTo) {
               if (typeof msg.replyTo === 'string') {
@@ -334,7 +468,6 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
         )}
       </div>
 
-      {/* Input */}
       <div className="p-3 border-t border-border flex flex-col gap-2 bg-card">
         <input 
           type="file" 
@@ -344,7 +477,6 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
           onChange={handleImageUpload}
         />
         
-        {/* Reply Preview */}
         {replyingTo && (
           <div className="flex items-center justify-between bg-muted/50 px-3 py-2 rounded-lg text-xs animate-in slide-in-from-bottom-2">
             <div className="flex items-center gap-2 overflow-hidden">
@@ -360,7 +492,6 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
           </div>
         )}
 
-        {/* Edit Preview */}
         {editingMessage && (
           <div className="flex items-center justify-between bg-primary/5 px-3 py-2 rounded-lg text-xs animate-in slide-in-from-bottom-2">
             <div className="flex items-center gap-2 overflow-hidden">
@@ -403,7 +534,7 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
               <div className="flex-1 relative">
                 <Input 
                   value={message}
-                  onChange={(e) => setMessage(e.target.value)}
+                  onChange={handleInputChange}
                   placeholder="Aa"
                   className="h-9 rounded-full bg-muted/50 border-none focus-visible:ring-1 pr-10"
                   onKeyDown={(e) => {

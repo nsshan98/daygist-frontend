@@ -51,7 +51,9 @@ axiosClient.interceptors.response.use(
       /* @ts-ignore */
       if (typeof window !== "undefined") {
         await deleteSession(); // explicit clear of session
-        window.location.href = "/auth/login";
+        if (window.location.pathname !== "/auth/login") {
+          window.location.href = "/auth/login";
+        }
       }
     }
     return Promise.reject(error);

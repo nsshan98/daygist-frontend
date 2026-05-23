@@ -6,7 +6,7 @@ import {
   Home, 
   Compass, 
   Bell, 
-  Mail, 
+  MessageCircle, 
   PlusSquare, 
   Menu,
   X,
@@ -243,7 +243,7 @@ const Navbar = ({ user: initialUser }: NavbarProps) => {
               { label: "Groups", icon: Users, href: "/groups" },
               { label: "Saved Posts", icon: Bookmark, href: "/saved-posts" },
               { label: "Notifications", icon: Bell, href: "/notifications", badge: 3 },
-              { label: "Messages", icon: Mail, href: "/messages", badge: 12 },
+              { label: "Messages", icon: MessageCircle, href: "/messages", badge: 12 },
               { label: "Profile", icon: PlusSquare, href: "/profile" },
             ].map((item) => {
               const Icon = item.icon;

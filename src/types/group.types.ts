@@ -138,5 +138,8 @@ export interface CreateGroupPayload {
     city?: string;
   };
   rules?: string[];
+  memberApprovalRequired: boolean;
+  postApprovalRequired: boolean;
+  allowMemberInvites: boolean;
 }
 
