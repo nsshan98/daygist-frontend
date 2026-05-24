@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { MessageCircle, Loader2, Search, MoreHorizontal, Maximize2, Edit3, CheckCircle2, XCircle } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/atoms/button";
 import { Badge } from "@/components/atoms/badge";
 import {
@@ -11,8 +12,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu";
-import { useGetConversations } from "../hooks/chat-query";
+import { useGetConversations, useUpdateConversationStatus } from "../hooks/chat-query";
 import { useChatStore } from "../stores/chat-store";
+import { useGetUserProfile } from "@/components/features/profile/hooks/profile-query";
 import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
@@ -33,10 +35,34 @@ const ChatDropdown = () => {
 
   const router = useRouter();
   const { addWindow } = useChatStore();
+  const { showUserProfileQuery } = useGetUserProfile();
+  const currentUser = showUserProfileQuery.data?.data;
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const conversations = data?.pages.flatMap((page) => page.data) || [];
+  
+  const filteredConversations = useMemo(() => {
+    if (activeTab === "all") {
+      return conversations.filter(c => c.status !== "requested");
+    }
+    
+    if (activeTab === "requested") {
+      // Sent requests: status is requested AND requestedBy IS current user
+      return conversations.filter(c => c.status === "requested" && c.requestedBy === currentUser?._id);
+    }
+    
+    if (activeTab === "pending") {
+      // Incoming requests: status is requested AND requestedBy is NOT current user
+      return conversations.filter(c => c.status === "requested" && c.requestedBy !== currentUser?._id);
+    }
+    
+    return conversations.filter(c => 
+      c.status !== "requested" && 
+      ((c as any).status === activeTab || c.type === activeTab)
+    );
+  }, [conversations, activeTab, currentUser?._id]);
+
   const totalUnreadCount = conversations.reduce((acc, conv) => acc + (conv.myUnreadCount || 0), 0);
 
   useEffect(() => {
@@ -59,6 +85,21 @@ const ChatDropdown = () => {
       if (observerRef.current) observerRef.current.disconnect();
     };
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const updateStatusMutation = useUpdateConversationStatus();
+
+  const handleUpdateStatus = async (e: React.MouseEvent, conversationId: string, status: 'approved' | 'rejected') => {
+    e.stopPropagation();
+    try {
+      await updateStatusMutation.mutateAsync({
+        conversationId,
+        status,
+      });
+      toast.success(status === 'approved' ? "Message request accepted" : "Message request rejected");
+    } catch (error) {
+      toast.error("Failed to update request status");
+    }
+  };
 
   const handleConversationClick = (conversation: Conversation) => {
     addWindow(conversation);
@@ -131,11 +172,11 @@ const ChatDropdown = () => {
         <DropdownMenuSeparator className="m-0" />
 
         <div className="max-h-[450px] overflow-y-auto no-scrollbar">
-          {isLoading && conversations.length === 0 ? (
+          {isLoading && filteredConversations.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
-          ) : conversations.length === 0 ? (
+          ) : filteredConversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
                 <MessageCircle className="w-8 h-8 text-muted-foreground" />
@@ -145,15 +186,20 @@ const ChatDropdown = () => {
             </div>
           ) : (
             <div className="py-2">
-              {conversations.map((conversation) => {
-                const participant = conversation.participants[0]; // Assuming 1-on-1 for now
+              {filteredConversations.map((conversation) => {
+                const participant = conversation.participants.find(p => p._id !== currentUser?._id) || conversation.participants[0];
                 if (!participant) return null;
+
+                const isSentRequestTab = activeTab === "requested";
 
                 return (
                   <button
                     key={conversation._id}
-                    onClick={() => handleConversationClick(conversation)}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer text-left relative group"
+                    onClick={() => !isSentRequestTab && handleConversationClick(conversation)}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors text-left relative group",
+                      isSentRequestTab ? "cursor-default" : "cursor-pointer"
+                    )}
                   >
                     <div className="relative shrink-0">
                       <Avatar className="w-14 h-14 border border-border">
@@ -174,7 +220,7 @@ const ChatDropdown = () => {
                         </p>
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
                           {formatDistanceToNow(new Date(conversation.lastMessageAt), { addSuffix: false })}
-                          {activeTab === "requested" && <span className="ml-1 text-[10px] uppercase font-bold text-blue-500">New</span>}
+                          {activeTab === "pending" && <span className="ml-1 text-[10px] uppercase font-bold text-blue-500">New</span>}
                         </span>
                       </div>
                       
@@ -183,7 +229,11 @@ const ChatDropdown = () => {
                           "text-sm truncate",
                           conversation.myUnreadCount > 0 ? "font-bold text-foreground" : "text-muted-foreground"
                         )}>
-                          {conversation.lastMessage || (conversation.status === 'requested' ? "Sent a message request" : "No messages yet")}
+                          {conversation.lastMessage || (
+                            conversation.status === 'requested' 
+                              ? (conversation.requestedBy === currentUser?._id ? "You sent a message request" : "Sent you a message request")
+                              : "No messages yet"
+                          )}
                         </p>
                         {conversation.myUnreadCount > 0 && (
                           <div className="shrink-0 w-2.5 h-2.5 rounded-full bg-blue-500" />
@@ -192,13 +242,25 @@ const ChatDropdown = () => {
                     </div>
 
                     {/* Quick Actions for Requested/Rejected */}
-                    {activeTab === "requested" && (
+                    {activeTab === "pending" && (
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-background shadow-sm hover:text-green-500">
-                          <CheckCircle2 className="h-5 w-5" />
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 rounded-full bg-background shadow-sm hover:text-green-500"
+                          onClick={(e) => handleUpdateStatus(e, conversation._id, 'approved')}
+                          disabled={updateStatusMutation.isPending}
+                        >
+                          {updateStatusMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-background shadow-sm hover:text-red-500">
-                          <XCircle className="h-5 w-5" />
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 rounded-full bg-background shadow-sm hover:text-red-500"
+                          onClick={(e) => handleUpdateStatus(e, conversation._id, 'rejected')}
+                          disabled={updateStatusMutation.isPending}
+                        >
+                          {updateStatusMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-5 w-5" />}
                         </Button>
                       </div>
                     )}

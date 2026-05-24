@@ -151,6 +151,22 @@ export const useCreateConversation = () => {
   });
 };
 
+export const useUpdateConversationStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ conversationId, status }: { conversationId: string; status: 'approved' | 'rejected' }) => {
+      const { data } = await axiosClient.patch<{ success: boolean; data: any }>(
+        `/chat/conversations/accept/${conversationId}?status=${status}`
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+};
+
 export const useCheckExistingConversation = (userId: string) => {
   return useInfiniteQuery({
     queryKey: ["check-existing-conversation", userId],

@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, Minus, Send, Mic, Image as ImageIcon, Smile, Phone, Video, Info, Loader2, Reply as ReplyIcon, Pencil } from "lucide-react";
+import { X, Minus, Send, Mic, Image as ImageIcon, Smile, Phone, Video, Info, Loader2, Reply as ReplyIcon, Pencil, MessageSquarePlus } from "lucide-react";
 import { Button } from "@/components/atoms/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Input } from "@/components/atoms/input";
-import { useGetMessages, useSendMessage, useEditMessage, useDeleteMessage, useReactToMessage } from "../hooks/chat-query";
+import { useGetMessages, useSendMessage, useEditMessage, useDeleteMessage, useReactToMessage, useUpdateConversationStatus } from "../hooks/chat-query";
 import { useUploadImage, useUploadVoice } from "@/components/features/home/hooks/upload-query";
 import { useChatStore } from "../stores/chat-store";
 import { formatDistanceToNow } from "date-fns";
@@ -53,6 +53,7 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
   const editMessageMutation = useEditMessage();
   const deleteMessageMutation = useDeleteMessage();
   const reactToMessageMutation = useReactToMessage();
+  const updateStatusMutation = useUpdateConversationStatus();
   const { uploadImageMutation } = useUploadImage();
   const { uploadVoiceMutation } = useUploadVoice();
 
@@ -61,8 +62,11 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
   const topRef = useRef<HTMLDivElement>(null);
 
   const messages = data?.pages ? [...data.pages].reverse().flatMap((page) => page.data) : [];
-  const participant = conversation.participants[0];
+  const participant = conversation.participants.find(p => p._id !== currentUser?._id) || conversation.participants[0];
   const isOnline = participant ? onlineUsers.includes(participant._id) : false;
+  
+  const isReceivedRequest = conversation.status === "requested" && conversation.requestedBy !== currentUser?._id;
+  const isSentRequest = conversation.status === "requested" && conversation.requestedBy === currentUser?._id;
 
   useEffect(() => {
     if (!socket || !currentUser) return;
@@ -371,6 +375,21 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
     }
   };
 
+  const handleUpdateStatus = async (status: 'approved' | 'rejected') => {
+    try {
+      await updateStatusMutation.mutateAsync({
+        conversationId: conversation._id,
+        status,
+      });
+      toast.success(status === 'approved' ? "Message request accepted" : "Message request rejected");
+      if (status === 'rejected') {
+        removeWindow(conversation._id);
+      }
+    } catch (error) {
+      toast.error("Failed to update request status");
+    }
+  };
+
   if (minimized) {
     return (
       <div className="w-48 bg-card border border-border rounded-t-lg shadow-2xl flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-accent transition-colors"
@@ -423,6 +442,7 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
           </Button>
         </div>
       </div>
+    
 
       <div 
         ref={scrollRef}
@@ -435,6 +455,30 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        ) : isReceivedRequest && messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center px-4 space-y-4">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+              <MessageSquarePlus className="w-8 h-8" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-bold text-foreground">Message Request</p>
+              <p className="text-xs text-muted-foreground">
+                {participant?.name} wants to connect with you. They won't know you've seen this until you accept.
+              </p>
+            </div>
+          </div>
+        ) : isSentRequest && messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center px-4 space-y-4">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+              <Send className="w-8 h-8" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-bold text-foreground">Request Sent</p>
+              <p className="text-xs text-muted-foreground">
+                You've sent a message request to {participant?.name}.
+              </p>
+            </div>
           </div>
         ) : (
           messages.map((msg, idx) => {
@@ -468,14 +512,44 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
         )}
       </div>
 
-      <div className="p-3 border-t border-border flex flex-col gap-2 bg-card">
-        <input 
-          type="file" 
-          accept="image/*" 
-          className="hidden" 
-          ref={fileInputRef} 
-          onChange={handleImageUpload}
-        />
+      {isReceivedRequest ? (
+        <div className="p-4 border-t border-border bg-card space-y-3">
+          <div className="flex flex-col gap-2">
+            <Button 
+              className="w-full rounded-xl font-bold h-10" 
+              onClick={() => handleUpdateStatus('approved')}
+              disabled={updateStatusMutation.isPending}
+            >
+              {updateStatusMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Accept"}
+            </Button>
+            <Button 
+              variant="secondary" 
+              className="w-full rounded-xl font-bold h-10" 
+              onClick={() => handleUpdateStatus('rejected')}
+              disabled={updateStatusMutation.isPending}
+            >
+              {updateStatusMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete Request"}
+            </Button>
+          </div>
+          <p className="text-[10px] text-center text-muted-foreground">
+            If you delete this request, they won't be able to message you again until you connect.
+          </p>
+        </div>
+      ) : isSentRequest ? (
+        <div className="p-4 border-t border-border bg-card text-center">
+          <p className="text-sm text-muted-foreground font-medium">
+            Message request sent. Waiting for {participant?.name} to accept.
+          </p>
+        </div>
+      ) : (
+        <div className="p-3 border-t border-border flex flex-col gap-2 bg-card">
+          <input 
+            type="file" 
+            accept="image/*" 
+            className="hidden" 
+            ref={fileInputRef} 
+            onChange={handleImageUpload}
+          />
         
         {replyingTo && (
           <div className="flex items-center justify-between bg-muted/50 px-3 py-2 rounded-lg text-xs animate-in slide-in-from-bottom-2">
@@ -569,6 +643,7 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 };
