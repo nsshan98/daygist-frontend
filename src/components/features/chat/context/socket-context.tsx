@@ -56,6 +56,14 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       setOnlineUsers((prev) => prev.filter((id) => id !== data.userId));
     });
 
+    socketInstance.on("check-user-online-result", (data: { userId: string; isOnline: boolean }) => {
+      if (data.isOnline) {
+        setOnlineUsers((prev) => Array.from(new Set([...prev, data.userId])));
+      } else {
+        setOnlineUsers((prev) => prev.filter((id) => id !== data.userId));
+      }
+    });
+
     socketInstance.on("disconnect", () => {
       console.log("Socket disconnected");
       setIsConnected(false);

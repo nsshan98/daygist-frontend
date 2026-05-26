@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { MoreHorizontal, Reply as ReplyIcon, Smile, Pencil, Trash2, Mic, Play, Pause, Loader2, Paperclip } from "lucide-react";
+import { MoreHorizontal, Reply as ReplyIcon, Smile, Pencil, Trash2, Mic, Play, Pause, Loader2, Paperclip, Check, CheckCheck } from "lucide-react";
 import { Button } from "@/components/atoms/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { useSignedMedia } from "@/components/features/profile/components/media-image";
 import {
   DropdownMenu,
@@ -30,6 +30,7 @@ interface ChatMessageItemProps {
   onDelete: (messageId: string) => void;
   onReact: (messageId: string, emoji: string) => void;
   repliedMessage?: any;
+  isLast?: boolean;
 }
 
 const COMMON_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
@@ -121,6 +122,7 @@ export const ChatMessageItem = ({
   onDelete,
   onReact,
   repliedMessage,
+  isLast,
 }: ChatMessageItemProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const { useSignedUrl } = useSignedMedia();
@@ -224,6 +226,17 @@ export const ChatMessageItem = ({
         )}
 
         <div className="relative group/content">
+          {/* Sending Time (Hover) */}
+          <div className={cn(
+            "absolute top-1/2 -translate-y-1/2 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-0",
+            isMe ? "left-full ml-2" : "right-full mr-2",
+            isHovered ? "opacity-100" : "opacity-0"
+          )}>
+            <span className="text-[10px] text-muted-foreground bg-background/80 backdrop-blur-sm px-1.5 py-0.5 rounded-md shadow-sm border border-border/50">
+              {format(new Date(message.createdAt), 'p')}
+            </span>
+          </div>
+
           <div className={cn(
             "px-3 py-2 rounded-2xl text-sm wrap-break-words relative",
             isMe 
@@ -232,6 +245,19 @@ export const ChatMessageItem = ({
           )}>
             {message.text && <p>{message.text}</p>}
             {renderMedia()}
+            
+            {/* Delivery/Seen Status for My Messages */}
+            {isMe && (
+              <div className="flex justify-end mt-0.5 -mr-1 -mb-1">
+                {message.seen ? (
+                  <CheckCheck className="h-3 w-3 text-primary-foreground/90" />
+                ) : message.delivered ? (
+                  <CheckCheck className="h-3 w-3 text-primary-foreground/60" />
+                ) : (
+                  <Check className="h-3 w-3 text-primary-foreground/60" />
+                )}
+              </div>
+            )}
           </div>
 
           {/* Reactions Display */}
@@ -309,6 +335,15 @@ export const ChatMessageItem = ({
           </DropdownMenu>
         </div>
       </div>
+
+      {isLast && isMe && message.seen && message.seenAt && (
+        <div className="mt-2 mr-1 animate-in fade-in slide-in-from-top-1 duration-300">
+          <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+            <span>Seen</span>
+            <span>{format(new Date(message.seenAt), 'p')}</span>
+          </p>
+        </div>
+      )}
     </div>
   );
 };

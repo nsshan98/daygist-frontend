@@ -5,7 +5,7 @@ import { X, Minus, Send, Mic, Image as ImageIcon, Smile, Phone, Video, Info, Loa
 import { Button } from "@/components/atoms/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Input } from "@/components/atoms/input";
-import { useGetMessages, useSendMessage, useEditMessage, useDeleteMessage, useReactToMessage, useUpdateConversationStatus } from "../hooks/chat-query";
+import { useGetMessages, useSendMessage, useEditMessage, useDeleteMessage, useReactToMessage, useUpdateConversationStatus, useMarkMessagesAsSeen } from "../hooks/chat-query";
 import { useUploadImage, useUploadVoice } from "@/components/features/home/hooks/upload-query";
 import { useChatStore } from "../stores/chat-store";
 import { formatDistanceToNow } from "date-fns";
@@ -54,6 +54,7 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
   const deleteMessageMutation = useDeleteMessage();
   const reactToMessageMutation = useReactToMessage();
   const updateStatusMutation = useUpdateConversationStatus();
+  const markAsSeenMutation = useMarkMessagesAsSeen();
   const { uploadImageMutation } = useUploadImage();
   const { uploadVoiceMutation } = useUploadVoice();
 
@@ -115,6 +116,25 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
 
     const handleReactionUpdated = (data: { conversationId: string; messageId: string; reactions: any[] }) => {
       if (data.conversationId === conversation._id) {
+        queryClient.setQueryData(["messages", conversation._id], (old: any) => {
+          if (!old) return old;
+          
+          const newPages = old.pages.map((page: any) => ({
+            ...page,
+            data: page.data.map((msg: ChatMessage) => 
+              msg._id === data.messageId 
+                ? { ...msg, reactions: data.reactions } 
+                : msg
+            )
+          }));
+          
+          return { ...old, pages: newPages };
+        });
+      }
+    };
+
+    const handleMessageSentRealtime = (data: { conversationId: string; messageId: string; deliveredToSocket: boolean }) => {
+      if (data.conversationId === conversation._id) {
         queryClient.invalidateQueries({ queryKey: ["messages", conversation._id] });
       }
     };
@@ -124,6 +144,12 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
     socket.on("stop-typing", handleStopTyping);
     socket.on("message-seen", handleMessageSeen);
     socket.on("message-reaction-updated", handleReactionUpdated);
+    socket.on("message-sent-realtime", handleMessageSentRealtime);
+
+    // Explicitly check online status of the participant when window opens
+    if (participant?._id) {
+      socket.emit("check-user-online", { userId: participant._id });
+    }
 
     return () => {
       socket.off("receive-message", handleReceiveMessage);
@@ -131,8 +157,30 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
       socket.off("stop-typing", handleStopTyping);
       socket.off("message-seen", handleMessageSeen);
       socket.off("message-reaction-updated", handleReactionUpdated);
+      socket.off("message-sent-realtime", handleMessageSentRealtime);
     };
   }, [socket, conversation._id, currentUser, queryClient, participant?._id, minimized]);
+
+  useEffect(() => {
+    if (!minimized && messages.length > 0 && currentUser) {
+      const unseenMessages = messages.filter(
+        msg => msg.sender._id !== currentUser._id && !msg.seen
+      );
+
+      if (unseenMessages.length > 0) {
+        markAsSeenMutation.mutate(conversation._id);
+        
+        if (socket && participant) {
+          socket.emit("mark-seen", {
+            senderId: participant._id,
+            conversationId: conversation._id,
+            messageIds: unseenMessages.map(m => m._id),
+            seenBy: currentUser._id,
+          });
+        }
+      }
+    }
+  }, [minimized, messages.length, conversation._id, currentUser, socket, participant]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMessage(e.target.value);
@@ -230,17 +278,21 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
   const handleSend = async () => {
     if (!message.trim() && !isUploading) return;
 
+    const currentMessage = message.trim();
+    setMessage("");
+    setReplyingTo(null);
+
     try {
       if (editingMessage) {
         await editMessageMutation.mutateAsync({
           messageId: editingMessage._id,
-          text: message.trim(),
+          text: currentMessage,
         });
         setEditingMessage(null);
       } else {
         const payload: any = {
           conversationId: conversation._id,
-          text: message.trim(),
+          text: currentMessage,
           messageType: 'text',
         };
 
@@ -269,10 +321,8 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
           });
         }
       }
-
-      setMessage("");
-      setReplyingTo(null);
     } catch (error) {
+      // Restore message on error if needed, but usually better to just toast
       toast.error(editingMessage ? "Failed to edit message" : "Failed to send message");
     }
   };
@@ -429,7 +479,7 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-bold truncate leading-tight">{participant?.name}</span>
             <span className="text-[10px] text-muted-foreground leading-tight">
-              {otherUserTyping ? "Typing..." : isOnline ? "Active now" : "Offline"}
+              {isOnline ? "Active now" : "Offline"}
             </span>
           </div>
         </div>
@@ -484,6 +534,7 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
           messages.map((msg, idx) => {
             const isMe = msg.sender._id !== participant?._id;
             const showAvatar = !isMe && (idx === 0 || messages[idx-1]?.sender._id !== msg.sender._id);
+            const isLast = idx === messages.length - 1;
             
             let repliedMessage: any = null;
             if (msg.replyTo) {
@@ -506,9 +557,24 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
                 onDelete={handleDelete}
                 onReact={handleReact}
                 repliedMessage={repliedMessage}
+                isLast={isLast}
               />
             );
           })
+        )}
+
+        {otherUserTyping && (
+          <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
+            <Avatar className="w-8 h-8 border border-border">
+              <AvatarImage src={participant?.avatar?.url || ""} />
+              <AvatarFallback className="text-[10px]">{participant?.name?.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="bg-muted/50 rounded-2xl px-3 py-2 flex items-center gap-1 shadow-sm">
+              <div className="w-1.5 h-1.5 bg-muted-foreground/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+              <div className="w-1.5 h-1.5 bg-muted-foreground/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+              <div className="w-1.5 h-1.5 bg-muted-foreground/40 rounded-full animate-bounce" />
+            </div>
+          </div>
         )}
       </div>
 

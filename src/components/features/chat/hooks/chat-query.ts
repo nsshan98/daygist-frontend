@@ -1,6 +1,7 @@
 import { axiosClient } from "@/lib/axios-client";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ConversationsResponse, MessagesResponse, ChatMessage } from "@/types";
+import { useGetUserProfile } from "@/components/features/profile/hooks/profile-query";
 
 export interface SendMessagePayload {
   conversationId: string;
@@ -10,6 +11,11 @@ export interface SendMessagePayload {
     url: string;
     key: string;
     provider: string;
+  };
+  mediaMeta?: {
+    duration?: number;
+    size?: number;
+    mimeType?: string;
   };
   replyTo?: {
     message: string;
@@ -66,6 +72,8 @@ export const useGetMessages = (conversationId: string) => {
 
 export const useSendMessage = () => {
   const queryClient = useQueryClient();
+  const { showUserProfileQuery } = useGetUserProfile();
+  const currentUser = showUserProfileQuery.data?.data;
 
   return useMutation({
     mutationFn: async (payload: SendMessagePayload) => {
@@ -75,10 +83,101 @@ export const useSendMessage = () => {
       );
       return data;
     },
-    onSuccess: (_, variables) => {
-      // Invalidate messages for this conversation
+    onMutate: async (newMessage) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["messages", newMessage.conversationId] });
+
+      // Snapshot the previous value
+      const previousMessages = queryClient.getQueryData(["messages", newMessage.conversationId]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(["messages", newMessage.conversationId], (old: any) => {
+        if (!old) return old;
+        
+        const newPages = [...old.pages];
+        const lastPageIndex = newPages.length - 1;
+        
+        if (lastPageIndex < 0) return old;
+
+        // Create a temporary message object
+        const tempMessage: ChatMessage = {
+          _id: `temp-${Date.now()}`,
+          conversationId: newMessage.conversationId,
+          text: newMessage.text || "",
+          messageType: newMessage.messageType || "text",
+          media: newMessage.media ? {
+            url: newMessage.media.url,
+            key: newMessage.media.key,
+            provider: newMessage.media.provider,
+          } : { url: "", key: "", provider: "wasabi" },
+          mediaMeta: {
+            duration: newMessage.mediaMeta?.duration || 0,
+            size: newMessage.mediaMeta?.size || 0,
+            mimeType: newMessage.mediaMeta?.mimeType || "",
+          },
+          sender: currentUser ? {
+            _id: currentUser._id,
+            name: currentUser.name,
+            avatar: currentUser.avatar,
+            username: currentUser.username,
+            isOnline: true,
+          } as any : { _id: "me", name: "Me", username: "me", avatar: { url: null, key: null, provider: "wasabi" } } as any,
+          receiver: {} as any, // Temporary receiver info
+          seen: false,
+          delivered: false,
+          seenAt: null,
+          deliveredAt: null,
+          isDeleted: false,
+          reactions: [],
+          replyTo: newMessage.replyTo || null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          __v: 0,
+        };
+
+        newPages[lastPageIndex] = {
+          ...newPages[lastPageIndex],
+          data: [...newPages[lastPageIndex].data, tempMessage],
+        };
+        
+        return { ...old, pages: newPages };
+      });
+
+      return { previousMessages };
+    },
+    onError: (err, newMessage, context: any) => {
+      if (context?.previousMessages) {
+        queryClient.setQueryData(
+          ["messages", newMessage.conversationId],
+          context.previousMessages
+        );
+      }
+    },
+    onSettled: (data, error, variables) => {
       queryClient.invalidateQueries({ queryKey: ["messages", variables.conversationId] });
-      // Also invalidate conversations list to update last message
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+};
+
+export const useMarkMessagesAsSeen = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (conversationId: string) => {
+      const { data } = await axiosClient.patch<{
+        success: boolean;
+        message: string;
+        data: {
+          conversationId: string;
+          updatedCount: number;
+          messageIds: string[];
+        };
+      }>(`/chat/messages/seen/${conversationId}`);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["messages", data.data.conversationId] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
@@ -128,8 +227,20 @@ export const useReactToMessage = () => {
       );
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["messages"] });
+    onSuccess: (response) => {
+      const updatedMessage = response.data;
+      queryClient.setQueryData(["messages", updatedMessage.conversationId], (old: any) => {
+        if (!old) return old;
+        
+        const newPages = old.pages.map((page: any) => ({
+          ...page,
+          data: page.data.map((msg: ChatMessage) => 
+            msg._id === updatedMessage._id ? updatedMessage : msg
+          )
+        }));
+        
+        return { ...old, pages: newPages };
+      });
     },
   });
 };

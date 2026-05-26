@@ -14,6 +14,8 @@ import {
 } from "@/components/atoms/dropdown-menu";
 import { useGetConversations, useUpdateConversationStatus } from "../hooks/chat-query";
 import { useChatStore } from "../stores/chat-store";
+import { useSocket } from "../context/socket-context";
+import { useQueryClient } from "@tanstack/react-query";
 import { useGetUserProfile } from "@/components/features/profile/hooks/profile-query";
 import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "next/navigation";
@@ -64,6 +66,29 @@ const ChatDropdown = () => {
   }, [conversations, activeTab, currentUser?._id]);
 
   const totalUnreadCount = conversations.reduce((acc, conv) => acc + (conv.myUnreadCount || 0), 0);
+
+  const { socket } = useSocket();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleConversationUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    };
+
+    const handleReceiveMessage = () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    };
+
+    socket.on("conversation-updated", handleConversationUpdate);
+    socket.on("receive-message", handleReceiveMessage);
+
+    return () => {
+      socket.off("conversation-updated", handleConversationUpdate);
+      socket.off("receive-message", handleReceiveMessage);
+    };
+  }, [socket, queryClient]);
 
   useEffect(() => {
     if (observerRef.current) observerRef.current.disconnect();
