@@ -496,7 +496,7 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
 
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-3 space-y-4 no-scrollbar bg-accent/5"
+        className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-4 no-scrollbar bg-accent/5"
       >
         <div ref={topRef} className="h-1 flex items-center justify-center">
           {isFetchingNextPage && <Loader2 className="w-4 h-4 animate-spin text-primary" />}

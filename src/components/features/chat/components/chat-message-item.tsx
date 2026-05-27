@@ -163,7 +163,7 @@ export const ChatMessageItem = ({
   return (
     <div 
       className={cn(
-        "flex flex-col group/msg",
+        "flex flex-col group/msg w-full",
         isMe ? "items-end" : "items-start",
         repliedMessage ? "mt-4" : "mt-1"
       )}
@@ -211,7 +211,7 @@ export const ChatMessageItem = ({
       )}
 
       <div className={cn(
-        "flex items-end gap-2 max-w-[85%] relative z-10",
+        "flex items-end gap-2 max-w-[85%] md:max-w-[75%] relative z-10",
         isMe ? "flex-row-reverse" : "flex-row"
       )}>
         {!isMe && (
@@ -229,12 +229,71 @@ export const ChatMessageItem = ({
           {/* Sending Time (Hover) */}
           <div className={cn(
             "absolute top-1/2 -translate-y-1/2 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-0",
-            isMe ? "left-full ml-2" : "right-full mr-2",
-            isHovered ? "opacity-100" : "opacity-0"
+            isMe ? "right-2" : "left-2",
+            isHovered ? "opacity-100 -translate-y-[180%]" : "opacity-0"
           )}>
-            <span className="text-[10px] text-muted-foreground bg-background/80 backdrop-blur-sm px-1.5 py-0.5 rounded-md shadow-sm border border-border/50">
+            <span className="text-[10px] text-white bg-black/80 backdrop-blur-sm px-2 py-1 rounded-full shadow-md font-medium">
               {format(new Date(message.createdAt), 'p')}
             </span>
+          </div>
+
+          {/* Action Buttons (Hover) */}
+          <div className={cn(
+            "absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 transition-opacity duration-200 z-20",
+            isMe ? "right-full mr-2 flex-row-reverse" : "left-full ml-2 flex-row",
+            isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
+          )}>
+            {/* Reactions Popover */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="h-7 w-7 rounded-full bg-accent/50 hover:bg-accent flex items-center justify-center transition-colors">
+                  <Smile className="h-4 w-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent side="top" className="w-fit p-1 rounded-full flex items-center gap-1 shadow-lg border border-border bg-card">
+                {COMMON_EMOJIS.map(emoji => (
+                  <button
+                    key={emoji}
+                    onClick={() => onReact(message._id, emoji)}
+                    className="w-8 h-8 flex items-center justify-center text-lg hover:scale-125 transition-transform"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
+
+            {/* Reply Button */}
+            <button 
+              className="h-7 w-7 rounded-full bg-accent/50 hover:bg-accent flex items-center justify-center transition-colors"
+              onClick={() => onReply(message)}
+            >
+              <ReplyIcon className="h-4 w-4" />
+            </button>
+
+            {/* More Actions (Edit/Delete) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="h-7 w-7 rounded-full bg-accent/50 hover:bg-accent flex items-center justify-center transition-colors">
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align={isMe ? "end" : "start"} className="w-32 rounded-xl">
+                {isMe && message.messageType === 'text' && (
+                  <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => onEdit(message)}>
+                    <Pencil className="h-4 w-4" />
+                    <span>Edit</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem 
+                  className="gap-2 text-destructive focus:text-destructive cursor-pointer" 
+                  onClick={() => onDelete(message._id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>Delete</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <div className={cn(
@@ -273,71 +332,10 @@ export const ChatMessageItem = ({
             </div>
           )}
         </div>
-
-        {/* Action Buttons (Hover) */}
-        <div className={cn(
-          "flex items-center gap-0.5 transition-opacity duration-200",
-          isHovered ? "opacity-100" : "opacity-0 pointer-events-none",
-          isMe ? "flex-row-reverse" : "flex-row"
-        )}>
-          {/* Reactions Popover */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full bg-accent/50 hover:bg-accent">
-                <Smile className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent side="top" className="w-fit p-1 rounded-full flex items-center gap-1 shadow-lg">
-              {COMMON_EMOJIS.map(emoji => (
-                <button
-                  key={emoji}
-                  onClick={() => onReact(message._id, emoji)}
-                  className="w-8 h-8 flex items-center justify-center text-lg hover:scale-125 transition-transform"
-                >
-                  {emoji}
-                </button>
-              ))}
-            </PopoverContent>
-          </Popover>
-
-          {/* Reply Button */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-7 w-7 rounded-full bg-accent/50 hover:bg-accent"
-            onClick={() => onReply(message)}
-          >
-            <ReplyIcon className="h-4 w-4" />
-          </Button>
-
-          {/* More Actions (Edit/Delete) */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full bg-accent/50 hover:bg-accent">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align={isMe ? "end" : "start"} className="w-32 rounded-xl">
-              {isMe && message.messageType === 'text' && (
-                <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => onEdit(message)}>
-                  <Pencil className="h-4 w-4" />
-                  <span>Edit</span>
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem 
-                className="gap-2 text-destructive focus:text-destructive cursor-pointer" 
-                onClick={() => onDelete(message._id)}
-              >
-                <Trash2 className="h-4 w-4" />
-                <span>Delete</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
       </div>
 
       {isLast && isMe && message.seen && message.seenAt && (
-        <div className="mt-2 mr-1 animate-in fade-in slide-in-from-top-1 duration-300">
+        <div className="mt-2 mr-0 animate-in fade-in slide-in-from-top-1 duration-300">
           <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
             <span>Seen</span>
             <span>{format(new Date(message.seenAt), 'p')}</span>
