@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Bell, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/atoms/button";
 import { Badge } from "@/components/atoms/badge";
+import { Skeleton } from "@/components/atoms/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +16,22 @@ import { useGetNotifications, useMarkAllSeen, useMarkNotificationSeen } from "..
 import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "next/navigation";
 import type { Notification } from "@/types";
+
+const NotificationSkeleton = () => {
+  return (
+    <div className="space-y-1">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="flex items-start gap-3 px-4 py-3">
+          <Skeleton className="flex-shrink-0 w-10 h-10 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const NotificationDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -74,9 +91,7 @@ const NotificationDropdown = () => {
         <DropdownMenuSeparator />
         <div className="max-h-[400px] overflow-y-auto">
           {notificationsQuery.isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
+            <NotificationSkeleton />
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
               <Bell className="w-12 h-12 text-muted-foreground mb-3" />

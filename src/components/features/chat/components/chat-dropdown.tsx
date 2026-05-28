@@ -20,9 +20,29 @@ import { useGetUserProfile } from "@/components/features/profile/hooks/profile-q
 import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
+import { Skeleton } from "@/components/atoms/skeleton";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/atoms/input";
 import type { Conversation } from "@/types";
+
+const ChatSkeleton = () => {
+  return (
+    <div className="py-2 space-y-1">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div key={i} className="flex items-center gap-3 px-4 py-3">
+          <Skeleton className="w-14 h-14 rounded-full flex-shrink-0" />
+          <div className="flex-1 space-y-2 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-3 w-12" />
+            </div>
+            <Skeleton className="h-3 w-3/4" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const ChatDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -198,9 +218,7 @@ const ChatDropdown = () => {
 
         <div className="max-h-[450px] overflow-y-auto no-scrollbar">
           {isLoading && filteredConversations.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
+            <ChatSkeleton />
           ) : filteredConversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">

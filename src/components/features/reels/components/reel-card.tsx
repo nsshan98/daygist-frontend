@@ -15,13 +15,19 @@ import {
   Pause,
   X,
   Send,
-  Reply
+  Reply,
+  ChevronUp,
+  ChevronDown,
+  MoreHorizontal,
+  UserPlus,
+  UserMinus
 } from "lucide-react";
 import { useSignedMedia } from "@/components/features/profile/components/media-image";
 import { cn } from "@/lib/utils";
 import { useLikePost, useUnlikePost, useSavePost, useUnsavePost, useSharePost } from "@/components/features/home/hooks/feed-query";
 import { useGetUserProfile } from "@/components/features/profile/hooks/profile-query";
 import { useGetComments, useCreateComment, useGetReplies } from "@/components/features/home/hooks/comment-query";
+import { useFollowUser, useUnfollowUser } from "@/components/features/follow/hooks/follow-query";
 import { Comment } from "@/types";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -380,6 +386,38 @@ export function ReelCard({ reel, index, isActive, onNext, onPrevious, hasNext, h
     );
   };
 
+  const { followUserMutation } = useFollowUser();
+  const { unfollowUserMutation } = useUnfollowUser();
+  const [progress, setProgress] = useState(0);
+
+  // Handle follow toggle
+  const handleFollowToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const isFollowing = reel.author.isFollowing || reel.isFollowingAuthor;
+    if (isFollowing) {
+      unfollowUserMutation.mutate(reel.author._id);
+    } else {
+      followUserMutation.mutate(reel.author._id);
+    }
+  };
+
+  // Update progress
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const updateProgress = () => {
+      if (video.duration) {
+        const percentage = (video.currentTime / video.duration) * 100;
+        setProgress(percentage);
+      }
+    };
+
+    video.addEventListener("timeupdate", updateProgress);
+    return () => video.removeEventListener("timeupdate", updateProgress);
+  }, []);
+
   // Handle video click (play/pause)
   const handleVideoClick = () => {
     const video = videoRef.current;
@@ -431,151 +469,189 @@ export function ReelCard({ reel, index, isActive, onNext, onPrevious, hasNext, h
     }
   }, [isCommentPanelOpen]);
 
+  const isFollowing = reel.author.isFollowing || reel.isFollowingAuthor;
+
   return (
     <>
-      <div className="w-full h-screen snap-start snap-always relative flex items-center justify-center bg-black">
-        {/* Video Container */}
-        <div className="relative w-full max-w-md mx-auto h-full flex items-center justify-center">
-          {/* Video */}
-          <video
-            ref={videoRef}
-            src={videoUrl}
-            className="w-full h-full object-contain"
-            loop
-            muted={isMuted}
-            autoPlay={isActive}
-            onClick={handleVideoClick}
-          />
+      <div className="w-full h-full snap-start snap-always relative flex items-center justify-center bg-background overflow-hidden">
+        {/* Navigation Arrows Column (Far Right of Page) */}
+        <div className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-30">
+          <button
+            onClick={onPrevious}
+            disabled={!hasPrevious}
+            className={cn(
+              "p-2.5 rounded-full bg-muted/80 hover:bg-muted border border-border text-foreground transition-all shadow-lg backdrop-blur-sm",
+              !hasPrevious ? "opacity-30 cursor-not-allowed" : "hover:scale-110 active:scale-95"
+            )}
+          >
+            <ChevronUp className="w-5 h-5" />
+          </button>
+          <button
+            onClick={onNext}
+            disabled={!hasNext}
+            className={cn(
+              "p-2.5 rounded-full bg-muted/80 hover:bg-muted border border-border text-foreground transition-all shadow-lg backdrop-blur-sm",
+              !hasNext ? "opacity-30 cursor-not-allowed" : "hover:scale-110 active:scale-95"
+            )}
+          >
+            <ChevronDown className="w-5 h-5" />
+          </button>
+        </div>
 
-          {/* Play/Pause Indicator */}
-          {!isPlaying && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
-              <Play className="w-20 h-20 text-white/80" />
-            </div>
-          )}
+        {/* Main Content Wrapper */}
+        <div className="relative flex items-end gap-4 h-full max-h-[calc(100vh-100px)] py-4">
+          
+          {/* Video Container */}
+          <div className="relative aspect-[9/16] h-full rounded-2xl overflow-hidden bg-zinc-900 group/video shadow-2xl">
+            {/* Video */}
+            <video
+              ref={videoRef}
+              src={videoUrl}
+              className="w-full h-full object-cover cursor-pointer"
+              loop
+              muted={isMuted}
+              autoPlay={isActive}
+              onClick={handleVideoClick}
+            />
 
-          {/* Right Side Actions */}
-          <div className="absolute right-4 bottom-32 flex flex-col items-center gap-6 z-10">
-            {/* Like */}
+            {/* Play/Pause Indicator Overlay */}
+            {!isPlaying && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none transition-opacity">
+                <Play className="w-16 h-16 text-white/90 fill-white/20" />
+              </div>
+            )}
+
+            {/* Mute/Unmute Toggle */}
             <button
-              onClick={handleLike}
-              className="flex flex-col items-center gap-1 group"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMuted(!isMuted);
+              }}
+              className="absolute top-4 right-4 p-2 bg-black/40 hover:bg-black/60 text-white rounded-full transition-colors z-20 backdrop-blur-sm"
             >
-              <div className="p-3 rounded-full bg-black/40 hover:bg-black/60 transition-colors">
+              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            </button>
+
+            {/* Bottom Info Overlay */}
+            <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10">
+              <div className="flex items-center gap-3 mb-4">
+                <Link 
+                  href={`/${reel.author.username}?id=${reel.author._id}`} 
+                  className="hover:opacity-90 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Avatar className="h-10 w-10 border-2 border-white/20 ring-2 ring-black/20">
+                    <AvatarImage src={avatarUrl} alt={reel.author.name} />
+                    <AvatarFallback className="bg-primary text-white text-xs">{reel.author.name[0]}</AvatarFallback>
+                  </Avatar>
+                </Link>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Link 
+                      href={`/${reel.author.username}?id=${reel.author._id}`}
+                      className="text-white font-bold text-sm hover:underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {reel.author.name}
+                    </Link>
+                    {!reel.author.isMe && (
+                      <button 
+                        onClick={handleFollowToggle}
+                        disabled={followUserMutation.isPending || unfollowUserMutation.isPending}
+                        className={cn(
+                          "px-3 py-1 rounded-full text-xs font-bold transition-all border",
+                          isFollowing 
+                            ? "bg-white/10 border-white/20 text-white hover:bg-white/20" 
+                            : "bg-white border-white text-black hover:bg-white/90"
+                        )}
+                      >
+                        {followUserMutation.isPending || unfollowUserMutation.isPending ? "..." : (isFollowing ? "Following" : "Follow")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {reel.text && (
+                <p className="text-white text-sm mb-2 line-clamp-2 leading-relaxed drop-shadow-md">
+                  {reel.text}
+                </p>
+              )}
+            </div>
+
+            {/* Video Progress Bar */}
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-white/20 z-20">
+              <div 
+                className="h-full bg-white transition-all duration-150 ease-linear shadow-[0_0_8px_rgba(255,255,255,0.8)]" 
+                style={{ width: `${progress}%` }} 
+              />
+            </div>
+          </div>
+
+          {/* Right Side Actions Column */}
+          <div className="flex flex-col items-center gap-5 z-10 mb-2">
+            {/* Like */}
+            <div className="flex flex-col items-center gap-1.5">
+              <button
+                onClick={handleLike}
+                className="p-3 rounded-full bg-muted/80 hover:bg-muted transition-all text-foreground hover:scale-110 active:scale-95 shadow-sm"
+              >
                 <Heart 
                   className={cn(
-                    "w-7 h-7 transition-colors",
-                    reel.isLiked ? "fill-red-500 text-red-500" : "text-white"
+                    "w-5 h-5 transition-all",
+                    reel.isLiked ? "fill-red-500 text-red-500" : "text-foreground"
                   )} 
                 />
-              </div>
-              <span className="text-white text-xs font-medium">
+              </button>
+              <span className="text-foreground text-[11px] font-bold">
                 {formatNumber(reel.likeCount)}
               </span>
-            </button>
+            </div>
 
-            {/* Comment Count */}
-            <button 
-              onClick={handleComment}
-              className="flex flex-col items-center gap-1 group"
-            >
-              <div className="p-3 rounded-full bg-black/40 hover:bg-black/60 transition-colors">
-                <MessageCircle className="w-7 h-7 text-white" />
-              </div>
-              <span className="text-white text-xs font-medium">
+            {/* Comment */}
+            <div className="flex flex-col items-center gap-1.5">
+              <button 
+                onClick={handleComment}
+                className="p-3 rounded-full bg-muted/80 hover:bg-muted transition-all text-foreground hover:scale-110 active:scale-95 shadow-sm"
+              >
+                <MessageCircle className="w-5 h-5" />
+              </button>
+              <span className="text-foreground text-[11px] font-bold">
                 {formatNumber(reel.commentCount)}
               </span>
-            </button>
+            </div>
 
             {/* Share */}
-            <button
-              onClick={handleShare}
-              className="flex flex-col items-center gap-1 group"
-            >
-              <div className="p-3 rounded-full bg-black/40 hover:bg-black/60 transition-colors">
-                <Share2 className="w-7 h-7 text-white" />
-              </div>
-              <span className="text-white text-xs font-medium">
-                {formatNumber(reel.shareCount)}
+            <div className="flex flex-col items-center gap-1.5">
+              <button
+                onClick={handleShare}
+                className="p-3 rounded-full bg-muted/80 hover:bg-muted transition-all text-foreground hover:scale-110 active:scale-95 shadow-sm"
+              >
+                <Share2 className="w-5 h-5" />
+              </button>
+              <span className="text-foreground text-[11px] font-bold">
+                {formatNumber(reel.shareCount || 0)}
               </span>
-            </button>
+            </div>
 
             {/* Save */}
-            <button
-              onClick={handleSave}
-              className="flex flex-col items-center gap-1 group"
-            >
-              <div className="p-3 rounded-full bg-black/40 hover:bg-black/60 transition-colors">
+            <div className="flex flex-col items-center gap-1.5">
+              <button
+                onClick={handleSave}
+                className="p-3 rounded-full bg-muted/80 hover:bg-muted transition-all text-foreground hover:scale-110 active:scale-95 shadow-sm"
+              >
                 <Bookmark 
                   className={cn(
-                    "w-7 h-7 transition-colors",
-                    reel.isSaved ? "fill-white text-white" : "text-white"
+                    "w-5 h-5 transition-all",
+                    reel.isSaved ? "fill-primary text-primary" : "text-foreground"
                   )} 
                 />
-              </div>
-              <span className="text-white text-xs font-medium">
-                {formatNumber(reel.saveCount)}
+              </button>
+              <span className="text-foreground text-[11px] font-bold">
+                {formatNumber(reel.saveCount || 0)}
               </span>
-            </button>
+            </div>
           </div>
-
-          {/* Bottom Info */}
-          <div className="absolute left-4 right-20 bottom-8 z-10">
-            <Link href={`/${reel.author.username}?id=${reel.author._id}`} className="flex items-center gap-3 mb-3 hover:opacity-80 transition-opacity">
-              <Avatar className="h-10 w-10 border-2 border-white">
-                <AvatarImage src={avatarUrl} alt={reel.author.name} />
-                <AvatarFallback>{reel.author.name[0]}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <p className="text-white font-semibold text-sm">
-                  {reel.author.name}
-                </p>
-                <p className="text-white/70 text-xs">
-                  @{reel.author.username} • {formatRelativeTime(reel.createdAt)}
-                </p>
-              </div>
-            </Link>
-
-            {reel.text && (
-              <p className="text-white text-sm mb-2 line-clamp-2">
-                {reel.text}
-              </p>
-            )}
-          </div>
-
-          {/* Mute/Unmute Button */}
-          <button
-            onClick={() => setIsMuted(!isMuted)}
-            className="absolute top-4 left-4 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors z-10"
-          >
-            {isMuted ? (
-              <VolumeX className="w-5 h-5" />
-            ) : (
-              <Volume2 className="w-5 h-5" />
-            )}
-          </button>
-
-          {/* Navigation Arrows */}
-          {hasPrevious && onPrevious && (
-            <button
-              onClick={onPrevious}
-              className="absolute top-1/2 left-4 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/70 text-white rounded-full transition-all z-20 hover:scale-110"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-              </svg>
-            </button>
-          )}
-          {hasNext && onNext && (
-            <button
-              onClick={onNext}
-              className="absolute top-1/2 right-4 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/70 text-white rounded-full transition-all z-20 hover:scale-110"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-          )}
         </div>
       </div>
 

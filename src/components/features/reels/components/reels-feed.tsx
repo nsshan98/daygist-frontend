@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { ReelCard } from "./reel-card";
 import { useGetGeneralVideos, useGetReelsVideos } from "../hooks/reels-query";
@@ -9,9 +10,25 @@ import { Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/atoms/tabs";
 
 export function ReelsFeed() {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState<"reels" | "general">("reels");
+  const [activeTab, setActiveTab] = useState<"reels" | "general">((tabParam as "reels" | "general") || "reels");
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Update active tab when URL param changes
+  useEffect(() => {
+    if (tabParam && (tabParam === "reels" || tabParam === "general")) {
+      setActiveTab(tabParam as "reels" | "general");
+      setCurrentIndex(0);
+      
+      // Scroll to top when tab changes
+      if (containerRef.current) {
+        containerRef.current.scrollTop = 0;
+      }
+    }
+  }, [tabParam]);
 
   const { reelsQuery } = useGetReelsVideos();
   const { videosQuery: generalVideosQuery } = useGetGeneralVideos();
@@ -73,41 +90,41 @@ export function ReelsFeed() {
 
   if (isLoading && videos.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-black">
-        <Loader2 className="w-8 h-8 animate-spin text-white mb-4" />
-        <p className="text-white text-sm">Loading videos...</p>
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground text-sm">Loading videos...</p>
       </div>
     );
   }
 
   if (videos.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-black text-white">
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] bg-background text-foreground">
         <p className="text-lg mb-2">No videos available</p>
-        <p className="text-sm text-white/60">Try switching tabs or check back later</p>
+        <p className="text-sm text-muted-foreground">Try switching tabs or check back later</p>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-black flex flex-col">
+    <div className="h-[calc(100vh-64px)] bg-background flex flex-col overflow-hidden">
       {/* Tabs - Always visible at top, aligned with video width */}
-      <div className="flex justify-center py-4 bg-black z-50">
+      <div className="flex justify-center py-4 bg-background z-50">
         <div className="w-full max-w-md px-4">
           <Tabs value={activeTab} onValueChange={(value) => {
             setActiveTab(value as "reels" | "general");
             setCurrentIndex(0);
           }} className="w-full">
-            <TabsList className="bg-black/60 backdrop-blur-md border border-white/20 w-full">
+            <TabsList className="bg-muted/60 backdrop-blur-md border border-border w-full">
               <TabsTrigger 
                 value="reels" 
-                className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 flex-1"
+                className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary text-muted-foreground flex-1"
               >
                 Reels
               </TabsTrigger>
               <TabsTrigger 
                 value="general" 
-                className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 flex-1"
+                className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary text-muted-foreground flex-1"
               >
                 Videos
               </TabsTrigger>

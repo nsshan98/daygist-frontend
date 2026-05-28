@@ -10,6 +10,7 @@ import { useUploadImage, useUploadVoice } from "@/components/features/home/hooks
 import { useChatStore } from "../stores/chat-store";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/atoms/skeleton";
 import { ChatMessageItem } from "./chat-message-item";
 import { VoiceRecorder } from "./voice-recorder";
 import { useSocket } from "../context/socket-context";
@@ -21,6 +22,22 @@ import type { Conversation, ChatMessage } from "@/types";
 interface ChatWindowProps {
   conversation: Conversation;
 }
+
+const MessageSkeleton = () => {
+  return (
+    <div className="space-y-4">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className={cn("flex gap-2", i % 2 === 0 ? "flex-row-reverse" : "flex-row")}>
+          <Skeleton className="w-8 h-8 rounded-full shrink-0" />
+          <div className={cn("space-y-2 max-w-[70%]", i % 2 === 0 ? "items-end" : "items-start")}>
+            <Skeleton className={cn("h-10 rounded-2xl w-[150px]", i % 2 === 0 ? "rounded-tr-none" : "rounded-tl-none")} />
+            <Skeleton className="h-3 w-12" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const ChatWindow = ({ conversation }: ChatWindowProps) => {
   const [message, setMessage] = useState("");
@@ -503,9 +520,7 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          </div>
+          <MessageSkeleton />
         ) : isReceivedRequest && messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4 space-y-4">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary">

@@ -25,7 +25,8 @@ import { useGetMonetizationStatus } from "@/components/features/monetization";
 
 const navItems = [
   { label: "Home", icon: Home, href: "/" },
-  { label: "Reels", icon: SquarePlay, href: "/reels" },
+  { label: "Reels", icon: SquarePlay, href: "/reels?tab=reels" },
+  { label: "Videos", icon: Video, href: "/reels?tab=general" },
   { label: "Groups", icon: Users, href: "/groups" },
   { label: "Saved", icon: Bookmark, href: "/saved-posts" },
   { label: "Monetization", icon: DollarSign, href: "/monetization" },
