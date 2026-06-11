@@ -64,6 +64,7 @@ export interface FeedPostData {
   feedType: "post";
   isFollowingAuthor: boolean;
   isLiked: boolean;
+  reaction: string | null;
   isSave: boolean;
   isSaved: boolean;
   isShared: boolean;
@@ -100,6 +101,7 @@ export interface SavedPost {
   createdAt: string;
   updatedAt: string;
   isLiked?: boolean;
+  reaction?: string | null;
 }
 
 // ===============================|| POST API RESPONSES ||============================== //
@@ -156,6 +158,7 @@ export interface LikeResponse {
     id: string;
     type: string;
     isLiked: boolean;
+    reaction: string | null;
     likeCount: number;
   };
 }

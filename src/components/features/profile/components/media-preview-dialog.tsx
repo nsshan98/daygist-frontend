@@ -37,6 +37,7 @@ import {
   useSharePost,
   useGetPostDetail,
 } from "@/components/features/home/hooks/feed-query";
+import { ReactionPicker } from "@/components/shared/reaction-picker";
 
 // Format relative time
 const formatRelativeTime = (dateString: string) => {
@@ -253,15 +254,15 @@ export function MediaPreviewDialog({
   const { unsavePostMutation } = useUnsavePost();
   const { sharePostMutation } = useSharePost();
 
-  // Handle like/unlike
-  const handleLikeToggle = () => {
+  // Handle reaction
+  const handleReact = (reaction: string) => {
     if (!updatedPost) return;
-    
-    if (updatedPost.isLiked) {
-      unlikePostMutation.mutate(updatedPost._id);
-    } else {
-      likePostMutation.mutate(updatedPost._id);
-    }
+    likePostMutation.mutate({ postId: updatedPost._id, reaction });
+  };
+
+  const handleRemoveReact = () => {
+    if (!updatedPost) return;
+    unlikePostMutation.mutate(updatedPost._id);
   };
 
   // Handle save/unsave
@@ -391,15 +392,22 @@ export function MediaPreviewDialog({
 
             {/* Action Buttons */}
             <div className="flex items-center gap-1 py-2">
-              <Button
-                variant="ghost"
+              <ReactionPicker
+                isLiked={updatedPost?.isLiked || false}
+                currentReaction={updatedPost?.reaction}
+                likeCount={updatedPost?.likeCount || 0}
+                onReact={handleReact}
+                onRemoveReact={handleRemoveReact}
+                isLoading={likePostMutation.isPending || unlikePostMutation.isPending}
                 size="sm"
-                onClick={handleLikeToggle}
-                className={`flex-1 gap-1 ${updatedPost?.isLiked ? "text-red-500" : ""}`}
-              >
-                <Heart className={`h-4 w-4 ${updatedPost?.isLiked ? "fill-current" : ""}`} />
-                <span className="text-xs">Like</span>
-              </Button>
+                iconSize="sm"
+                showCount={false}
+                buttonText="Like"
+                showLabel={true}
+                buttonClassName="flex-1 gap-1"
+                activeClassName="text-red-500"
+                hoverClassName=""
+              />
               <Button variant="ghost" size="sm" className="flex-1 gap-1">
                 <MessageCircle className="h-4 w-4" />
                 <span className="text-xs">Comment</span>

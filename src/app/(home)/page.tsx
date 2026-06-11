@@ -138,12 +138,21 @@ export default function Home() {
 
   // Handle like action
   const handleLike = (postId: string) => {
-    likePostMutation.mutate(postId);
+    likePostMutation.mutate({ postId });
   };
 
   // Handle save action
   const handleSave = (postId: string) => {
     savePostMutation.mutate(postId);
+  };
+
+  // Handle react for comment dialog
+  const handleReact = (postId: string, reaction: string) => {
+    likePostMutation.mutate({ postId, reaction });
+  };
+
+  const handleRemoveReact = (postId: string) => {
+    unlikePostMutation.mutate(postId);
   };
 
   // Handle like/unlike for comment dialog
@@ -153,7 +162,7 @@ export default function Home() {
       if (post.data.isLiked) {
         unlikePostMutation.mutate(postId);
       } else {
-        likePostMutation.mutate(postId);
+        likePostMutation.mutate({ postId });
       }
     }
   };
@@ -309,6 +318,8 @@ export default function Home() {
             onSaveToggle={handleSaveToggle}
             isLiking={likePostMutation.isPending || unlikePostMutation.isPending}
             isSaving={savePostMutation.isPending || unsavePostMutation.isPending}
+            onReact={handleReact}
+            onRemoveReact={handleRemoveReact}
             currentUser={currentUser ? {
               name: currentUser.name,
               avatar: currentUser.avatar

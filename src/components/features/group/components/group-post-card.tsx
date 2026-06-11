@@ -26,6 +26,7 @@ import { EditGroupPostDialog } from "./edit-group-post-dialog";
 import { GroupCommentDialog } from "./group-comment-dialog";
 import { toast } from "sonner";
 import { GroupPostData } from "@/types";
+import { ReactionPicker } from "@/components/shared/reaction-picker";
 
 interface GroupPostCardProps {
   post: GroupPostData;
@@ -61,13 +62,13 @@ export function GroupPostCard({
   const { data: signedCurrentUserAvatar } = useSignedUrl(author?.avatar?.key || null);
   const currentUserAvatarUrl = signedCurrentUserAvatar || author?.avatar?.url;
 
-  const handleLikeToggle = () => {
-    const isLiked = (post as any).isLiked || false;
-    if (isLiked) {
-      unlikeGroupPostMutation.mutate(post._id);
-    } else {
-      likeGroupPostMutation.mutate(post._id);
-    }
+  const handleReact = (reaction: string) => {
+    likeGroupPostMutation.mutate({ postId: post._id, reaction });
+    onLike?.(post._id);
+  };
+
+  const handleRemoveReact = () => {
+    unlikeGroupPostMutation.mutate(post._id);
     onLike?.(post._id);
   };
 
@@ -235,18 +236,21 @@ export function GroupPostCard({
       <CardFooter className="flex flex-col pt-0">
         {/* Action buttons */}
         <div className="flex items-center justify-between w-full pt-4 border-t">
-          <Button
-            variant="ghost"
+          <ReactionPicker
+            isLiked={(post as any).isLiked || false}
+            currentReaction={(post as any).reaction}
+            likeCount={post.counts?.likeCount || 0}
+            onReact={handleReact}
+            onRemoveReact={handleRemoveReact}
+            isLoading={likeGroupPostMutation.isPending || unlikeGroupPostMutation.isPending}
             size="sm"
-            onClick={handleLikeToggle}
-            disabled={likeGroupPostMutation.isPending || unlikeGroupPostMutation.isPending}
-            className={`group/like relative overflow-hidden rounded-xl transition-all duration-300 hover:scale-110 ${(post as any).isLiked ? 'text-red-500' : 'hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30'}`}
-          >
-            {/* Like animation background */}
-            <div className="absolute inset-0 bg-red-500/10 scale-0 group-hover/like:scale-100 transition-transform duration-300 rounded-xl" />
-            <Heart className={`h-5 w-5 relative z-10 transition-all duration-300 ${(post as any).isLiked ? 'fill-current scale-110' : 'group-hover/like:scale-125'}`} />
-            <span className="relative z-10 ml-1">{post.counts?.likeCount || 0}</span>
-          </Button>
+            iconSize="sm"
+            showCount={true}
+            buttonClassName="rounded-xl"
+            activeClassName="hover:bg-red-50 dark:hover:bg-red-950/30"
+            hoverClassName="hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
+            countClassName="ml-0"
+          />
 
           <Button
             variant="ghost"

@@ -31,6 +31,7 @@ import { useFollowUser, useUnfollowUser } from "@/components/features/follow/hoo
 import { Comment } from "@/types";
 import { toast } from "sonner";
 import Link from "next/link";
+import { ReactionPicker } from "@/components/shared/reaction-picker";
 import { Input } from "@/components/atoms/input";
 import { Skeleton } from "@/components/atoms/skeleton";
 
@@ -284,13 +285,13 @@ export function ReelCard({ reel, index, isActive, onNext, onPrevious, hasNext, h
     }
   }, [isActive]);
 
-  // Handle like/unlike with optimistic update
-  const handleLike = () => {
-    if (reel.isLiked) {
-      unlikePostMutation.mutate(reel._id);
-    } else {
-      likePostMutation.mutate(reel._id);
-    }
+  // Handle reaction
+  const handleReact = (reaction: string) => {
+    likePostMutation.mutate({ postId: reel._id, reaction });
+  };
+
+  const handleRemoveReact = () => {
+    unlikePostMutation.mutate(reel._id);
   };
 
   // Handle save/unsave with optimistic update
@@ -592,17 +593,20 @@ export function ReelCard({ reel, index, isActive, onNext, onPrevious, hasNext, h
           <div className="flex flex-col items-center gap-5 z-10 mb-2">
             {/* Like */}
             <div className="flex flex-col items-center gap-1.5">
-              <button
-                onClick={handleLike}
-                className="p-3 rounded-full bg-muted/80 hover:bg-muted transition-all text-foreground hover:scale-110 active:scale-95 shadow-sm"
-              >
-                <Heart 
-                  className={cn(
-                    "w-5 h-5 transition-all",
-                    reel.isLiked ? "fill-red-500 text-red-500" : "text-foreground"
-                  )} 
-                />
-              </button>
+              <ReactionPicker
+                isLiked={reel.isLiked}
+                currentReaction={reel.reaction}
+                likeCount={reel.likeCount}
+                onReact={handleReact}
+                onRemoveReact={handleRemoveReact}
+                isLoading={likePostMutation.isPending || unlikePostMutation.isPending}
+                size="lg"
+                iconSize="md"
+                showCount={false}
+                buttonClassName="p-3 rounded-full bg-muted/80 hover:bg-muted shadow-sm"
+                activeClassName="text-red-500"
+                hoverClassName="text-foreground"
+              />
               <span className="text-foreground text-[11px] font-bold">
                 {formatNumber(reel.likeCount)}
               </span>

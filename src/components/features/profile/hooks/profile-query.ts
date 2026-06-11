@@ -1,11 +1,7 @@
+import { useMemo } from "react";
+import { MEDIA_BASE_URL } from "@/lib/constants";
 import { axiosClient } from "@/lib/axios-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
-// ===============================|| SIGNED URL RESPONSE TYPE ||============================== //
-interface SignedUrlResponse {
-  ok: boolean;
-  url: string;
-}
 
 // ===============================|| GET USER PROFILE ||============================== //
 const useGetUserProfile = () => {
@@ -105,43 +101,76 @@ const useUploadCover = () => {
 };
 
 // ===============================|| GET SIGNED URL ||============================== //
+// CURRENT APPROACH: Direct URL construction from key + MEDIA_BASE_URL
+// Old signed URL API approach is preserved below (commented out)
 const useGetSignedUrl = () => {
-  const queryClient = useQueryClient();
-
-  // Use useQuery to fetch and cache signed URLs automatically
   const useSignedUrl = (key: string | null | undefined) => {
-    return useQuery({
-      queryKey: ["signed-url", key],
-      queryFn: async () => {
-        if (!key) return null;
-        const encodedKey = encodeURIComponent(key);
-        const { data } = await axiosClient.get<SignedUrlResponse>(`/upload/signed?key=${encodedKey}`);
-        return data.url;
-      },
-      enabled: !!key,
-      staleTime: 1000 * 60 * 50, // 50 minutes (URL expires in 60 minutes typically)
-      gcTime: 1000 * 60 * 55, // 55 minutes
-    });
+    const url = useMemo(() => {
+      if (!key) return null;
+      if (key.startsWith("http")) return key;
+      return `${MEDIA_BASE_URL}/${key.replace(/^\//, "")}`;
+    }, [key]);
+
+    return { data: url, isLoading: false };
   };
 
-  const prefetchSignedUrl = async (key: string) => {
-    await queryClient.prefetchQuery({
-      queryKey: ["signed-url", key],
-      queryFn: async () => {
-        const encodedKey = encodeURIComponent(key);
-        const { data } = await axiosClient.get<SignedUrlResponse>(`/upload/signed?key=${encodedKey}`);
-        return data.url;
-      },
-      staleTime: 1000 * 60 * 50,
-    });
+  const prefetchSignedUrl = (_key: string) => {
+    // No-op: URL construction is synchronous, nothing to prefetch
   };
 
   const getCachedSignedUrl = (key: string) => {
-    return queryClient.getQueryData<string>(["signed-url", key]);
+    if (!key) return null;
+    return `${MEDIA_BASE_URL}/${key.replace(/^\//, "")}`;
   };
 
   return { useSignedUrl, prefetchSignedUrl, getCachedSignedUrl };
 };
+
+// =====================================================================================
+// OLD APPROACH: Signed URLs via API
+// Uncomment the block below and comment the implementation above to restore
+// =====================================================================================
+// interface SignedUrlResponse {
+//   ok: boolean;
+//   url: string;
+// }
+//
+// const useGetSignedUrl = () => {
+//   const queryClient = useQueryClient();
+//
+//   const useSignedUrl = (key: string | null | undefined) => {
+//     return useQuery({
+//       queryKey: ["signed-url", key],
+//       queryFn: async () => {
+//         if (!key) return null;
+//         const encodedKey = encodeURIComponent(key);
+//         const { data } = await axiosClient.get<SignedUrlResponse>(`/upload/signed?key=${encodedKey}`);
+//         return data.url;
+//       },
+//       enabled: !!key,
+//       staleTime: 1000 * 60 * 50,
+//       gcTime: 1000 * 60 * 55,
+//     });
+//   };
+//
+//   const prefetchSignedUrl = async (key: string) => {
+//     await queryClient.prefetchQuery({
+//       queryKey: ["signed-url", key],
+//       queryFn: async () => {
+//         const encodedKey = encodeURIComponent(key);
+//         const { data } = await axiosClient.get<SignedUrlResponse>(`/upload/signed?key=${encodedKey}`);
+//         return data.url;
+//       },
+//       staleTime: 1000 * 60 * 50,
+//     });
+//   };
+//
+//   const getCachedSignedUrl = (key: string) => {
+//     return queryClient.getQueryData<string>(["signed-url", key]);
+//   };
+//
+//   return { useSignedUrl, prefetchSignedUrl, getCachedSignedUrl };
+// };
 
 // ===============================|| GET USER PROFILE BY ID ||============================== //
 const useGetUserProfileById = (userId: string) => {

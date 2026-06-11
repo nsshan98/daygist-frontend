@@ -122,23 +122,33 @@ export const useDeleteGroupPost = (groupId: string) => {
   return { deleteGroupPostMutation };
 };
 
+interface GroupPostLikeVars {
+  postId: string;
+  reaction?: string;
+}
+
 // ===============================|| LIKE GROUP POST ||============================== //
 export const useLikeGroupPost = (groupId: string) => {
   const queryClient = useQueryClient();
 
-  const likeGroupPostMutation = useMutation<GroupPostLikeResponse, Error, string, GroupPostContext>({
-    mutationFn: async (postId: string) => {
+  const likeGroupPostMutation = useMutation<GroupPostLikeResponse, Error, GroupPostLikeVars, GroupPostContext>({
+    mutationFn: async ({ postId, reaction }) => {
+      if (reaction) {
+        const { data } = await axiosClient.post(`/groups/${postId}/like`, { reaction });
+        return data;
+      }
       const { data } = await axiosClient.post(`/groups/${postId}/like`);
       return data;
     },
-    onMutate: async (postId) => {
+    onMutate: async ({ postId, reaction }) => {
       await queryClient.cancelQueries({ queryKey: ["group-posts", groupId] });
       await queryClient.cancelQueries({ queryKey: ["group-post-detail", groupId, postId] });
 
       const previousGroupPosts = queryClient.getQueryData(["group-posts", groupId]);
       const previousGroupPostDetail = queryClient.getQueryData(["group-post-detail", groupId, postId]);
 
-      // Optimistically update group posts
+      const theReaction = reaction || "like";
+
       queryClient.setQueryData(["group-posts", groupId], (old: any) => {
         if (!old) return old;
         return {
@@ -154,6 +164,7 @@ export const useLikeGroupPost = (groupId: string) => {
                     likeCount: item.counts.likeCount + 1,
                   },
                   isLiked: true,
+                  reaction: theReaction,
                 };
               }
               return item;
@@ -162,7 +173,6 @@ export const useLikeGroupPost = (groupId: string) => {
         };
       });
 
-      // Optimistically update group post detail
       queryClient.setQueryData(["group-post-detail", groupId, postId], (old: any) => {
         if (!old) return old;
         return {
@@ -174,13 +184,14 @@ export const useLikeGroupPost = (groupId: string) => {
               likeCount: old.item.counts.likeCount + 1,
             },
             isLiked: true,
+            reaction: theReaction,
           },
         };
       });
 
       return { previousGroupPosts, previousGroupPostDetail };
     },
-    onError: (err, postId, context) => {
+    onError: (err, { postId }, context) => {
       if (context?.previousGroupPosts) {
         queryClient.setQueryData(["group-posts", groupId], context.previousGroupPosts);
       }
@@ -188,9 +199,9 @@ export const useLikeGroupPost = (groupId: string) => {
         queryClient.setQueryData(["group-post-detail", groupId, postId], context.previousGroupPostDetail);
       }
     },
-    onSettled: (data, error, postId) => {
+    onSettled: (data, error, { postId }) => {
       if (data?.data) {
-        const { isLiked, likeCount } = data.data;
+        const { isLiked, likeCount, reaction } = data.data;
 
         queryClient.setQueryData(["group-posts", groupId], (old: any) => {
           if (!old) return old;
@@ -207,6 +218,7 @@ export const useLikeGroupPost = (groupId: string) => {
                       likeCount,
                     },
                     isLiked,
+                    reaction,
                   };
                 }
                 return item;
@@ -226,6 +238,7 @@ export const useLikeGroupPost = (groupId: string) => {
                 likeCount,
               },
               isLiked,
+              reaction,
             },
           };
         });
@@ -304,7 +317,7 @@ export const useUnlikeGroupPost = (groupId: string) => {
     },
     onSettled: (data, error, postId) => {
       if (data?.data) {
-        const { isLiked, likeCount } = data.data;
+        const { isLiked, likeCount, reaction } = data.data;
 
         queryClient.setQueryData(["group-posts", groupId], (old: any) => {
           if (!old) return old;
@@ -321,6 +334,7 @@ export const useUnlikeGroupPost = (groupId: string) => {
                       likeCount,
                     },
                     isLiked,
+                    reaction,
                   };
                 }
                 return item;
@@ -340,6 +354,7 @@ export const useUnlikeGroupPost = (groupId: string) => {
                 likeCount,
               },
               isLiked,
+              reaction,
             },
           };
         });

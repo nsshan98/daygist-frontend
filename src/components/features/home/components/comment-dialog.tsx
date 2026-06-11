@@ -29,6 +29,7 @@ import {
 } from "../hooks/comment-query";
 import { useSignedMedia } from "@/components/features/profile/components/media-image";
 import { Comment, FeedItem, FeedMedia } from "@/types";
+import { ReactionPicker } from "@/components/shared/reaction-picker";
 
 // Format relative time
 const formatRelativeTime = (dateString: string) => {
@@ -305,6 +306,9 @@ function PostPreview({
   isSaved,
   isLiking,
   isSaving,
+  onReact,
+  onRemoveReact,
+  currentReaction,
 }: {
   post: FeedItem;
   onLikeToggle: () => void;
@@ -313,6 +317,9 @@ function PostPreview({
   isSaved: boolean;
   isLiking: boolean;
   isSaving: boolean;
+  onReact?: (reaction: string) => void;
+  onRemoveReact?: () => void;
+  currentReaction?: string | null;
 }) {
   const postData = post.data;
   const { useSignedUrl } = useSignedMedia();
@@ -396,16 +403,35 @@ function PostPreview({
 
       {/* Actions */}
       <div className="flex items-center gap-1 border-t pt-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onLikeToggle}
-          disabled={isLiking}
-          className={`flex-1 gap-1 ${isLiked ? "text-red-500" : ""}`}
-        >
-          <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
-          <span className="hidden sm:inline">{isLiked ? "Liked" : "Like"}</span>
-        </Button>
+        {onReact && onRemoveReact ? (
+          <ReactionPicker
+            isLiked={isLiked}
+            currentReaction={currentReaction}
+            likeCount={post.data.likeCount}
+            onReact={onReact}
+            onRemoveReact={onRemoveReact}
+            isLoading={isLiking}
+            size="sm"
+            iconSize="sm"
+            showCount={false}
+            buttonText="Like"
+            likedText="Liked"
+            buttonClassName="flex-1 gap-1"
+            activeClassName="text-red-500"
+            hoverClassName=""
+          />
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onLikeToggle}
+            disabled={isLiking}
+            className={`flex-1 gap-1 ${isLiked ? "text-red-500" : ""}`}
+          >
+            <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
+            <span className="hidden sm:inline">{isLiked ? "Liked" : "Like"}</span>
+          </Button>
+        )}
         <Button variant="ghost" size="sm" className="flex-1 gap-1">
           <MessageCircle className="h-4 w-4" />
           <span className="hidden sm:inline">Comment</span>
@@ -423,6 +449,8 @@ interface CommentDialogProps {
   onSaveToggle: (postId: string) => void;
   isLiking: boolean;
   isSaving: boolean;
+  onReact?: (postId: string, reaction: string) => void;
+  onRemoveReact?: (postId: string) => void;
   currentUser?: {
     name: string;
     avatar?: {
@@ -440,6 +468,8 @@ export function CommentDialog({
   onSaveToggle,
   isLiking,
   isSaving,
+  onReact,
+  onRemoveReact,
   currentUser,
 }: CommentDialogProps) {
   const [commentText, setCommentText] = useState("");
@@ -580,6 +610,9 @@ export function CommentDialog({
             isSaved={post.data.isSave}
             isLiking={isLiking}
             isSaving={isSaving}
+            onReact={onReact ? (r) => onReact(postId, r) : undefined}
+            onRemoveReact={onRemoveReact ? () => onRemoveReact(postId) : undefined}
+            currentReaction={post.data.reaction}
           />
 
           {/* Comments List */}

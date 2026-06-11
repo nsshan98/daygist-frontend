@@ -16,6 +16,7 @@ import { useLikePost, useUnlikePost } from "@/components/features/home/hooks/fee
 import { useSignedMedia } from "@/components/features/profile/components/media-image";
 import { useState } from "react";
 import { Skeleton } from "@/components/atoms/skeleton";
+import { ReactionPicker } from "@/components/shared/reaction-picker";
 
 interface SavedPostCardProps {
   post: SavedPost;
@@ -29,15 +30,12 @@ export function SavedPostCard({ post, onUnsave, isUnsaving }: SavedPostCardProps
   const { likePostMutation } = useLikePost();
   const { unlikePostMutation } = useUnlikePost();
 
-  // Handle like/unlike with optimistic updates
-  const handleLikeToggle = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (post.isLiked) {
-      unlikePostMutation.mutate(post._id);
-    } else {
-      likePostMutation.mutate(post._id);
-    }
+  const handleReact = (reaction: string) => {
+    likePostMutation.mutate({ postId: post._id, reaction });
+  };
+
+  const handleRemoveReact = () => {
+    unlikePostMutation.mutate(post._id);
   };
 
   // Fetch signed URL for avatar
@@ -177,16 +175,20 @@ export function SavedPostCard({ post, onUnsave, isUnsaving }: SavedPostCardProps
         {/* Stats and Actions */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <button
-              onClick={handleLikeToggle}
-              disabled={likePostMutation.isPending || unlikePostMutation.isPending}
-              className={`flex items-center gap-1 transition-colors hover:text-foreground ${
-                post.isLiked ? "text-red-500" : ""
-              }`}
-            >
-              <Heart className={`w-3.5 h-3.5 ${post.isLiked ? "fill-current" : ""}`} />
-              {post.likeCount}
-            </button>
+            <ReactionPicker
+              isLiked={post.isLiked || false}
+              currentReaction={post.reaction}
+              likeCount={post.likeCount || 0}
+              onReact={handleReact}
+              onRemoveReact={handleRemoveReact}
+              isLoading={likePostMutation.isPending || unlikePostMutation.isPending}
+              size="sm"
+              iconSize="sm"
+              showCount={true}
+              className="hover:text-foreground"
+              activeClassName="text-red-500"
+              hoverClassName="hover:text-red-500"
+            />
             <span className="flex items-center gap-1">
               <MessageCircle className="w-3.5 h-3.5" />
               {post.commentCount}

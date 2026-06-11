@@ -53,6 +53,7 @@ import { useGetComments, useCreateComment } from "@/components/features/home/hoo
 import { useSignedMedia } from "@/components/features/profile/components/media-image";
 import { useFollowUser, useUnfollowUser } from "@/components/features/follow";
 import { FeedMedia, Comment } from "@/types";
+import { ReactionPicker } from "@/components/shared/reaction-picker";
 
 // Format relative time
 const formatRelativeTime = (dateString: string) => {
@@ -276,14 +277,15 @@ export function PostDetailContent() {
   const { data: signedAvatarUrl } = useSignedUrl(post?.author?.avatar?.key || null);
   const finalAvatarUrl = signedAvatarUrl || post?.author?.avatar?.url;
 
-  // Handle like/unlike with optimistic updates
-  const handleLikeToggle = () => {
+  // Handle reaction
+  const handleReact = (reaction: string) => {
     if (!post) return;
-    if (post.isLiked) {
-      unlikePostMutation.mutate(post._id);
-    } else {
-      likePostMutation.mutate(post._id);
-    }
+    likePostMutation.mutate({ postId: post._id, reaction });
+  };
+
+  const handleRemoveReact = () => {
+    if (!post) return;
+    unlikePostMutation.mutate(post._id);
   };
 
   // Handle save/unsave
@@ -676,25 +678,23 @@ export function PostDetailContent() {
               {/* Action Buttons */}
               <div className="flex items-center justify-between border-t pt-3">
                 <div className="flex items-center gap-1 flex-1">
-                  <Button
-                    variant="ghost"
-                    onClick={handleLikeToggle}
-                    disabled={likePostMutation.isPending || unlikePostMutation.isPending}
-                    className={`flex-1 gap-2 rounded-xl transition-all duration-300 ${
-                      post.isLiked
-                        ? "text-red-500"
-                        : "hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
-                    }`}
-                  >
-                    <Heart
-                      className={`h-5 w-5 transition-all duration-300 ${
-                        post.isLiked ? "fill-current scale-110" : ""
-                      }`}
-                    />
-                    <span className="hidden sm:inline">
-                      {post.isLiked ? "Liked" : "Like"}
-                    </span>
-                  </Button>
+                  <ReactionPicker
+                    isLiked={post.isLiked}
+                    currentReaction={post.reaction}
+                    likeCount={post.likeCount}
+                    onReact={handleReact}
+                    onRemoveReact={handleRemoveReact}
+                    isLoading={likePostMutation.isPending || unlikePostMutation.isPending}
+                    size="md"
+                    iconSize="md"
+                    showCount={false}
+                    buttonText="Like"
+                    likedText="Liked"
+                    showLabel={true}
+                    buttonClassName="flex-1 gap-2 rounded-xl"
+                    activeClassName="text-red-500"
+                    hoverClassName="hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
+                  />
                   <Button
                     variant="ghost"
                     className="flex-1 gap-2 rounded-xl transition-all duration-300 hover:bg-primary/10 hover:text-primary"

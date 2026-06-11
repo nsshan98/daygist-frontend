@@ -75,16 +75,24 @@ interface LikeContext {
   previousGeneralVideos: unknown;
 }
 
+interface LikeVars {
+  postId: string;
+  reaction?: string;
+}
+
 export const useLikePost = () => {
   const queryClient = useQueryClient();
 
-  const likePostMutation = useMutation<LikeResponse, Error, string, LikeContext>({
-    mutationFn: async (postId: string) => {
+  const likePostMutation = useMutation<LikeResponse, Error, LikeVars, LikeContext>({
+    mutationFn: async ({ postId, reaction }) => {
+      if (reaction) {
+        const { data } = await axiosClient.post(`/posts/${postId}/like`, { reaction });
+        return data;
+      }
       const { data } = await axiosClient.post(`/posts/${postId}/like`);
       return data;
     },
-    onMutate: async (postId) => {
-      // Cancel any outgoing refetches
+    onMutate: async ({ postId, reaction }) => {
       await queryClient.cancelQueries({ queryKey: ["feed"] });
       await queryClient.cancelQueries({ queryKey: ["saved-posts"] });
       await queryClient.cancelQueries({ queryKey: ["post-detail", postId] });
@@ -94,7 +102,6 @@ export const useLikePost = () => {
       await queryClient.cancelQueries({ queryKey: ["reels-videos"] });
       await queryClient.cancelQueries({ queryKey: ["general-videos"] });
 
-      // Snapshot previous values
       const previousFeed = queryClient.getQueryData(["feed"]);
       const previousSaved = queryClient.getQueryData(["saved-posts"]);
       const previousDetail = queryClient.getQueryData(["post-detail", postId]);
@@ -104,7 +111,8 @@ export const useLikePost = () => {
       const previousReelsVideos = queryClient.getQueryData(["reels-videos"]);
       const previousGeneralVideos = queryClient.getQueryData(["general-videos"]);
 
-      // Optimistically update feed
+      const theReaction = reaction || "like";
+
       queryClient.setQueryData(["feed"], (old: any) => {
         if (!old) return old;
         return {
@@ -118,6 +126,7 @@ export const useLikePost = () => {
                   data: {
                     ...item.data,
                     isLiked: true,
+                    reaction: theReaction,
                     likeCount: item.data.likeCount + 1,
                   },
                 };
@@ -128,7 +137,6 @@ export const useLikePost = () => {
         };
       });
 
-      // Optimistically update saved posts
       queryClient.setQueryData(["saved-posts"], (old: any) => {
         if (!old) return old;
         return {
@@ -140,6 +148,7 @@ export const useLikePost = () => {
                 return {
                   ...p,
                   isLiked: true,
+                  reaction: theReaction,
                   likeCount: p.likeCount + 1,
                 };
               }
@@ -149,7 +158,6 @@ export const useLikePost = () => {
         };
       });
 
-      // Optimistically update post detail
       queryClient.setQueryData(["post-detail", postId], (old: any) => {
         if (!old) return old;
         return {
@@ -157,12 +165,12 @@ export const useLikePost = () => {
           post: {
             ...old.post,
             isLiked: true,
+            reaction: theReaction,
             likeCount: old.post.likeCount + 1,
           },
         };
       });
 
-      // Optimistically update my reels
       queryClient.setQueryData(["my-reels"], (old: any) => {
         if (!old) return old;
         return {
@@ -174,6 +182,7 @@ export const useLikePost = () => {
                 return {
                   ...item,
                   isLiked: true,
+                  reaction: theReaction,
                   likeCount: item.likeCount + 1,
                 };
               }
@@ -183,7 +192,6 @@ export const useLikePost = () => {
         };
       });
 
-      // Optimistically update user reels (all userIds)
       queryClient.setQueryData(["user-reels"], (old: any) => {
         if (!old) return old;
         return {
@@ -195,6 +203,7 @@ export const useLikePost = () => {
                 return {
                   ...item,
                   isLiked: true,
+                  reaction: theReaction,
                   likeCount: item.likeCount + 1,
                 };
               }
@@ -204,7 +213,6 @@ export const useLikePost = () => {
         };
       });
 
-      // Optimistically update all reels
       queryClient.setQueryData(["all-reels"], (old: any) => {
         if (!old) return old;
         return {
@@ -216,6 +224,7 @@ export const useLikePost = () => {
                 return {
                   ...item,
                   isLiked: true,
+                  reaction: theReaction,
                   likeCount: item.likeCount + 1,
                 };
               }
@@ -225,7 +234,6 @@ export const useLikePost = () => {
         };
       });
 
-      // Optimistically update reels videos
       queryClient.setQueryData(["reels-videos"], (old: any) => {
         if (!old) return old;
         return {
@@ -237,6 +245,7 @@ export const useLikePost = () => {
                 return {
                   ...item,
                   isLiked: true,
+                  reaction: theReaction,
                   likeCount: item.likeCount + 1,
                 };
               }
@@ -246,7 +255,6 @@ export const useLikePost = () => {
         };
       });
 
-      // Optimistically update general videos
       queryClient.setQueryData(["general-videos"], (old: any) => {
         if (!old) return old;
         return {
@@ -258,6 +266,7 @@ export const useLikePost = () => {
                 return {
                   ...item,
                   isLiked: true,
+                  reaction: theReaction,
                   likeCount: item.likeCount + 1,
                 };
               }
@@ -269,8 +278,7 @@ export const useLikePost = () => {
 
       return { previousFeed, previousSaved, previousDetail, previousMyReels, previousUserReels, previousAllReels, previousReelsVideos, previousGeneralVideos };
     },
-    onError: (err, postId, context) => {
-      // Rollback on error
+    onError: (err, { postId }, context) => {
       if (context?.previousFeed) {
         queryClient.setQueryData(["feed"], context.previousFeed);
       }
@@ -296,11 +304,10 @@ export const useLikePost = () => {
         queryClient.setQueryData(["general-videos"], context.previousGeneralVideos);
       }
     },
-    onSettled: (data, error, postId) => {
-      // Sync with server response
+    onSettled: (data, error, { postId }) => {
       if (data?.data) {
-        const { isLiked, likeCount } = data.data;
-        
+        const { isLiked, likeCount, reaction } = data.data;
+
         queryClient.setQueryData(["feed"], (old: any) => {
           if (!old) return old;
           return {
@@ -314,6 +321,7 @@ export const useLikePost = () => {
                     data: {
                       ...item.data,
                       isLiked,
+                      reaction,
                       likeCount,
                     },
                   };
@@ -335,6 +343,7 @@ export const useLikePost = () => {
                   return {
                     ...p,
                     isLiked,
+                    reaction,
                     likeCount,
                   };
                 }
@@ -351,6 +360,7 @@ export const useLikePost = () => {
             post: {
               ...old.post,
               isLiked,
+              reaction,
               likeCount,
             },
           };
@@ -367,6 +377,7 @@ export const useLikePost = () => {
                   return {
                     ...item,
                     isLiked,
+                    reaction,
                     likeCount,
                   };
                 }
@@ -387,6 +398,7 @@ export const useLikePost = () => {
                   return {
                     ...item,
                     isLiked,
+                    reaction,
                     likeCount,
                   };
                 }
@@ -396,7 +408,6 @@ export const useLikePost = () => {
           });
         }
 
-        // Update all reels
         const allReelsQueries = queryClient.getQueryData(["all-reels"]);
         if (allReelsQueries) {
           queryClient.setQueryData(["all-reels"], {
@@ -408,6 +419,7 @@ export const useLikePost = () => {
                   return {
                     ...item,
                     isLiked,
+                    reaction,
                     likeCount,
                   };
                 }
@@ -417,7 +429,6 @@ export const useLikePost = () => {
           });
         }
 
-        // Update reels videos
         const reelsVideosQueries = queryClient.getQueryData(["reels-videos"]);
         if (reelsVideosQueries) {
           queryClient.setQueryData(["reels-videos"], {
@@ -429,6 +440,7 @@ export const useLikePost = () => {
                   return {
                     ...item,
                     isLiked,
+                    reaction,
                     likeCount,
                   };
                 }
@@ -438,7 +450,6 @@ export const useLikePost = () => {
           });
         }
 
-        // Update general videos
         const generalVideosQueries = queryClient.getQueryData(["general-videos"]);
         if (generalVideosQueries) {
           queryClient.setQueryData(["general-videos"], {
@@ -450,6 +461,7 @@ export const useLikePost = () => {
                   return {
                     ...item,
                     isLiked,
+                    reaction,
                     likeCount,
                   };
                 }
@@ -686,7 +698,7 @@ export const useUnlikePost = () => {
     },
     onSettled: (data, error, postId) => {
       if (data?.data) {
-        const { isLiked, likeCount } = data.data;
+        const { isLiked, likeCount, reaction } = data.data;
         
         queryClient.setQueryData(["feed"], (old: any) => {
           if (!old) return old;
@@ -701,6 +713,7 @@ export const useUnlikePost = () => {
                     data: {
                       ...item.data,
                       isLiked,
+                      reaction,
                       likeCount,
                     },
                   };
@@ -722,6 +735,7 @@ export const useUnlikePost = () => {
                   return {
                     ...p,
                     isLiked,
+                    reaction,
                     likeCount,
                   };
                 }
@@ -738,6 +752,7 @@ export const useUnlikePost = () => {
             post: {
               ...old.post,
               isLiked,
+              reaction,
               likeCount,
             },
           };
@@ -754,6 +769,7 @@ export const useUnlikePost = () => {
                   return {
                     ...item,
                     isLiked,
+                    reaction,
                     likeCount,
                   };
                 }
@@ -774,6 +790,7 @@ export const useUnlikePost = () => {
                   return {
                     ...item,
                     isLiked,
+                    reaction,
                     likeCount,
                   };
                 }
@@ -783,7 +800,6 @@ export const useUnlikePost = () => {
           });
         }
 
-        // Update all reels
         const allReelsData = queryClient.getQueryData(["all-reels"]);
         if (allReelsData) {
           queryClient.setQueryData(["all-reels"], {
@@ -795,6 +811,7 @@ export const useUnlikePost = () => {
                   return {
                     ...item,
                     isLiked,
+                    reaction,
                     likeCount,
                   };
                 }
@@ -804,7 +821,6 @@ export const useUnlikePost = () => {
           });
         }
 
-        // Update reels videos
         const reelsVideosData = queryClient.getQueryData(["reels-videos"]);
         if (reelsVideosData) {
           queryClient.setQueryData(["reels-videos"], {
@@ -816,6 +832,7 @@ export const useUnlikePost = () => {
                   return {
                     ...item,
                     isLiked,
+                    reaction,
                     likeCount,
                   };
                 }
@@ -825,7 +842,6 @@ export const useUnlikePost = () => {
           });
         }
 
-        // Update general videos
         const generalVideosData = queryClient.getQueryData(["general-videos"]);
         if (generalVideosData) {
           queryClient.setQueryData(["general-videos"], {
@@ -837,6 +853,7 @@ export const useUnlikePost = () => {
                   return {
                     ...item,
                     isLiked,
+                    reaction,
                     likeCount,
                   };
                 }

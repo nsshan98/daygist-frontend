@@ -22,6 +22,7 @@ import {
 } from "@/components/atoms/dialog";
 import { Textarea } from "@/components/atoms/textarea";
 import { useDeletePost, useSavePost, useUnsavePost, useLikePost, useUnlikePost, useSharePost } from "../hooks/feed-query";
+import { ReactionPicker } from "@/components/shared/reaction-picker";
 import { MediaViewer } from "./media-viewer";
 import { useSignedMedia } from "@/components/features/profile/components/media-image";
 import { toast } from "sonner";
@@ -127,13 +128,13 @@ export function FeedPost({
     }
   };
 
-  // Handle like/unlike with optimistic updates
-  const handleLikeToggle = () => {
-    if (data.isLiked) {
-      unlikePostMutation.mutate(data._id);
-    } else {
-      likePostMutation.mutate(data._id);
-    }
+  // Handle reaction
+  const handleReact = (reaction: string) => {
+    likePostMutation.mutate({ postId: data._id, reaction });
+  };
+
+  const handleRemoveReact = () => {
+    unlikePostMutation.mutate(data._id);
   };
   
   // Handle share
@@ -323,17 +324,19 @@ export function FeedPost({
           {/* Action Buttons - Enhanced with hover effects */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLikeToggle}
-                disabled={likePostMutation.isPending || unlikePostMutation.isPending}
-                className={`group/like relative overflow-hidden rounded-xl transition-all duration-300 hover:scale-110 ${data.isLiked ? 'text-red-500' : 'hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30'}`}
-              >
-                {/* Like animation background */}
-                <div className="absolute inset-0 bg-red-500/10 scale-0 group-hover/like:scale-100 transition-transform duration-300 rounded-xl" />
-                <Heart className={`h-5 w-5 relative z-10 transition-all duration-300 ${data.isLiked ? 'fill-current scale-110' : 'group-hover/like:scale-125'}`} />
-              </Button>
+              <ReactionPicker
+                isLiked={data.isLiked}
+                currentReaction={data.reaction}
+                likeCount={data.counts?.likeCount ?? data.likeCount ?? 0}
+                onReact={handleReact}
+                onRemoveReact={handleRemoveReact}
+                isLoading={likePostMutation.isPending || unlikePostMutation.isPending}
+                size="md"
+                iconSize="md"
+                buttonClassName="rounded-xl"
+                activeClassName="hover:bg-red-50 dark:hover:bg-red-950/30"
+                hoverClassName="hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
+              />
               <Button 
                 variant="ghost" 
                 size="icon"

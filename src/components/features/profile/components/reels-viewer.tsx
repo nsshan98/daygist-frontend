@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useSignedMedia } from "./media-image";
 import { cn } from "@/lib/utils";
+import { ReactionPicker } from "@/components/shared/reaction-picker";
 import { useLikePost, useUnlikePost, useSavePost, useUnsavePost, useSharePost } from "@/components/features/home/hooks/feed-query";
 import { CommentDialog } from "@/components/features/home/components/comment-dialog";
 import { useGetUserProfile } from "../hooks/profile-query";
@@ -99,15 +100,15 @@ export function ReelsViewer({
     }
   }, [currentIndex, reels.length]);
 
-  // Handle like/unlike with optimistic update
-  const handleLike = () => {
+  // Handle reaction
+  const handleReact = (reaction: string) => {
     if (!currentReel) return;
+    likePostMutation.mutate({ postId: currentReel._id, reaction });
+  };
 
-    if (currentReel.isLiked) {
-      unlikePostMutation.mutate(currentReel._id);
-    } else {
-      likePostMutation.mutate(currentReel._id);
-    }
+  const handleRemoveReact = () => {
+    if (!currentReel) return;
+    unlikePostMutation.mutate(currentReel._id);
   };
 
   // Handle save/unsave with optimistic update
@@ -239,22 +240,23 @@ export function ReelsViewer({
                   {/* Right Side Actions */}
                   <div className="absolute right-4 bottom-32 flex flex-col items-center gap-6 z-10">
                     {/* Like */}
-                    <button
-                      onClick={handleLike}
-                      className="flex flex-col items-center gap-1 group"
-                    >
-                      <div className="p-3 rounded-full bg-black/40 hover:bg-black/60 transition-colors">
-                        <Heart 
-                          className={cn(
-                            "w-7 h-7 transition-colors",
-                            reel.isLiked ? "fill-red-500 text-red-500" : "text-white"
-                          )} 
-                        />
-                      </div>
-                      <span className="text-white text-xs font-medium">
-                        {formatNumber(reel.likeCount)}
-                      </span>
-                    </button>
+                    <ReactionPicker
+                      isLiked={reel.isLiked}
+                      currentReaction={reel.reaction}
+                      likeCount={reel.likeCount}
+                      onReact={handleReact}
+                      onRemoveReact={handleRemoveReact}
+                      isLoading={likePostMutation.isPending || unlikePostMutation.isPending}
+                      size="lg"
+                      iconSize="lg"
+                      showCount={false}
+                      buttonClassName="p-3 rounded-full bg-black/40 hover:bg-black/60"
+                      activeClassName="text-red-500"
+                      hoverClassName="text-white"
+                    />
+                    <span className="text-white text-xs font-medium">
+                      {formatNumber(reel.likeCount)}
+                    </span>
 
                     {/* Comment */}
                     <button 
@@ -368,9 +370,11 @@ export function ReelsViewer({
               if (reel?.isLiked) {
                 unlikePostMutation.mutate(postId);
               } else {
-                likePostMutation.mutate(postId);
+                likePostMutation.mutate({ postId });
               }
             }}
+            onReact={(postId, reaction) => likePostMutation.mutate({ postId, reaction })}
+            onRemoveReact={(postId) => unlikePostMutation.mutate(postId)}
             onSaveToggle={(postId) => {
               const reel = reels.find(r => r._id === postId);
               if (reel?.isSaved) {

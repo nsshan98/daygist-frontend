@@ -74,6 +74,8 @@ export interface GroupPostData {
   editedAt?: string;
   __v: number;
   // Expanded fields (from API response)
+  isLiked?: boolean;
+  reaction?: string | null;
   author?: GroupPostAuthor;
   group?: GroupPostGroup;
 }
@@ -100,6 +102,7 @@ export interface GroupPostLikeResponse {
   data: {
     postId: string;
     isLiked: boolean;
+    reaction: string | null;
     likeCount: number;
   };
 }
