@@ -141,6 +141,7 @@ export function ReactionPicker({
     >
       {showPicker && typeof document !== "undefined" && createPortal(
         <div
+          ref={popupRef}
           style={popupStyle}
           onMouseEnter={() => { if (hideTimer.current) clearTimeout(hideTimer.current); }}
           onMouseLeave={() => {

@@ -42,9 +42,9 @@ interface Post {
 
 // Mock data for suggestions (can be replaced with real API later)
 const mockSuggestions = [
-  { id: 1, name: "Emily Rodriguez", username: "emily_r", avatar: "/placeholder-user-4.jpg", mutual: "3 mutual friends" },
-  { id: 2, name: "Alex Thompson", username: "alex_t", avatar: "/placeholder-user-5.jpg", mutual: "5 mutual friends" },
-  { id: 3, name: "Creative Studio", username: "creative_studio", avatar: "/placeholder-user-6.jpg", mutual: "Trending" },
+  { id: 1, _id: "suggestion1", name: "Emily Rodriguez", username: "emily_r", avatar: "/placeholder-user-4.jpg", mutual: "3 mutual friends" },
+  { id: 2, _id: "suggestion2", name: "Alex Thompson", username: "alex_t", avatar: "/placeholder-user-5.jpg", mutual: "5 mutual friends" },
+  { id: 3, _id: "suggestion3", name: "Creative Studio", username: "creative_studio", avatar: "/placeholder-user-6.jpg", mutual: "Trending" },
 ];
 
 // Loading skeleton for feed posts

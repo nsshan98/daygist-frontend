@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Send, Pencil, Trash2, UserPlus, UserMinus } from "lucide-react";
+import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Send, Pencil, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Button } from "@/components/atoms/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/atoms/card";
@@ -26,7 +26,7 @@ import { ReactionPicker } from "@/components/shared/reaction-picker";
 import { MediaViewer } from "./media-viewer";
 import { useSignedMedia } from "@/components/features/profile/components/media-image";
 import { toast } from "sonner";
-import { useFollowUser, useUnfollowUser } from "@/components/features/follow";
+import { useFollowUser } from "@/components/features/follow";
 import { EditPostDialog } from "./edit-post-dialog";
 import { FeedItem } from "@/types";
 
@@ -55,7 +55,6 @@ export function FeedPost({
   // Mutations
   const { deletePostMutation } = useDeletePost();
   const { followUserMutation } = useFollowUser();
-  const { unfollowUserMutation } = useUnfollowUser();
   const { savePostMutation } = useSavePost();
   const { unsavePostMutation } = useUnsavePost();
   const { likePostMutation } = useLikePost();
@@ -67,6 +66,10 @@ export function FeedPost({
   
   // Delete dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  // Expand long text
+  const [isTextExpanded, setIsTextExpanded] = useState(false);
+  const MAX_TEXT_LENGTH = 300;
   
   // Handle delete post
   const handleDeletePost = () => {
@@ -79,30 +82,6 @@ export function FeedPost({
         toast.error("Failed to delete post");
       },
     });
-  };
-  
-  // Handle follow/unfollow
-  const handleFollowToggle = () => {
-    const isFollowing = data.isFollowingAuthor || data.author.isFollowing;
-    if (isFollowing) {
-      unfollowUserMutation.mutate(data.author._id, {
-        onSuccess: () => {
-          toast.success(`Unfollowed ${data.author.name}`);
-        },
-        onError: () => {
-          toast.error("Failed to unfollow");
-        },
-      });
-    } else {
-      followUserMutation.mutate(data.author._id, {
-        onSuccess: () => {
-          toast.success(`Following ${data.author.name}`);
-        },
-        onError: () => {
-          toast.error("Failed to follow");
-        },
-      });
-    }
   };
   
   // Handle save/unsave
@@ -198,10 +177,25 @@ export function FeedPost({
 
     // Plain text post
     if (data.text) {
+      const shouldTruncate = data.text.length > MAX_TEXT_LENGTH && !isTextExpanded;
+      const displayText = shouldTruncate ? data.text.slice(0, MAX_TEXT_LENGTH) : data.text;
       return (
-        <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">
-          {data.text}
-        </p>
+        <div>
+          <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">
+            {displayText}
+            {shouldTruncate && (
+              <>
+                <span className="text-muted-foreground">... </span>
+                <button
+                  className="text-primary font-medium text-sm hover:underline cursor-pointer"
+                  onClick={() => setIsTextExpanded(true)}
+                >
+                  See more
+                </button>
+              </>
+            )}
+          </p>
+        </div>
       );
     }
 
@@ -250,6 +244,25 @@ export function FeedPost({
             <div className="space-y-0.5">
               <h3 className="font-semibold text-base group-hover:text-primary transition-colors duration-300">
                 {data.author.name}
+                {!data.author.isMe && (
+                  data.isFollowingAuthor || data.author.isFollowing ? (
+                    <span className="font-normal text-xs text-muted-foreground ml-1">
+                      · Following
+                    </span>
+                  ) : (
+                    <button
+                      className="font-normal text-xs text-primary hover:text-primary/80 ml-1 cursor-pointer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        followUserMutation.mutate(data.author._id);
+                      }}
+                      disabled={followUserMutation.isPending}
+                    >
+                      {followUserMutation.isPending ? "..." : "· Follow"}
+                    </button>
+                  )
+                )}
                 {data.feeling && (
                   <span className="font-normal text-muted-foreground text-sm">
                     {" "}is feeling {data.feeling.toLowerCase()}
@@ -265,49 +278,34 @@ export function FeedPost({
               </p>
             </div>
           </Link>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-primary/10 hover:text-primary rounded-xl"
-              >
-                <MoreHorizontal className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {data.author.isMe ? (
-                <>
-                  <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)} className="cursor-pointer">
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit post
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={() => setIsDeleteDialogOpen(true)} 
-                    className="cursor-pointer text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete post
-                  </DropdownMenuItem>
-                </>
-              ) : (
-                <DropdownMenuItem onClick={handleFollowToggle} className="cursor-pointer">
-                  {data.isFollowingAuthor || data.author.isFollowing ? (
-                    <>
-                      <UserMinus className="mr-2 h-4 w-4" />
-                      Unfollow
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="mr-2 h-4 w-4" />
-                      Follow
-                    </>
-                  )}
+
+          {data.author.isMe && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-primary/10 hover:text-primary rounded-xl"
+                >
+                  <MoreHorizontal className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)} className="cursor-pointer">
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit post
                 </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => setIsDeleteDialogOpen(true)} 
+                  className="cursor-pointer text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete post
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </CardHeader>
       

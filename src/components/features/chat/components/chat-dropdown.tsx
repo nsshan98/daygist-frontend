@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { MessageCircle, Loader2, Search, MoreHorizontal, Maximize2, Edit3, CheckCircle2, XCircle } from "lucide-react";
+import { MessagesSquare, Loader2, Search, MoreHorizontal, Maximize2, Edit3, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/atoms/button";
 import { Badge } from "@/components/atoms/badge";
@@ -155,7 +155,7 @@ const ChatDropdown = () => {
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-primary/10 hover:text-primary cursor-pointer">
-          <MessageCircle className="w-6 h-6" />
+          <MessagesSquare className="w-6 h-6" />
           {totalUnreadCount > 0 && (
             <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs font-bold rounded-full border-2 border-card">
               {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
@@ -222,7 +222,7 @@ const ChatDropdown = () => {
           ) : filteredConversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                <MessageCircle className="w-8 h-8 text-muted-foreground" />
+                <MessagesSquare className="w-8 h-8 text-muted-foreground" />
               </div>
               <p className="text-foreground font-semibold">No messages yet</p>
               <p className="text-muted-foreground text-sm">When you start a conversation, it will show up here.</p>
