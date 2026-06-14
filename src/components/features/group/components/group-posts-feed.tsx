@@ -90,8 +90,8 @@ export function GroupPostsFeed({ groupId }: GroupPostsFeedProps) {
               onClick={() => setIsCreateDialogOpen(true)}
               className="flex-1 gap-2 hover:bg-muted/50"
             >
-              <Sparkles className="w-5 h-5 text-orange-500" />
-              <span className="text-sm font-medium">Text Style</span>
+              <Sparkles className="w-5 h-5 text-blue-500" />
+              <span className="text-sm font-medium">Text</span>
             </Button>
             <Button
               variant="ghost"

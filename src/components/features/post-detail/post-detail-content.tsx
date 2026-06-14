@@ -676,42 +676,41 @@ export function PostDetailContent() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-between border-t pt-3">
-                <div className="flex items-center gap-1 flex-1">
-                  <ReactionPicker
-                    isLiked={post.isLiked}
-                    currentReaction={post.reaction}
-                    likeCount={post.likeCount}
-                    onReact={handleReact}
-                    onRemoveReact={handleRemoveReact}
-                    isLoading={likePostMutation.isPending || unlikePostMutation.isPending}
-                    size="md"
-                    iconSize="md"
-                    showCount={false}
-                    buttonText="Like"
-                    likedText="Liked"
-                    showLabel={true}
-                    buttonClassName="flex-1 gap-2 rounded-xl"
-                    activeClassName="text-red-500"
-                    hoverClassName="hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
-                  />
-                  <Button
-                    variant="ghost"
-                    className="flex-1 gap-2 rounded-xl transition-all duration-300 hover:bg-primary/10 hover:text-primary"
-                  >
-                    <MessageCircle className="h-5 w-5" />
-                    <span className="hidden sm:inline">Comment</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={handleShare}
-                    disabled={sharePostMutation.isPending}
-                    className="flex-1 gap-2 rounded-xl transition-all duration-300 hover:bg-primary/10 hover:text-primary"
-                  >
-                    <Share2 className="h-5 w-5" />
-                    <span className="hidden sm:inline">Share</span>
-                  </Button>
-                </div>
+              <div className="grid grid-cols-3 gap-1 border-t pt-3">
+                <ReactionPicker
+                  isLiked={post.isLiked}
+                  currentReaction={post.reaction}
+                  likeCount={post.likeCount}
+                  onReact={handleReact}
+                  onRemoveReact={handleRemoveReact}
+                  isLoading={likePostMutation.isPending || unlikePostMutation.isPending}
+                  size="md"
+                  iconSize="md"
+                  showCount={false}
+                  buttonText="Like"
+                  likedText="Liked"
+                  showLabel={true}
+                  className="justify-center"
+                  buttonClassName="gap-2 rounded-xl"
+                  activeClassName="text-red-500"
+                  hoverClassName="hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
+                />
+                <Button
+                  variant="ghost"
+                  className="flex-1 gap-2 rounded-xl transition-all duration-300 hover:bg-primary/10 hover:text-primary"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                  <span className="hidden sm:inline">Comment</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={handleShare}
+                  disabled={sharePostMutation.isPending}
+                  className="flex-1 gap-2 rounded-xl transition-all duration-300 hover:bg-primary/10 hover:text-primary"
+                >
+                  <Share2 className="h-5 w-5" />
+                  <span className="hidden sm:inline">Share</span>
+                </Button>
               </div>
             </div>
           </CardFooter>

@@ -48,6 +48,19 @@ export function MediaViewer({ media, layout }: MediaViewerProps) {
     setIsLoading(false);
   };
 
+  // Pause video when comment dialog opens, resume when it closes
+  useEffect(() => {
+    const handlePause = () => {
+      if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    };
+
+    window.addEventListener("feed:pause-videos", handlePause);
+    return () => window.removeEventListener("feed:pause-videos", handlePause);
+  }, []);
+
   // Handle video media
   if (media.type === "video") {
     return (

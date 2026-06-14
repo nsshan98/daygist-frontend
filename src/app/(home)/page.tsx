@@ -197,6 +197,8 @@ export default function Home() {
     if (postItem) {
       setSelectedPostForComment(postItem);
       setIsCommentDialogOpen(true);
+      // Pause all feed videos while comment dialog is open
+      window.dispatchEvent(new Event("feed:pause-videos"));
     }
   };
 

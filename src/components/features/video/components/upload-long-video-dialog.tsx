@@ -28,6 +28,7 @@ import {
   UploadLongVideoSchemaType,
 } from "@/zod/video-schema";
 import { useUploadLongVideo } from "../hooks/video-query";
+import { useUploadImage, useUploadVideo } from "@/components/features/home/hooks/upload-query";
 import { Upload, Image, X } from "lucide-react";
 
 interface UploadLongVideoDialogProps {
@@ -40,9 +41,12 @@ export function UploadLongVideoDialog({
   onOpenChange,
 }: UploadLongVideoDialogProps) {
   const { uploadLongVideoMutation } = useUploadLongVideo();
+  const { uploadVideoMutation } = useUploadVideo();
+  const { uploadImageMutation } = useUploadImage();
   const [globalError, setGlobalError] = useState<string>("");
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [uploadStage, setUploadStage] = useState<string>("");
 
   const form = useForm<UploadLongVideoSchemaType>({
     resolver: zodResolver(uploadLongVideoSchema),
@@ -113,11 +117,35 @@ export function UploadLongVideoDialog({
 
   const onSubmit = async (data: UploadLongVideoSchemaType) => {
     setGlobalError("");
+    setUploadStage("");
 
     try {
+      // Step 1: Upload video file
+      setUploadStage("Uploading video...");
+      const videoResult = await uploadVideoMutation.mutateAsync(data.video);
+
+      // Step 2: Upload thumbnail if provided
+      let thumbnailResult = null;
+      if (data.thumbnail) {
+        setUploadStage("Uploading thumbnail...");
+        thumbnailResult = await uploadImageMutation.mutateAsync(data.thumbnail);
+      }
+
+      // Step 3: Submit the payload with uploaded media references
+      setUploadStage("Submitting...");
       await uploadLongVideoMutation.mutateAsync({
-        video: data.video,
-        thumbnail: data.thumbnail,
+        video: {
+          url: videoResult.url,
+          key: videoResult.key,
+          provider: videoResult.provider,
+        },
+        ...(thumbnailResult && {
+          thumbnail: {
+            url: thumbnailResult.url,
+            key: thumbnailResult.key,
+            provider: thumbnailResult.provider,
+          },
+        }),
         title: data.title,
         description: data.description,
         subCategory: data.subCategory,
@@ -130,8 +158,10 @@ export function UploadLongVideoDialog({
       form.reset();
       setVideoPreview(null);
       setThumbnailPreview(null);
+      setUploadStage("");
       onOpenChange(false);
     } catch (error: any) {
+      setUploadStage("");
       console.error("Upload long video error:", error);
       setGlobalError(
         error.response?.data?.message || "Failed to upload video"
@@ -310,17 +340,17 @@ export function UploadLongVideoDialog({
                 type="button"
                 variant="destructive"
                 onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
+                disabled={isSubmitting || uploadLongVideoMutation.isPending || uploadVideoMutation.isPending || uploadImageMutation.isPending}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting || uploadLongVideoMutation.isPending}
+                disabled={isSubmitting || uploadLongVideoMutation.isPending || uploadVideoMutation.isPending || uploadImageMutation.isPending}
               >
-                {isSubmitting || uploadLongVideoMutation.isPending ? (
+                {uploadVideoMutation.isPending || uploadImageMutation.isPending || uploadLongVideoMutation.isPending ? (
                   <>
-                    Uploading...
+                    {uploadStage || "Processing..."}
                     <Spinner />
                   </>
                 ) : (

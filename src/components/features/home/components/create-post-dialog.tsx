@@ -40,11 +40,8 @@ export function CreatePostDialog() {
     postType,
     setPostType,
     privacy,
-    caption,
     textContent,
     setTextContent,
-    textBackground,
-    textStyle,
     mediaFiles,
     imageLayout,
     videoFile,
@@ -130,24 +127,8 @@ export function CreatePostDialog() {
     try {
       let payload: CreatePostPayload;
 
-      // If background is selected, create text post with background
-      if (textBackground) {
-        payload = {
-          type: "text",
-          privacy,
-          text: textContent,
-          feeling: feeling || null,
-          backgroundUrl: textBackground,
-          textStyle: {
-            color: textStyle.color,
-            fontSize: textStyle.fontSize,
-            fontWeight: textStyle.fontWeight,
-            align: textStyle.align,
-          },
-        };
-      } 
       // If media files exist, create media post
-      else if (mediaFiles.length > 0) {
+      if (mediaFiles.length > 0) {
         // Upload all images first
         const uploadResults = await Promise.all(
           mediaFiles.map(async (file) => {
@@ -251,126 +232,114 @@ export function CreatePostDialog() {
           <div className="space-y-4">
             <TextPostForm />
             
-            {/* Add Media Options - Only show if no background selected */}
-            {!textBackground && (
-              <div className="border-t pt-4">
-                <p className="text-sm font-medium mb-3">Add to your post</p>
-                <div className="flex gap-2 flex-wrap">
-                  <button
-                    onClick={() => {
-                      // Trigger file input for images
-                      const input = document.getElementById('image-upload-inline');
-                      if (input) input.click();
-                    }}
-                    className="flex-1 min-w-[100px] flex items-center justify-center gap-2 p-3 rounded-lg border border-border hover:border-green-500/50 hover:bg-green-500/5 transition-all"
-                  >
-                    <ImageIcon className="w-5 h-5 text-green-500" />
-                    <span className="text-sm">Photo</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setVideoMode("reels");
-                      // Trigger file input for video
-                      const input = document.getElementById('video-upload-inline');
-                      if (input) input.click();
-                    }}
-                    className="flex-1 min-w-[100px] flex items-center justify-center gap-2 p-3 rounded-lg border border-border hover:border-red-500/50 hover:bg-red-500/5 transition-all"
-                  >
-                    <Video className="w-5 h-5 text-red-500" />
-                    <span className="text-sm">Reels</span>
-                  </button>
-                  <button
-                    onClick={() => setShowFeelingPicker(!showFeelingPicker)}
-                    className="flex-1 min-w-[100px] flex items-center justify-center gap-2 p-3 rounded-lg border border-border hover:border-yellow-500/50 hover:bg-yellow-500/5 transition-all"
-                  >
-                    <SmilePlus className="w-5 h-5 text-yellow-500" />
-                    <span className="text-sm">Feeling</span>
-                  </button>
-                </div>
-                
-                {/* Hidden file inputs */}
-                <input
-                  id="image-upload-inline"
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/heic"
-                  multiple
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files || []);
-                    const imageFiles = files.filter((file) => file.type.startsWith("image/"));
-                    imageFiles.forEach((file) => {
-                      if (file.size <= 25 * 1024 * 1024) {
-                        useCreatePostStore.getState().addMediaFile(file);
-                      }
-                    });
-                    e.target.value = "";
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium mb-3">Add to your post</p>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => {
+                    // Trigger file input for images
+                    const input = document.getElementById('image-upload-inline');
+                    if (input) input.click();
                   }}
-                  className="hidden"
-                />
-                <input
-                  id="video-upload-inline"
-                  type="file"
-                  accept="video/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file && file.type.startsWith("video/") && file.size <= 300 * 1024 * 1024) {
-                      useCreatePostStore.getState().setVideoFile(file);
+                  className="flex-1 min-w-[100px] flex items-center justify-center gap-2 p-3 rounded-lg border border-border hover:border-green-500/50 hover:bg-green-500/5 transition-all"
+                >
+                  <ImageIcon className="w-5 h-5 text-green-500" />
+                  <span className="text-sm">Photo</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setVideoMode("reels");
+                    // Trigger file input for video
+                    const input = document.getElementById('video-upload-inline');
+                    if (input) input.click();
+                  }}
+                  className="flex-1 min-w-[100px] flex items-center justify-center gap-2 p-3 rounded-lg border border-border hover:border-red-500/50 hover:bg-red-500/5 transition-all"
+                >
+                  <Video className="w-5 h-5 text-red-500" />
+                  <span className="text-sm">Reels</span>
+                </button>
+                <button
+                  onClick={() => setShowFeelingPicker(!showFeelingPicker)}
+                  className="flex-1 min-w-[100px] flex items-center justify-center gap-2 p-3 rounded-lg border border-border hover:border-yellow-500/50 hover:bg-yellow-500/5 transition-all"
+                >
+                  <SmilePlus className="w-5 h-5 text-yellow-500" />
+                  <span className="text-sm">Feeling</span>
+                </button>
+              </div>
+              
+              {/* Hidden file inputs */}
+              <input
+                id="image-upload-inline"
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/heic"
+                multiple
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  const imageFiles = files.filter((file) => file.type.startsWith("image/"));
+                  imageFiles.forEach((file) => {
+                    if (file.size <= 25 * 1024 * 1024) {
+                      useCreatePostStore.getState().addMediaFile(file);
                     }
-                    e.target.value = "";
-                  }}
-                  className="hidden"
-                />
-                
-                {/* Feeling Picker */}
-                {showFeelingPicker && (
-                  <div className="mt-4 p-4 bg-muted/30 rounded-xl">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-sm font-medium">How are you feeling?</p>
-                      {feeling && (
-                        <button
-                          onClick={() => {
-                            setFeeling(null);
-                            setShowFeelingPicker(false);
-                          }}
-                          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-                        >
-                          <X className="w-3 h-3" />
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {feelings.map((f) => (
-                        <button
-                          key={f.label}
-                          onClick={() => {
-                            setFeeling(feeling === f.label ? null : f.label);
-                            setShowFeelingPicker(false);
-                          }}
-                          className={cn(
-                            "flex items-center gap-2 p-3 rounded-lg transition-all",
-                            feeling === f.label
-                              ? "bg-primary/20 ring-2 ring-primary/50"
-                              : "hover:bg-muted"
-                          )}
-                        >
-                          <span className="text-2xl">{f.emoji}</span>
-                          <span className="text-sm">{f.label}</span>
-                        </button>
-                      ))}
-                    </div>
+                  });
+                  e.target.value = "";
+                }}
+                className="hidden"
+              />
+              <input
+                id="video-upload-inline"
+                type="file"
+                accept="video/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file && file.type.startsWith("video/") && file.size <= 300 * 1024 * 1024) {
+                    useCreatePostStore.getState().setVideoFile(file);
+                  }
+                  e.target.value = "";
+                }}
+                className="hidden"
+              />
+              
+              {/* Feeling Picker */}
+              {showFeelingPicker && (
+                <div className="mt-4 p-4 bg-muted/30 rounded-xl">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium">How are you feeling?</p>
+                    {feeling && (
+                      <button
+                        onClick={() => {
+                          setFeeling(null);
+                          setShowFeelingPicker(false);
+                        }}
+                        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                      >
+                        <X className="w-3 h-3" />
+                        Clear
+                      </button>
+                    )}
                   </div>
-                )}
-              </div>
-            )}
-            
-            {/* Show message when background is selected */}
-            {textBackground && (
-              <div className="border-t pt-4">
-                <p className="text-xs text-muted-foreground text-center">
-                  Background selected. Media upload is disabled for background posts.
-                </p>
-              </div>
-            )}
+                  <div className="grid grid-cols-4 gap-2">
+                    {feelings.map((f) => (
+                      <button
+                        key={f.label}
+                        onClick={() => {
+                          setFeeling(feeling === f.label ? null : f.label);
+                          setShowFeelingPicker(false);
+                        }}
+                        className={cn(
+                          "flex items-center gap-2 p-3 rounded-lg transition-all",
+                          feeling === f.label
+                            ? "bg-primary/20 ring-2 ring-primary/50"
+                            : "hover:bg-muted"
+                        )}
+                      >
+                        <span className="text-2xl">{f.emoji}</span>
+                        <span className="text-sm">{f.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
         

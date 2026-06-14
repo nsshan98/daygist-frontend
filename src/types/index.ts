@@ -99,8 +99,14 @@ export type {
 
 // Video Types
 export type {
+  MediaReference,
   UploadLongVideoPayload,
   UploadLongVideoResponse,
+  UserVideoAuthor,
+  UserVideoMedia,
+  UserVideo,
+  UserVideosResponse,
+  VideoSearchResponse,
 } from "@/types/video.types";
 
 // Story Types
