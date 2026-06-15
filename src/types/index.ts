@@ -154,4 +154,4 @@ export type {
   TextStyle as PostTextStyle,
   CreatePostState,
   CreatePostActions,
-} from "@/components/features/home/stores/create-post-store";
+} from "@/features/home/stores/create-post-store";

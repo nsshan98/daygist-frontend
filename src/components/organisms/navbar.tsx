@@ -36,9 +36,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu";
 import { logout } from "@/lib/logout";
-import NotificationDropdown from "@/components/features/notification/components/notification-dropdown";
-import ChatDropdown from "@/components/features/chat/components/chat-dropdown";
-import { useGetUserProfile } from "@/components/features/profile/hooks/profile-query";
+import NotificationDropdown from "@/features/notification/components/notification-dropdown";
+import ChatDropdown from "@/features/chat/components/chat-dropdown";
+import { useGetUserProfile } from "@/features/profile/hooks/profile-query";
 import { Skeleton } from "@/components/atoms/skeleton";
 
 interface NavbarProps {

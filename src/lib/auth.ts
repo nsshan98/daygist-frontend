@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { createSession, updateTokens } from "./session";
-import { FormState, loginSchema } from "@/zod/auth-schema";
+import { FormState, loginSchema } from "@/schema/auth-schema";
 
 
 export async function signIn(
