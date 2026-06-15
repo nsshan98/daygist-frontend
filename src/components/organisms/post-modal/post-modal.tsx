@@ -95,16 +95,16 @@ export function PostModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={true}
-        className="min-w-7xl h-[90vh] max-h-[900px] p-0 overflow-hidden gap-0 sm:rounded-2xl"
+        className="min-w-7xl h-[90vh] max-h-[900px] p-0 overflow-hidden gap-0 sm:rounded-2xl flex flex-col"
       >
         <DialogTitle className="sr-only">Post</DialogTitle>
         <DialogDescription className="sr-only">
           View post by {data.author.name}
         </DialogDescription>
 
-        <div className="grid h-full w-full grid-cols-1 md:grid-cols-4">
+        <div className="flex flex-1 min-h-0 w-full">
           {/* Left: Media Preview (75% on md+) */}
-          <div className="md:col-span-3 relative bg-black min-h-[300px] md:min-h-0">
+          <div className="md:w-3/4 relative bg-background min-h-[300px] md:min-h-0 overflow-hidden">
             <MediaPreview
               medias={data.medias || []}
               text={data.type === "text" ? data.text : undefined}
@@ -117,7 +117,7 @@ export function PostModal({
           </div>
 
           {/* Right: Sidebar (25% on md+) */}
-          <div className="md:col-span-1 flex flex-col min-h-0 border-l">
+          <div className="md:w-1/4 flex flex-col min-h-0 overflow-hidden border-l">
             <PostSidebar
               post={post}
               currentUser={currentUser}

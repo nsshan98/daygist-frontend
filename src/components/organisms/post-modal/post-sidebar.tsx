@@ -186,7 +186,7 @@ export function PostSidebar({
   const shareCount = data.counts?.shareCount ?? data.shareCount ?? 0;
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex flex-1 flex-col bg-background overflow-hidden min-h-0">
       {/* PAGE META */}
       <div className="px-4 pt-4 pb-3 border-b">
         <div className="flex items-start justify-between gap-2">
@@ -309,7 +309,7 @@ export function PostSidebar({
 
       {/* POST META - Caption / text */}
       {data.text && (
-        <div className="px-4 py-3 border-b">
+        <div className="px-4 py-3 border-b max-h-40 overflow-y-auto shrink-0">
           <p className="text-sm text-foreground/90 whitespace-pre-wrap wrap-break-word">
             {data.text}
           </p>
@@ -422,6 +422,8 @@ export function PostSidebar({
               <PostCommentItem
                 key={c._id}
                 comment={c}
+                currentUserId={currentUser?._id}
+                postId={data._id}
                 onReply={setReplyToId}
                 replyToId={replyToId}
                 replyText={replyText}

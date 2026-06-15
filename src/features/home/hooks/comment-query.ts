@@ -1,5 +1,6 @@
 import { axiosClient } from "@/lib/api/axios-client";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type { 
   Comment,
   CommentsResponse,
@@ -201,5 +202,74 @@ export const useGetReplies = (commentId: string, enabled: boolean = true) => {
   });
 
   return { repliesQuery };
+};
+
+// ===============================|| REACT TO COMMENT ||============================== //
+// Toggle: same reaction removes it, different reaction updates it
+
+export const useReactToComment = (postId: string) => {
+  const queryClient = useQueryClient();
+
+  const reactToCommentMutation = useMutation({
+    mutationFn: async ({ commentId, reaction }: { commentId: string; reaction: string }) => {
+      const { data } = await axiosClient.post(`/comment/${commentId}/reaction`, { reaction });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", postId] });
+      queryClient.invalidateQueries({ queryKey: ["replies"] });
+    },
+    onError: () => {
+      toast.error("Failed to react to comment");
+    },
+  });
+
+  return { reactToCommentMutation };
+};
+
+// ===============================|| EDIT COMMENT ||============================== //
+
+export const useEditComment = (postId: string) => {
+  const queryClient = useQueryClient();
+
+  const editCommentMutation = useMutation({
+    mutationFn: async ({ commentId, text }: { commentId: string; text: string }) => {
+      const { data } = await axiosClient.put(`/comment/${commentId}`, { text });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", postId] });
+      queryClient.invalidateQueries({ queryKey: ["replies"] });
+      toast.success("Comment updated");
+    },
+    onError: () => {
+      toast.error("Failed to edit comment");
+    },
+  });
+
+  return { editCommentMutation };
+};
+
+// ===============================|| DELETE COMMENT ||============================== //
+
+export const useDeleteComment = (postId: string) => {
+  const queryClient = useQueryClient();
+
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: string) => {
+      const { data } = await axiosClient.delete(`/comment/${commentId}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", postId] });
+      queryClient.invalidateQueries({ queryKey: ["replies"] });
+      toast.success("Comment deleted");
+    },
+    onError: () => {
+      toast.error("Failed to delete comment");
+    },
+  });
+
+  return { deleteCommentMutation };
 };
 

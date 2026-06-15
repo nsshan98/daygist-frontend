@@ -21,6 +21,8 @@ export interface Comment {
   text: string;
   isDeleted: boolean;
   likeCount: number;
+  isLiked?: boolean;
+  reaction?: string | null;
   replyCount: number;
   createdAt: string;
   updatedAt: string;

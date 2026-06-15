@@ -304,10 +304,12 @@ function TextPanel({
   }
 
   return (
-    <div className="w-full h-full flex items-center justify-center p-10 bg-linear-to-br from-primary/10 via-background to-secondary/10">
-      <p className="text-2xl leading-relaxed text-foreground/90 whitespace-pre-wrap text-center max-w-2xl">
-        {text}
-      </p>
+    <div className="w-full h-full overflow-y-auto bg-background">
+      <div className="min-h-full flex items-center justify-center p-10">
+        <p className="text-2xl leading-relaxed text-foreground/90 whitespace-pre-wrap text-center max-w-2xl">
+          {text}
+        </p>
+      </div>
     </div>
   );
 }

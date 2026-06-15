@@ -163,6 +163,16 @@ export default function Home() {
     window.dispatchEvent(new Event("feed:pause-videos"));
   };
 
+  // Open the post modal when comment icon/count is clicked
+  const handleComment = (postId: string) => {
+    const postItem = posts.find((item: FeedItem) => item.data._id === postId);
+    if (postItem) {
+      setSelectedPostForModal(postItem);
+      setIsPostModalOpen(true);
+      window.dispatchEvent(new Event("feed:pause-videos"));
+    }
+  };
+
   // Error state
   if (isError) {
     return (
@@ -249,6 +259,7 @@ export default function Home() {
                   onLike={handleLike}
                   onSave={handleSave}
                   onShare={handleShare}
+                  onComment={handleComment}
                   onOpen={handleOpenPost}
                 />
               ))}
@@ -278,6 +289,7 @@ export default function Home() {
             open={isPostModalOpen}
             onOpenChange={setIsPostModalOpen}
             currentUser={currentUser ? {
+              _id: currentUser._id,
               name: currentUser.name,
               username: currentUser.username,
               avatar: currentUser.avatar

@@ -1,6 +1,7 @@
 import type { FeedItem } from "@/types";
 
 export interface CurrentUserLite {
+  _id?: string;
   name: string;
   username?: string;
   avatar?: {

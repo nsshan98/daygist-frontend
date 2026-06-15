@@ -402,7 +402,7 @@ function PostPreview({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 border-t pt-2">
+      <div className="grid grid-cols-2 gap-1 border-t pt-2">
         {onReact && onRemoveReact ? (
           <ReactionPicker
             isLiked={isLiked}
@@ -416,7 +416,8 @@ function PostPreview({
             showCount={false}
             buttonText="Like"
             likedText="Liked"
-            buttonClassName="flex-1 gap-1"
+            className="justify-center"
+            buttonClassName="gap-1"
             activeClassName="text-red-500"
             hoverClassName=""
           />
