@@ -5,6 +5,8 @@ import type {
   MonetizationResponse,
   ApplyMonetizationPayload,
   ApplyMonetizationResponse,
+  ManageTransactionPayload,
+  ManageTransactionResponse,
 } from "@/types";
 
 // ===============================|| GET MONETIZATION STATUS ||============================== //
@@ -60,4 +62,30 @@ export const useApplyMonetization = () => {
   });
 
   return { applyMonetizationMutation };
+};
+
+// ===============================|| MANAGE TRANSACTION ||============================== //
+
+export const useManageTransaction = () => {
+  const queryClient = useQueryClient();
+
+  const manageTransactionMutation = useMutation<
+    ManageTransactionResponse,
+    Error,
+    ManageTransactionPayload
+  >({
+    mutationFn: async (payload: ManageTransactionPayload) => {
+      const { data } = await axiosClient.post("/transaction/manage", payload);
+      return data;
+    },
+    onSuccess: (res) => {
+      toast.success(res.message || "Transaction successful");
+      queryClient.invalidateQueries({ queryKey: ["monetization", "me"] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Transaction failed");
+    },
+  });
+
+  return { manageTransactionMutation };
 };

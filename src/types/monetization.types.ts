@@ -50,3 +50,25 @@ export interface ApplyMonetizationResponse {
     app: MonetizationApp;
   };
 }
+
+// ===============================|| TRANSACTION TYPES ||============================== //
+
+export type TransactionType = "own" | "other" | "withdraw";
+export type WithdrawMethod = "bkash" | "nagad" | "bank";
+
+export interface ManageTransactionPayload {
+  type: TransactionType;
+  amount: number;
+  reference?: string;
+  targetUserId?: string;
+  method?: WithdrawMethod;
+  accountNumber?: string;
+}
+
+export interface ManageTransactionResponse {
+  success: boolean;
+  message: string;
+  transaction: Record<string, unknown>;
+  currentBalance?: number;
+  walletAvailable: number;
+}

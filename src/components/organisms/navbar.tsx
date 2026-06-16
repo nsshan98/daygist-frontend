@@ -40,6 +40,8 @@ import NotificationDropdown from "@/features/notification/components/notificatio
 import ChatDropdown from "@/features/chat/components/chat-dropdown";
 import { useGetUserProfile } from "@/features/profile/hooks/profile-query";
 import { Skeleton } from "@/components/atoms/skeleton";
+import Image from "next/image";
+import logo from "../../../public/logo-white.png";
 
 interface NavbarProps {
   user?: {
@@ -62,9 +64,7 @@ const Navbar = ({ user: initialUser }: NavbarProps) => {
           {/* Left Section - Logo */}
           <div className="flex items-center gap-2 min-w-fit">
             <Button variant={"link"} href="/" className="hover:no-underline p-0">
-              <p className="font-baumans text-3xl text-center bg-[#2445CE] text-white rounded-2xl p-2 w-12 h-12">
-                D
-              </p>
+              <Image src={logo} alt="Daygist Logo" width={40} height={40} className="rounded-full bg-primary" />
               <p className="font-baumans text-3xl uppercase ml-2 hidden sm:block">Daygist</p>
             </Button>
           </div>

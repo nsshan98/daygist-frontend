@@ -95,6 +95,10 @@ export type {
   MonetizationResponse,
   ApplyMonetizationPayload,
   ApplyMonetizationResponse,
+  TransactionType,
+  WithdrawMethod,
+  ManageTransactionPayload,
+  ManageTransactionResponse,
 } from "@/types/monetization.types";
 
 // Video Types

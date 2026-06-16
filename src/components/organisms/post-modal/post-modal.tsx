@@ -92,7 +92,7 @@ export function PostModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
       <DialogContent
         showCloseButton={true}
         className="min-w-7xl h-[90vh] max-h-[900px] p-0 overflow-hidden gap-0 sm:rounded-2xl flex flex-col"

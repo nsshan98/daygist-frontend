@@ -4,9 +4,11 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Button } from "@/components/atoms/button";
 import { Skeleton } from "@/components/atoms/skeleton";
+import { Badge } from "@/components/atoms/badge";
 import { DollarSign, Wallet, TrendingUp, Clock, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import { useGetMonetizationStatus } from "../hooks/monetization-query";
 import { ApplyMonetizationDialog } from "./apply-monetization-dialog";
+import { TransactionTabs } from "./transaction-tabs";
 import type { MonetizationData } from "@/types";
 
 function MonetizationSkeleton() {
@@ -178,9 +180,18 @@ function ApprovedState({ data }: { data: MonetizationData }) {
   return (
     <>
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Monetization</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight">Monetization</h1>
+          <Badge variant="secondary" className="gap-1 text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-900/30">
+            <CheckCircle className="h-3 w-3" />
+            Approved
+          </Badge>
+        </div>
         <p className="text-muted-foreground">
           Manage your earnings and withdrawal settings
+          {data.lastWithdraw && (
+            <span className="ml-1 text-xs">· Last withdrawal: {new Date(data.lastWithdraw).toLocaleDateString()}</span>
+          )}
         </p>
       </div>
 
@@ -225,36 +236,7 @@ function ApprovedState({ data }: { data: MonetizationData }) {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-500" />
-            Monetization Active
-          </CardTitle>
-          <CardDescription>
-            Your monetization is approved and active
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-lg border bg-muted/50 p-4">
-            <div className="text-sm font-medium capitalize">Status : {data?.app?.status}</div>
-          </div>
-
-          {data.lastWithdraw && (
-            <div className="rounded-lg border bg-muted/50 p-4">
-              <div className="text-sm font-medium">Last Withdrawal</div>
-              <div className="text-sm text-muted-foreground">
-                {new Date(data.lastWithdraw).toLocaleDateString()}
-              </div>
-            </div>
-          )}
-
-          <Button className="w-full sm:w-auto" size="lg">
-            <Wallet className="h-4 w-4 mr-2" />
-            Withdraw Earnings
-          </Button>
-        </CardContent>
-      </Card>
+      <TransactionTabs availableBalance={data.wallet.available} />
     </>
   );
 }

@@ -215,12 +215,68 @@ export const useReactToComment = (postId: string) => {
       const { data } = await axiosClient.post(`/comment/${commentId}/reaction`, { reaction });
       return data;
     },
+    onMutate: async ({ commentId, reaction }) => {
+      await queryClient.cancelQueries({ queryKey: ["comments", postId] });
+      await queryClient.cancelQueries({ queryKey: ["replies"] });
+
+      const previousComments = queryClient.getQueryData(["comments", postId]);
+      const previousReplies = queryClient.getQueriesData({ queryKey: ["replies"] });
+
+      const updateComment = (comment: Comment): Comment => {
+        if (comment._id !== commentId) return comment;
+        const isTogglingOff = comment.reaction === reaction;
+        return {
+          ...comment,
+          reaction: isTogglingOff ? null : reaction,
+          isLiked: !isTogglingOff,
+          likeCount: isTogglingOff
+            ? Math.max(0, (comment.likeCount || 0) - 1)
+            : comment.isLiked
+              ? comment.likeCount || 0
+              : (comment.likeCount || 0) + 1,
+        };
+      };
+
+      // Update top-level comments
+      queryClient.setQueryData(["comments", postId], (old: any) => {
+        if (!old?.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map(updateComment),
+          })),
+        };
+      });
+
+      // Update replies (any cached reply query)
+      queryClient.setQueriesData({ queryKey: ["replies"] }, (old: any) => {
+        if (!old?.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map(updateComment),
+          })),
+        };
+      });
+
+      return { previousComments, previousReplies };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousComments) {
+        queryClient.setQueryData(["comments", postId], context.previousComments);
+      }
+      if (context?.previousReplies) {
+        for (const [key, data] of context.previousReplies) {
+          queryClient.setQueryData(key, data);
+        }
+      }
+      toast.error("Failed to react to comment");
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["comments", postId] });
       queryClient.invalidateQueries({ queryKey: ["replies"] });
-    },
-    onError: () => {
-      toast.error("Failed to react to comment");
     },
   });
 

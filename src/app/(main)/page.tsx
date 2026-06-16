@@ -76,9 +76,9 @@ export default function Home() {
   const { savePostMutation } = useSavePost();
   const { sharePostMutation } = useSharePost();
 
-  // Post modal state
+  // Post modal state - store ID only, derive post from feed data for real-time updates
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
-  const [selectedPostForModal, setSelectedPostForModal] = useState<FeedItem | null>(null);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
   // Get current user profile for avatar in comment dialog
   const { showUserProfileQuery } = useGetUserProfile();
@@ -97,6 +97,11 @@ export default function Home() {
 
   // Flatten all pages into a single array
   const posts = data?.pages.flatMap((page: any) => page.items) || [];
+
+  // Derive the modal post from feed data so it updates in real-time on reactions
+  const selectedPostForModal = selectedPostId
+    ? posts.find((item: FeedItem) => item.data._id === selectedPostId) ?? null
+    : null;
   
   // Debug logging
   useEffect(() => {
@@ -158,19 +163,16 @@ export default function Home() {
 
   // Open the unified post modal when a post is clicked
   const handleOpenPost = (post: FeedItem) => {
-    setSelectedPostForModal(post);
+    setSelectedPostId(post.data._id);
     setIsPostModalOpen(true);
     window.dispatchEvent(new Event("feed:pause-videos"));
   };
 
   // Open the post modal when comment icon/count is clicked
   const handleComment = (postId: string) => {
-    const postItem = posts.find((item: FeedItem) => item.data._id === postId);
-    if (postItem) {
-      setSelectedPostForModal(postItem);
-      setIsPostModalOpen(true);
-      window.dispatchEvent(new Event("feed:pause-videos"));
-    }
+    setSelectedPostId(postId);
+    setIsPostModalOpen(true);
+    window.dispatchEvent(new Event("feed:pause-videos"));
   };
 
   // Error state
