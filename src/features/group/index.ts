@@ -11,6 +11,8 @@ export { GroupsContent } from "./components/groups-content";
 export { GroupTextPostForm } from "./components/group-text-post-form";
 export { EditGroupPostDialog } from "./components/edit-group-post-dialog";
 export { GroupCommentDialog } from "./components/group-comment-dialog";
+export { GroupMembersList } from "./components/group-members-list";
+export { GroupJoinRequests } from "./components/group-join-requests";
 
 // Hook exports
 export {
@@ -19,6 +21,10 @@ export {
   useGetForYouGroups,
   useGetMyGroups,
   useGetGroupDetails,
+  useGetGroupMembers,
+  useGetGroupJoinRequests,
+  useUpdateMemberStatus,
+  useDeleteGroup,
 } from "./hooks/group-query";
 
 export {

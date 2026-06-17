@@ -1,10 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { MediaImage } from "@/features/profile";
 import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import { Card, CardContent } from "@/components/atoms/card";
 import { Skeleton } from "@/components/atoms/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/atoms/alert-dialog";
 import {
   Users,
   FileText,
@@ -16,9 +28,11 @@ import {
   Crown,
   User,
   AlertCircle,
+  Trash2,
 } from "lucide-react";
-import { useGetGroupDetails, useJoinGroup } from "../hooks/group-query";
+import { useGetGroupDetails, useJoinGroup, useDeleteGroup } from "../hooks/group-query";
 import { formatDistanceToNow } from "date-fns";
+import { useRouter } from "next/navigation";
 
 interface GroupDetailsProps {
   groupId: string;
@@ -28,6 +42,9 @@ interface GroupDetailsProps {
 export function GroupDetails({ groupId, showOnlyAbout = false }: GroupDetailsProps) {
   const { groupDetailsQuery } = useGetGroupDetails(groupId);
   const { joinGroupMutation } = useJoinGroup();
+  const { deleteGroupMutation } = useDeleteGroup();
+  const router = useRouter();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data, isLoading, isError, refetch } = groupDetailsQuery;
 
@@ -76,6 +93,15 @@ export function GroupDetails({ groupId, showOnlyAbout = false }: GroupDetailsPro
 
   const handleJoin = () => {
     joinGroupMutation.mutate(group._id);
+  };
+
+  const handleDelete = () => {
+    deleteGroupMutation.mutate(group._id, {
+      onSuccess: () => {
+        setShowDeleteDialog(false);
+        router.push("/groups");
+      },
+    });
   };
 
   // If showOnlyAbout is true, only render the about section
@@ -188,6 +214,36 @@ export function GroupDetails({ groupId, showOnlyAbout = false }: GroupDetailsPro
                   >
                     {joinGroupMutation.isPending ? "Joining..." : "Join Group"}
                   </Button>
+                )}
+                {/* Delete Button (only for owner) */}
+                {isOwner && (
+                  <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="lg">
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Group
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Group</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this group? This action cannot be undone.
+                          All posts, members, and related data will be permanently deleted.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          variant="destructive"
+                          onClick={handleDelete}
+                          disabled={deleteGroupMutation.isPending}
+                        >
+                          {deleteGroupMutation.isPending ? "Deleting..." : "Delete Group"}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
               </div>
             </div>

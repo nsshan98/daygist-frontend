@@ -65,6 +65,14 @@ export type {
   CreateGroupPayload,
   CreateGroupResponse,
   JoinGroupResponse,
+  GroupMemberUser,
+  GroupMember,
+  GroupJoinRequest,
+  GroupMembersResponse,
+  GroupJoinRequestsResponse,
+  UpdateMemberStatusPayload,
+  UpdateMemberStatusResponse,
+  DeleteGroupResponse,
 } from "@/types/group.types";
 
 // Group Post Types

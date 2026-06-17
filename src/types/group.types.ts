@@ -143,3 +143,67 @@ export interface CreateGroupPayload {
   allowMemberInvites: boolean;
 }
 
+// ===============================|| GROUP MEMBER TYPES ||============================== //
+
+export interface GroupMemberUser {
+  _id: string;
+  name: string;
+  username: string;
+  avatar?: {
+    url: string;
+    key: string;
+    provider: string;
+  } | null;
+}
+
+export interface GroupMember {
+  _id: string;
+  user: GroupMemberUser;
+  role: "owner" | "admin" | "member";
+  status: "active" | "pending" | "rejected" | "blocked";
+  joinedAt: string;
+}
+
+export interface GroupJoinRequest {
+  _id: string;
+  user: GroupMemberUser;
+  requestedAt: string;
+}
+
+// ===============================|| GROUP MEMBERS API RESPONSES ||============================== //
+
+export interface GroupMembersResponse {
+  success: boolean;
+  items: GroupMember[];
+  nextCursor: {
+    joinedAt: string;
+    _id: string;
+  } | null;
+}
+
+export interface GroupJoinRequestsResponse {
+  success: boolean;
+  items: GroupJoinRequest[];
+  nextCursor: {
+    requestedAt: string;
+    _id: string;
+  } | null;
+}
+
+export interface UpdateMemberStatusPayload {
+  groupId: string;
+  memberId: string;
+  status: "active" | "rejected" | "blocked";
+}
+
+export interface UpdateMemberStatusResponse {
+  success: boolean;
+  message: string;
+  item: GroupMember;
+}
+
+export interface DeleteGroupResponse {
+  success: boolean;
+  message: string;
+}
+
