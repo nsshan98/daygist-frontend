@@ -5,10 +5,11 @@ import { Button } from "@/components/atoms/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Badge } from "@/components/atoms/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/atoms/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
-import { Building, CreditCard, MapPin, Phone, User, Wallet, Clock, CheckCircle, AlertCircle, Loader2, Plus } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
+import { Building, CreditCard, MapPin, Phone, User, Wallet, CheckCircle, AlertCircle, Loader2, Plus, Clock, FileText, Shield, Search } from "lucide-react";
 import { useSellerProfile } from "../hooks/seller-query";
 import { SellerApplicationDialog } from "./seller-application-dialog";
+import { SellerProfile, SellerStats } from "@/types/seller.types";
 
 export function SellerDashboard() {
   const { data: sellerData, isLoading, error } = useSellerProfile();
@@ -37,9 +38,8 @@ export function SellerDashboard() {
   }
 
   if (!sellerData?.data) {
-    // User has not applied yet - show application prompt
     return (
-      <div className="space-y-6">
+      <div className="max-w-2xl mx-auto space-y-6 py-4">
         <div className="text-center space-y-4">
           <div className="mx-auto w-20 h-20 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
             <Building className="h-10 w-10 text-blue-600 dark:text-blue-400" />
@@ -47,12 +47,12 @@ export function SellerDashboard() {
           <div className="space-y-2">
             <h2 className="text-2xl font-bold">Welcome to the Marketplace!</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Apply to become a seller today and start selling your products on Daygist's marketplace. It's free and takes just a few minutes.
+              Apply to become a seller today and start selling your products on Daygist&apos;s marketplace. It&apos;s free and takes just a few minutes.
             </p>
           </div>
         </div>
 
-        <Card className="max-w-2xl mx-auto">
+        <Card className="max-w-lg mx-auto">
           <CardHeader className="text-center">
             <CardTitle>Ready to Start Selling?</CardTitle>
             <CardDescription>
@@ -98,7 +98,6 @@ export function SellerDashboard() {
     );
   }
 
-  // Render different views based on seller status
   const renderSellerContent = () => {
     switch (sellerData.data?.status) {
       case "pending":
@@ -106,14 +105,14 @@ export function SellerDashboard() {
       case "approved":
         return <ApprovedSellerView seller={sellerData.data} stats={sellerData.status} />;
       case "rejected":
-        return <RejectedSellerView seller={sellerData.data} />;
+        return <RejectedSellerView seller={sellerData.data} onReapply={() => setIsApplicationDialogOpen(true)} />;
       default:
-        return <PendingSellerView seller={sellerData.data} />;
+        return <PendingSellerView seller={sellerData.data!} />;
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 py-4">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -144,6 +143,7 @@ export function SellerDashboard() {
             </Avatar>
             {sellerData.data?.shopName}
             <Badge
+            className="capitalize"
               variant={sellerData.data?.status === "approved" ? "default" :
                        sellerData.data?.status === "pending" ? "secondary" : "destructive"}
             >
@@ -151,7 +151,7 @@ export function SellerDashboard() {
             </Badge>
           </CardTitle>
           <CardDescription>
-            Applied on {new Date(sellerData.data?.createdAt).toLocaleDateString()}
+            Applied on {new Date(sellerData.data?.createdAt || "").toLocaleDateString()}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -167,26 +167,26 @@ export function SellerDashboard() {
               </div>
               <div className="flex items-center gap-3">
                 <Building className="h-4 w-4 text-muted-foreground" />
-                <span>{sellerData.data?.businessType}</span>
+                <span className="capitalize">{sellerData.data?.businessType}</span>
               </div>
             </div>
             <div className="space-y-4">
               {sellerData.data?.district && (
                 <div className="flex items-center gap-3">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{sellerData.data?.district}</span>
+                  <span>{sellerData.data.district}</span>
                 </div>
               )}
               {sellerData.data?.businessType === "individual" && sellerData.data?.nidNumber && (
                 <div className="flex items-center gap-3">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  <span>ID: {sellerData.data?.nidNumber}</span>
+                  <span>ID: {sellerData.data.nidNumber}</span>
                 </div>
               )}
               {sellerData.data?.businessType === "business" && sellerData.data?.tradeLicense && (
                 <div className="flex items-center gap-3">
                   <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  <span>{sellerData.data?.tradeLicense}</span>
+                  <span>{sellerData.data.tradeLicense}</span>
                 </div>
               )}
             </div>
@@ -194,7 +194,7 @@ export function SellerDashboard() {
           {sellerData.data?.description && (
             <div className="mt-4 pt-4 border-t">
               <p className="text-sm text-muted-foreground leading-relaxed">
-                {sellerData.data?.description}
+                {sellerData.data.description}
               </p>
             </div>
           )}
@@ -211,54 +211,152 @@ export function SellerDashboard() {
   );
 }
 
-function PendingSellerView({ seller }: { seller: any }) {
+function PendingSellerView({ seller }: { seller: SellerProfile }) {
   return (
-    <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Loader2 className="h-5 w-5 text-yellow-600 animate-spin" />
-          Application Under Review
-        </CardTitle>
-        <CardDescription>
-          Your seller application is being processed. We'll notify you when there's an update.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="bg-white dark:bg-gray-900 rounded-lg p-4 space-y-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Application ID:</span>
-            <span className="font-medium">#{seller._id}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Applied:</span>
-            <span className="font-medium">
-              {new Date(seller.createdAt).toLocaleDateString()}
-            </span>
-          </div>
-          {seller.reason && (
-            <div className="pt-2 border-t">
-              <span className="text-sm font-medium">Rejection Reason:</span>
-              <p className="text-sm text-muted-foreground mt-1">
-                {seller.reason}
+    <div className="max-w-lg mx-auto space-y-4">
+      {/* Status Banner */}
+      <Card className="border-amber-200 bg-linear-to-br from-amber-50 to-orange-50 dark:border-amber-800 dark:from-amber-950/30 dark:to-orange-950/20 overflow-hidden">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+              <Clock className="h-6 w-6 text-amber-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-amber-900 dark:text-amber-100">
+                Application Under Review
+              </h3>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                Your seller application is being reviewed by our team. We&apos;ll notify you once a decision is made.
               </p>
             </div>
-          )}
-        </div>
+          </div>
+        </CardContent>
+      </Card>
 
-        <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
-          <h4 className="font-medium mb-2">What happens next?</h4>
-          <ul className="text-sm space-y-1 text-muted-foreground">
-            <li>• Our team will review your application (2-3 business days)</li>
-            <li>• You'll receive an email notification when approved or rejected</li>
-            <li>• If approved, you can start adding products to your shop</li>
+      {/* Application Details */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <h4 className="font-medium">Application Details</h4>
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Application ID</span>
+              <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">
+                #{seller._id.slice(-8).toUpperCase()}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Submitted</span>
+              <span className="font-medium">
+                {new Date(seller.createdAt).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Shop Name</span>
+              <span className="font-medium">{seller.shopName}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Business Type</span>
+              <span className="font-medium capitalize">{seller.businessType}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Review Steps */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <h4 className="font-medium">Review Process</h4>
+          </div>
+          <div className="space-y-0">
+            <div className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                </div>
+                <div className="w-px h-full bg-border my-1" />
+              </div>
+              <div className="pb-4">
+                <p className="font-medium text-sm">Application Submitted</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {new Date(seller.createdAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                  <Search className="h-4 w-4 text-amber-600" />
+                </div>
+                <div className="w-px h-full bg-border my-1" />
+              </div>
+              <div className="pb-4">
+                <p className="font-medium text-sm">Under Review</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Our team is reviewing your documents
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <span className="text-xs font-medium text-muted-foreground">3</span>
+                </div>
+              </div>
+              <div>
+                <p className="font-medium text-sm text-muted-foreground">Decision</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Typically within 2-3 business days
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* What happens next */}
+      <Card className="border-blue-200 dark:border-blue-800">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Shield className="h-4 w-4 text-blue-600" />
+            <h4 className="font-medium">What happens next?</h4>
+          </div>
+          <ul className="text-sm space-y-2 text-muted-foreground">
+            <li className="flex items-start gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+              <span>Our team will review your application (2-3 business days)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+              <span>You&apos;ll receive a notification when approved or rejected</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+              <span>If approved, you can start adding products to your shop</span>
+            </li>
           </ul>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
-function ApprovedSellerView({ seller, stats }: { seller: any; stats: any }) {
+function ApprovedSellerView({ seller, stats }: { seller: SellerProfile; stats: SellerStats }) {
   return (
     <Tabs defaultValue="overview" className="space-y-4">
       <TabsList>
@@ -278,7 +376,7 @@ function ApprovedSellerView({ seller, stats }: { seller: any; stats: any }) {
             <CardContent>
               <div className="text-2xl font-bold">{stats?.productCount || 0}</div>
               <p className="text-xs text-muted-foreground">
-                +{Math.floor(stats?.productCount * 0.2) || 2} this month
+                +{Math.floor((stats?.productCount || 0) * 0.2)} this month
               </p>
             </CardContent>
           </Card>
@@ -302,7 +400,7 @@ function ApprovedSellerView({ seller, stats }: { seller: any; stats: any }) {
               <Wallet className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">BDT {stats?.walletBalance?.toLocaleString() || 0}</div>
+              <div className="text-2xl font-bold">BDT {(stats?.walletBalance || 0).toLocaleString()}</div>
               <p className="text-xs text-green-600">
                 Available for withdrawal
               </p>
@@ -402,54 +500,95 @@ function ApprovedSellerView({ seller, stats }: { seller: any; stats: any }) {
   );
 }
 
-function RejectedSellerView({ seller }: { seller: any }) {
+function RejectedSellerView({ seller, onReapply }: { seller: SellerProfile; onReapply: () => void }) {
   return (
-    <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <AlertCircle className="h-5 w-5 text-red-600" />
-          Application Rejected
-        </CardTitle>
-        <CardDescription>
-          Unfortunately, your seller application was not approved.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="bg-white dark:bg-gray-900 rounded-lg p-4 space-y-3">
-          {seller.reason && (
-            <div>
-              <span className="text-sm font-medium">Rejection Reason:</span>
-              <p className="text-sm text-muted-foreground mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded">
-                {seller.reason}
+    <div className="max-w-lg mx-auto space-y-4">
+      {/* Status Banner */}
+      <Card className="border-red-200 bg-linear-to-br from-red-50 to-rose-50 dark:border-red-800 dark:from-red-950/30 dark:to-rose-950/20 overflow-hidden">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-red-900 dark:text-red-100">
+                Application Rejected
+              </h3>
+              <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                Unfortunately, your seller application was not approved.
               </p>
             </div>
-          )}
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Application ID:</span>
-            <span className="font-medium">#{seller._id}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Submitted:</span>
-            <span className="font-medium">
-              {new Date(seller.createdAt).toLocaleDateString()}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Last Updated:</span>
-            <span className="font-medium">
-              {new Date(seller.updatedAt).toLocaleDateString()}
-            </span>
-          </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
-          <h4 className="font-medium mb-2">You can now re-apply with corrected information.</h4>
-          <p className="text-sm text-muted-foreground">
-            Make sure to address all requirements and ensure all documents are properly uploaded.
-            We typically respond to applications within 2-3 business days.
+      {/* Rejection Reason */}
+      {seller.reason && (
+        <Card className="border-red-200 dark:border-red-800">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <h4 className="font-medium text-red-900 dark:text-red-100">Rejection Reason</h4>
+            </div>
+            <p className="text-sm text-muted-foreground p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-100 dark:border-red-900/30">
+              {seller.reason}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Application Details */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <h4 className="font-medium">Application Details</h4>
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Application ID</span>
+              <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">
+                #{seller._id.slice(-8).toUpperCase()}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Submitted</span>
+              <span className="font-medium">
+                {new Date(seller.createdAt).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Last Updated</span>
+              <span className="font-medium">
+                {new Date(seller.updatedAt).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Re-apply CTA */}
+      <Card className="border-blue-200 dark:border-blue-800">
+        <CardContent className="p-6">
+          <h4 className="font-medium mb-2">Ready to try again?</h4>
+          <p className="text-sm text-muted-foreground mb-4">
+            Address the rejection reason above, ensure all documents are properly uploaded, and submit a new application.
+            We typically respond within 2-3 business days.
           </p>
-        </div>
-      </CardContent>
-    </Card>
+          <Button onClick={onReapply} className="w-full">
+            <Plus className="h-4 w-4 mr-2" />
+            Re-apply for Seller Account
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

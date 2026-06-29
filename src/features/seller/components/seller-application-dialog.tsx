@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/atoms/button";
@@ -36,7 +36,31 @@ import {
   SellerApplicationSchemaType,
 } from "@/schema/seller-schema";
 import { useApplySeller } from "../hooks/seller-query";
-import { Camera, Upload, Building, User, MapPin, CreditCard, Image, FileText, CheckCircle } from "lucide-react";
+import { useUploadImage } from "@/features/home/hooks/upload-query";
+import { SellerImage } from "@/types/seller.types";
+import { Upload, Building, User, CreditCard, Image, X } from "lucide-react";
+
+const BANGLADESH_DISTRICTS = [
+  "Bagerhat", "Bandarban", "Barguna", "Barisal", "Bhola", "Bogra",
+  "Brahmanbaria", "Chandpur", "Chittagong", "Chuadanga", "Comilla",
+  "Cox's Bazar", "Dhaka", "Dinajpur", "Faridganj", "Feni", "Gaibandha",
+  "Gazipur", "Gopalganj", "Habiganj", "Jamalpur", "Jessore", "Jhalokati",
+  "Jhenaidah", "Joypurhat", "Khagrachhari", "Khulna", "Kishoreganj",
+  "Kurigram", "Kushtia", "Lakshmipur", "Lalmonirhat", "Madaripur",
+  "Magura", "Manikganj", "Meherpur", "Moulvibazar", "Munshiganj",
+  "Mymensingh", "Naogaon", "Narail", "Narayanganj", "Narsingdi",
+  "Natore", "Netrokona", "Nilphamari", "Noakhali", "Pabna", "Panchagarh",
+  "Patuakhali", "Pirojpur", "Rajbari", "Rajshahi", "Rangamati", "Rangpur",
+  "Satkhira", "Shariatpur", "Sherpur", "Sirajganj", "Sunamganj",
+  "Sylhet", "Tangail", "Thakurgaon"
+];
+
+interface ImageFiles {
+  logo: File | null;
+  banner: File | null;
+  nidFront: File | null;
+  nidBack: File | null;
+}
 
 export function SellerApplicationDialog({
   open,
@@ -46,13 +70,17 @@ export function SellerApplicationDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { applySellerMutation } = useApplySeller();
+  const { uploadImageMutation } = useUploadImage();
   const [globalError, setGlobalError] = useState<string>("");
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
-  const [nidFrontPreview, setNidFrontPreview] = useState<string | null>(null);
-  const [nidBackPreview, setNidBackPreview] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<ImageFiles>({
+    logo: null,
+    banner: null,
+    nidFront: null,
+    nidBack: null,
+  });
+  const [isUploading, setIsUploading] = useState(false);
 
-  const form = useForm<SellerApplicationSchemaType & Partial<Pick<SellerApplicationSchemaType, 'nidNumber' | 'nidFrontImage' | 'nidBackImage' | 'tradeLicense' | 'logo' | 'banner'>>>( {
+  const form = useForm<SellerApplicationSchemaType>({
     resolver: zodResolver(sellerApplicationSchema),
     defaultValues: {
       shopName: "",
@@ -60,7 +88,7 @@ export function SellerApplicationDialog({
       address: "",
       district: "",
       businessType: "individual",
-      acceptedTerms: true,
+      acceptedTerms: false,
       nidNumber: "",
       nidFrontImage: undefined,
       nidBackImage: undefined,
@@ -73,59 +101,179 @@ export function SellerApplicationDialog({
   const { isSubmitting } = form.formState;
   const businessType = form.watch("businessType");
 
-  const handleImageUpload = (
-    field: { onChange: (value: any) => void },
-    setPreview: (url: string | null) => void,
-    acceptType?: string
-  ) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = acceptType || "image/*";
+  const logoPreview = imageFiles.logo ? URL.createObjectURL(imageFiles.logo) : null;
+  const bannerPreview = imageFiles.banner ? URL.createObjectURL(imageFiles.banner) : null;
+  const nidFrontPreview = imageFiles.nidFront ? URL.createObjectURL(imageFiles.nidFront) : null;
+  const nidBackPreview = imageFiles.nidBack ? URL.createObjectURL(imageFiles.nidBack) : null;
 
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        // Create mock object for image upload
-        const mockObject = {
-          key: `uploads/${Date.now()}-${file.name}`, // Mock key
-          url: URL.createObjectURL(file), // Mock URL
-          provider: "wasabi",
-        };
-
-        field.onChange(mockObject);
-        const previewUrl = URL.createObjectURL(file);
-        setPreview(previewUrl);
-      }
+  useEffect(() => {
+    return () => {
+      if (imageFiles.logo) URL.revokeObjectURL(URL.createObjectURL(imageFiles.logo));
+      if (imageFiles.banner) URL.revokeObjectURL(URL.createObjectURL(imageFiles.banner));
+      if (imageFiles.nidFront) URL.revokeObjectURL(URL.createObjectURL(imageFiles.nidFront));
+      if (imageFiles.nidBack) URL.revokeObjectURL(URL.createObjectURL(imageFiles.nidBack));
     };
+  }, [imageFiles]);
 
-    input.click();
+  const handleFileSelect = useCallback(
+    (key: keyof ImageFiles, acceptType?: string) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = acceptType || "image/*";
+
+      input.onchange = (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (file) {
+          setImageFiles((prev) => ({ ...prev, [key]: file }));
+        }
+      };
+
+      input.click();
+    },
+    []
+  );
+
+  const handleRemoveFile = useCallback((key: keyof ImageFiles) => {
+    setImageFiles((prev) => ({ ...prev, [key]: null }));
+  }, []);
+
+  const handleBusinessTypeChange = useCallback(
+    (value: "individual" | "business") => {
+      form.setValue("businessType", value);
+
+      if (value === "business") {
+        form.setValue("nidNumber", "");
+        setImageFiles((prev) => ({ ...prev, nidFront: null, nidBack: null }));
+      } else {
+        form.setValue("tradeLicense", "");
+      }
+    },
+    [form]
+  );
+
+  const uploadFile = async (file: File): Promise<SellerImage> => {
+    const result = await uploadImageMutation.mutateAsync(file);
+    return {
+      key: result.key,
+      url: result.url,
+      provider: result.provider,
+    };
   };
 
   const onSubmit = async (data: SellerApplicationSchemaType) => {
     setGlobalError("");
+    setIsUploading(true);
 
     try {
-      await applySellerMutation.mutateAsync(data);
+      const uploadPromises: Promise<{ key: string; image: SellerImage }>[] = [];
 
-      // Clean up previews
-      if (logoPreview) URL.revokeObjectURL(logoPreview);
-      if (bannerPreview) URL.revokeObjectURL(bannerPreview);
-      if (nidFrontPreview) URL.revokeObjectURL(nidFrontPreview);
-      if (nidBackPreview) URL.revokeObjectURL(nidBackPreview);
+      if (imageFiles.logo) {
+        uploadPromises.push(
+          uploadFile(imageFiles.logo).then((image) => ({ key: "logo", image }))
+        );
+      }
+      if (imageFiles.banner) {
+        uploadPromises.push(
+          uploadFile(imageFiles.banner).then((image) => ({ key: "banner", image }))
+        );
+      }
+      if (imageFiles.nidFront) {
+        uploadPromises.push(
+          uploadFile(imageFiles.nidFront).then((image) => ({ key: "nidFront", image }))
+        );
+      }
+      if (imageFiles.nidBack) {
+        uploadPromises.push(
+          uploadFile(imageFiles.nidBack).then((image) => ({ key: "nidBack", image }))
+        );
+      }
+
+      const uploadResults = await Promise.all(uploadPromises);
+
+      const uploadedImages: Record<string, SellerImage> = {};
+      for (const result of uploadResults) {
+        uploadedImages[result.key] = result.image;
+      }
+
+      const payload: SellerApplicationSchemaType = {
+        ...data,
+        logo: uploadedImages["logo"] || data.logo,
+        banner: uploadedImages["banner"] || data.banner,
+        nidFrontImage: uploadedImages["nidFront"] || data.nidFrontImage,
+        nidBackImage: uploadedImages["nidBack"] || data.nidBackImage,
+      };
+
+      await applySellerMutation.mutateAsync(payload);
 
       form.reset();
-      setLogoPreview(null);
-      setBannerPreview(null);
-      setNidFrontPreview(null);
-      setNidBackPreview(null);
+      setImageFiles({ logo: null, banner: null, nidFront: null, nidBack: null });
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Seller application error:", error);
+      const err = error as { response?: { data?: { message?: string } } };
       setGlobalError(
-        error.response?.data?.message || "Failed to submit seller application"
+        err.response?.data?.message || "Failed to submit seller application"
       );
+    } finally {
+      setIsUploading(false);
     }
   };
+
+  const renderImageUpload = ({
+    preview,
+    fileKey,
+    label,
+    alt,
+  }: {
+    preview: string | null;
+    fileKey: keyof ImageFiles;
+    label: string;
+    alt: string;
+  }) => (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <FormLabel>{label}</FormLabel>
+        {preview && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-muted-foreground hover:text-destructive"
+            onClick={() => handleRemoveFile(fileKey)}
+          >
+            <X className="h-3 w-3 mr-1" />
+            Remove
+          </Button>
+        )}
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full h-32 border-dashed hover:border-primary hover:bg-primary/5 p-2"
+        onClick={() => handleFileSelect(fileKey, "image/*")}
+      >
+        <div className="w-full h-full flex items-center justify-center">
+          {preview ? (
+            <div className="relative w-full h-full flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={preview}
+                alt={alt}
+                className="max-w-full max-h-full object-contain rounded"
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <Upload className="h-8 w-8 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">
+                Click to upload
+              </span>
+            </div>
+          )}
+        </div>
+      </Button>
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -152,6 +300,13 @@ export function SellerApplicationDialog({
             {globalError && (
               <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
                 {globalError}
+              </div>
+            )}
+
+            {isUploading && (
+              <div className="p-3 text-sm text-blue-600 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md flex items-center gap-2">
+                <Spinner className="h-4 w-4" />
+                Uploading images and submitting application...
               </div>
             )}
 
@@ -211,9 +366,20 @@ export function SellerApplicationDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>District *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Dhaka" {...field} />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select district" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {BANGLADESH_DISTRICTS.map((district) => (
+                            <SelectItem key={district} value={district}>
+                              {district}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -225,9 +391,12 @@ export function SellerApplicationDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Business Type *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={handleBusinessTypeChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select business type" />
                           </SelectTrigger>
                         </FormControl>
@@ -278,101 +447,33 @@ export function SellerApplicationDialog({
                   )}
                 />
 
-                {/* Front NID Image */}
                 <FormField
                   control={form.control}
                   name="nidFrontImage"
-                  render={({ field }) => (
+                  render={() => (
                     <FormItem>
-                      <FormLabel>NID Front *</FormLabel>
-                      <FormControl>
-                        <div className="space-y-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full h-32 border-dashed hover:border-primary hover:bg-primary/5 p-2"
-                            onClick={() =>
-                              handleImageUpload(
-                                field,
-                                setNidFrontPreview,
-                                "image/*"
-                              )
-                            }
-                          >
-                            <div className="w-full h-full flex items-center justify-center">
-                              {nidFrontPreview ? (
-                                <div className="relative w-full h-full flex items-center justify-center">
-                                  <img
-                                    src={nidFrontPreview}
-                                    alt="NID Front"
-                                    className="max-w-full max-h-full object-contain rounded"
-                                  />
-                                  <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full">
-                                    <CheckCircle className="h-4 w-4" />
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex flex-col items-center gap-2">
-                                  <Upload className="h-8 w-8 text-muted-foreground" />
-                                  <span className="text-xs text-muted-foreground">
-                                    Upload Front (Back ID)
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </Button>
-                        </div>
-                      </FormControl>
+                      {renderImageUpload({
+                        preview: nidFrontPreview,
+                        fileKey: "nidFront",
+                        label: "NID Front *",
+                        alt: "NID Front",
+                      })}
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                {/* Back NID Image */}
                 <FormField
                   control={form.control}
                   name="nidBackImage"
-                  render={({ field }) => (
+                  render={() => (
                     <FormItem>
-                      <FormLabel>NID Back *</FormLabel>
-                      <FormControl>
-                        <div className="space-y-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full h-32 border-dashed hover:border-primary hover:bg-primary/5 p-2"
-                            onClick={() =>
-                              handleImageUpload(
-                                field,
-                                setNidBackPreview,
-                                "image/*"
-                              )
-                            }
-                          >
-                            <div className="w-full h-full flex items-center justify-center">
-                              {nidBackPreview ? (
-                                <div className="relative w-full h-full flex items-center justify-center">
-                                  <img
-                                    src={nidBackPreview}
-                                    alt="NID Back"
-                                    className="max-w-full max-h-full object-contain rounded"
-                                  />
-                                  <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full">
-                                    <CheckCircle className="h-4 w-4" />
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex flex-col items-center gap-2">
-                                  <Upload className="h-8 w-8 text-muted-foreground" />
-                                  <span className="text-xs text-muted-foreground">
-                                    Upload Back (Front ID)
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </Button>
-                        </div>
-                      </FormControl>
+                      {renderImageUpload({
+                        preview: nidBackPreview,
+                        fileKey: "nidBack",
+                        label: "NID Back *",
+                        alt: "NID Back",
+                      })}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -380,7 +481,6 @@ export function SellerApplicationDialog({
               </div>
             )}
 
-            {/* Business Type Specific Fields */}
             {businessType === "business" && (
               <div className="space-y-4 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -414,93 +514,33 @@ export function SellerApplicationDialog({
                 Shop Visuals (Optional)
               </h3>
 
-              {/* Logo */}
               <FormField
                 control={form.control}
                 name="logo"
-                render={({ field }) => (
+                render={() => (
                   <FormItem>
-                    <FormLabel>Shop Logo</FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full h-32 border-dashed hover:border-primary hover:bg-primary/5 p-2"
-                          onClick={() =>
-                            handleImageUpload(field, setLogoPreview, "image/*")
-                          }
-                        >
-                          <div className="w-full h-full flex items-center justify-center">
-                            {logoPreview ? (
-                              <div className="relative w-full h-full flex items-center justify-center">
-                                <img
-                                  src={logoPreview}
-                                  alt="Shop Logo"
-                                  className="max-w-full max-h-full object-contain rounded"
-                                />
-                                <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full">
-                                  <CheckCircle className="h-4 w-4" />
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex flex-col items-center gap-2">
-                                <Upload className="h-8 w-8 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground">
-                                  Upload Logo
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </Button>
-                      </div>
-                    </FormControl>
+                    {renderImageUpload({
+                      preview: logoPreview,
+                      fileKey: "logo",
+                      label: "Shop Logo",
+                      alt: "Shop Logo",
+                    })}
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Banner */}
               <FormField
                 control={form.control}
                 name="banner"
-                render={({ field }) => (
+                render={() => (
                   <FormItem>
-                    <FormLabel>Shop Banner</FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full h-32 border-dashed hover:border-primary hover:bg-primary/5 p-2"
-                          onClick={() =>
-                            handleImageUpload(field, setBannerPreview, "image/*")
-                          }
-                        >
-                          <div className="w-full h-full flex items-center justify-center">
-                            {bannerPreview ? (
-                              <div className="relative w-full h-full flex items-center justify-center">
-                                <img
-                                  src={bannerPreview}
-                                  alt="Shop Banner"
-                                  className="max-w-full max-h-full object-contain rounded"
-                                />
-                                <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full">
-                                  <CheckCircle className="h-4 w-4" />
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex flex-col items-center gap-2">
-                                <Upload className="h-8 w-8 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground">
-                                  Upload Banner
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </Button>
-                      </div>
-                    </FormControl>
+                    {renderImageUpload({
+                      preview: bannerPreview,
+                      fileKey: "banner",
+                      label: "Shop Banner",
+                      alt: "Shop Banner",
+                    })}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -551,17 +591,17 @@ export function SellerApplicationDialog({
             <DialogFooter>
               <Button
                 type="button"
-                variant="outline"
+                variant="secondary"
                 onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isUploading}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting || applySellerMutation.isPending}
+                disabled={isSubmitting || applySellerMutation.isPending || isUploading}
               >
-                {isSubmitting || applySellerMutation.isPending ? (
+                {isSubmitting || applySellerMutation.isPending || isUploading ? (
                   <>
                     Submitting Application...
                     <Spinner />

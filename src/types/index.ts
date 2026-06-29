@@ -159,6 +159,18 @@ export type {
   MessagesResponse,
 } from "@/types/chat.types";
 
+// Seller Types
+export type {
+  SellerStatus,
+  BusinessType,
+  SellerImage,
+  SellerProfile,
+  SellerStats,
+  SellerMeResponse,
+  SellerApplicationPayload,
+  SellerApplicationResponse,
+} from "@/types/seller.types";
+
 // Component Types (from stores)
 export type {
   PostType,
