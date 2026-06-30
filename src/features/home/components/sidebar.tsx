@@ -21,6 +21,7 @@ import {
   DollarSign,
   Video,
   Building,
+  Store,
 } from "lucide-react";
 import { useGetMonetizationStatus } from "@/features/monetization";
 
@@ -31,7 +32,7 @@ const navItems = [
   { label: "Groups", icon: Users, href: "/groups" },
   { label: "Saved", icon: Bookmark, href: "/saved-posts" },
   { label: "Monetization", icon: DollarSign, href: "/monetization" },
-  { label: "Seller", icon: Building, href: "/seller" },
+  { label: "Marketplace", icon: Store, href: "/marketplace" },
 ];
 
 const trendingTopics = [

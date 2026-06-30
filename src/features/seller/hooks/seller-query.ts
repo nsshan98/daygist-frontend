@@ -1,5 +1,18 @@
 import { axiosClient } from "@/lib/api/axios-client";
-import { SellerApplicationPayload, SellerMeResponse, SellerApplicationResponse } from "@/types/seller.types";
+import {
+  SellerApplicationPayload,
+  SellerMeResponse,
+  SellerApplicationResponse,
+} from "@/types/seller.types";
+import {
+  CreateProductPayload,
+  UpdateProductPayload,
+  SellerProductListResponse,
+  SellerProductCreateResponse,
+  SellerProductUpdateResponse,
+  SellerProductDeleteResponse,
+  ProductStatus,
+} from "@/types/product.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -40,12 +53,113 @@ const useSellerProfile = () => {
       return data;
     },
     retry: false,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
   });
 
   return sellerProfileQuery;
 };
 
+// ===============================|| SELLER PRODUCTS ||============================== //
+
+const useGetSellerProducts = (status?: ProductStatus | "all", page = 1, limit = 20) => {
+  const sellerProductsQuery = useQuery({
+    queryKey: ["seller-products", status, page, limit],
+    queryFn: async (): Promise<SellerProductListResponse> => {
+      const params = new URLSearchParams();
+      params.set("page", String(page));
+      params.set("limit", String(limit));
+      if (status && status !== "all") params.set("status", status);
+      const { data } = await axiosClient.get(`/e-commerce/seller/products?${params.toString()}`);
+      return data;
+    },
+    staleTime: 1000 * 60 * 2,
+  });
+
+  return sellerProductsQuery;
+};
+
+const useCreateSellerProduct = () => {
+  const queryClient = useQueryClient();
+
+  const createProductMutation = useMutation({
+    mutationFn: async (data: CreateProductPayload): Promise<SellerProductCreateResponse> => {
+      const { data: response } = await axiosClient.post("/e-commerce/seller/products", data, {
+        headers: { "Content-Type": "application/json" },
+      });
+      return response;
+    },
+    onSuccess: (response) => {
+      toast.success(response.message || "Product created successfully!");
+      queryClient.invalidateQueries({ queryKey: ["seller-products"] });
+      queryClient.invalidateQueries({ queryKey: ["seller-profile"] });
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      const message = error.response?.data?.message || "Failed to create product";
+      toast.error(message);
+    },
+  });
+
+  return { createProductMutation };
+};
+
+const useUpdateSellerProduct = () => {
+  const queryClient = useQueryClient();
+
+  const updateProductMutation = useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateProductPayload;
+    }): Promise<SellerProductUpdateResponse> => {
+      const { data: response } = await axiosClient.patch(`/e-commerce/seller/products/${id}`, data, {
+        headers: { "Content-Type": "application/json" },
+      });
+      return response;
+    },
+    onSuccess: () => {
+      toast.success("Product updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["seller-products"] });
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      const message = error.response?.data?.message || "Failed to update product";
+      toast.error(message);
+    },
+  });
+
+  return { updateProductMutation };
+};
+
+const useDeleteSellerProduct = () => {
+  const queryClient = useQueryClient();
+
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id: string): Promise<SellerProductDeleteResponse> => {
+      const { data } = await axiosClient.delete(`/e-commerce/seller/products/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Product deleted successfully!");
+      queryClient.invalidateQueries({ queryKey: ["seller-products"] });
+      queryClient.invalidateQueries({ queryKey: ["seller-profile"] });
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      const message = error.response?.data?.message || "Failed to delete product";
+      toast.error(message);
+    },
+  });
+
+  return { deleteProductMutation };
+};
+
 // ===============================|| SELLER HOOKS EXPORT ||============================== //
 
-export { useApplySeller, useSellerProfile };
+export {
+  useApplySeller,
+  useSellerProfile,
+  useGetSellerProducts,
+  useCreateSellerProduct,
+  useUpdateSellerProduct,
+  useDeleteSellerProduct,
+};

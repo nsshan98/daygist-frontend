@@ -9,11 +9,14 @@ import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
 import { Building, CreditCard, MapPin, Phone, User, Wallet, CheckCircle, AlertCircle, Loader2, Plus, Clock, FileText, Shield, Search } from "lucide-react";
 import { useSellerProfile } from "../hooks/seller-query";
 import { SellerApplicationDialog } from "./seller-application-dialog";
+import { SellerProductList } from "./seller-product-list";
+import { CreateProductDialog } from "./create-product-dialog";
 import { SellerProfile, SellerStats } from "@/types/seller.types";
 
 export function SellerDashboard() {
   const { data: sellerData, isLoading, error } = useSellerProfile();
   const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
+  const [isCreateProductOpen, setIsCreateProductOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -103,7 +106,13 @@ export function SellerDashboard() {
       case "pending":
         return <PendingSellerView seller={sellerData.data} />;
       case "approved":
-        return <ApprovedSellerView seller={sellerData.data} stats={sellerData.status} />;
+        return (
+          <ApprovedSellerView
+            seller={sellerData.data}
+            stats={sellerData.status}
+            onCreateProduct={() => setIsCreateProductOpen(true)}
+          />
+        );
       case "rejected":
         return <RejectedSellerView seller={sellerData.data} onReapply={() => setIsApplicationDialogOpen(true)} />;
       default:
@@ -206,6 +215,11 @@ export function SellerDashboard() {
       <SellerApplicationDialog
         open={isApplicationDialogOpen}
         onOpenChange={setIsApplicationDialogOpen}
+      />
+
+      <CreateProductDialog
+        open={isCreateProductOpen}
+        onOpenChange={setIsCreateProductOpen}
       />
     </div>
   );
@@ -356,7 +370,15 @@ function PendingSellerView({ seller }: { seller: SellerProfile }) {
   );
 }
 
-function ApprovedSellerView({ seller, stats }: { seller: SellerProfile; stats: SellerStats }) {
+function ApprovedSellerView({
+  seller,
+  stats,
+  onCreateProduct,
+}: {
+  seller: SellerProfile;
+  stats: SellerStats;
+  onCreateProduct: () => void;
+}) {
   return (
     <Tabs defaultValue="overview" className="space-y-4">
       <TabsList>
@@ -420,45 +442,20 @@ function ApprovedSellerView({ seller, stats }: { seller: SellerProfile; stats: S
             </CardContent>
           </Card>
         </div>
-
-        {seller.approvedBy && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Approval Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
-                  <User className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="font-medium">Approved by: {seller.approvedBy}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {seller.approvedAt && `On ${new Date(seller.approvedAt).toLocaleDateString()}`}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </TabsContent>
 
-      <TabsContent value="products">
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Products</CardTitle>
-            <CardDescription>
-              Manage your product listings on the marketplace.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <CreditCard className="h-12 w-12 mx-auto mb-4" />
-              <p className="text-lg font-medium">Product management coming soon</p>
-              <p className="text-sm">You can add products after the seller setup is complete.</p>
-            </div>
-          </CardContent>
-        </Card>
+      <TabsContent value="products" className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">Your Products</h3>
+            <p className="text-sm text-muted-foreground">Manage your product listings.</p>
+          </div>
+          <Button onClick={onCreateProduct}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Product
+          </Button>
+        </div>
+        <SellerProductList />
       </TabsContent>
 
       <TabsContent value="orders">
