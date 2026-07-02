@@ -179,7 +179,7 @@ export function SellerProductList() {
           </DialogHeader>
           <DialogFooter>
             <Button
-              variant="outline"
+              variant="secondary"
               onClick={() => setDeletingProduct(null)}
               disabled={deleteProductMutation.isPending}
             >
@@ -267,11 +267,11 @@ function SellerProductCard({
 
         {/* Actions */}
         <div className="flex gap-2 pt-1">
-          <Button variant="outline" size="sm" className="flex-1" onClick={onEdit}>
+          <Button variant="secondary" size="sm" className="flex-1" onClick={onEdit}>
             <Pencil className="w-3.5 h-3.5 mr-1" />
             Edit
           </Button>
-          <Button variant="outline" size="sm" onClick={onDelete}>
+          <Button variant="destructive" size="sm" onClick={onDelete}>
             <Trash2 className="w-3.5 h-3.5" />
           </Button>
         </div>

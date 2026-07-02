@@ -1,15 +1,14 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/atoms/button";
-import { Card, CardContent } from "@/components/atoms/card";
+import { Card } from "@/components/atoms/card";
 import { Input } from "@/components/atoms/input";
 import { Textarea } from "@/components/atoms/textarea";
 import { Switch } from "@/components/atoms/switch";
 import { Badge } from "@/components/atoms/badge";
-import { Skeleton } from "@/components/atoms/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -45,10 +44,12 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useCreateSellerProduct } from "../hooks/seller-query";
+import { useGetCategoryTree } from "../hooks/category-query";
 import { useUploadImage } from "@/features/home/hooks/upload-query";
-import { MediaImage } from "@/features/profile/components/media-image";
 import { createProductSchema, CreateProductSchemaType } from "@/schema/product-schema";
-import { ProductImage, ProductVariant } from "@/types/product.types";
+import { ProductVariant } from "@/types/product.types";
+import { Category } from "@/types/category.types";
+import { CategoryPicker } from "./category-picker";
 
 interface CreateProductDialogProps {
   open: boolean;
@@ -67,13 +68,31 @@ const STEPS: { key: Step; label: string; icon: typeof Package }[] = [
 
 export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogProps) {
   const [step, setStep] = useState<Step>("basic");
-  const [uploadedImages, setUploadedImages] = useState<ProductImage[]>([]);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { createProductMutation } = useCreateSellerProduct();
   const { uploadImageMutation } = useUploadImage();
+  const { data: catData } = useGetCategoryTree();
+
+  const findCategoryName = (list: Category[], id: string): string | null => {
+    for (const cat of list) {
+      if (cat._id === id) return cat.name;
+      if (cat.children?.length) {
+        const found = findCategoryName(cat.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const getCategoryNames = (ids: string[]): string[] => {
+    const categories = catData?.data ?? [];
+    return ids.map((id) => findCategoryName(categories, id) ?? id);
+  };
 
   const form = useForm<CreateProductSchemaType>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -110,39 +129,64 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
   const finalPrice = Math.round(price - (price * discountPercent) / 100);
   const freeShipping = form.watch("shipping.freeShipping");
 
+  const selectOnFocus = (e: React.FocusEvent<HTMLInputElement>) => e.target.select();
+
+  const blockNegative = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "-" || e.key === "e" || e.key === "E" || e.key === "+") {
+      e.preventDefault();
+    }
+  };
+
+  const stripNegative = (e: React.FormEvent<HTMLInputElement>) => {
+    const val = e.currentTarget.value;
+    if (val.startsWith("-")) {
+      e.currentTarget.value = val.replace("-", "");
+      e.currentTarget.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  };
+
+  const previewUrls = useRef<string[]>([]);
+
   useEffect(() => {
     if (!open) {
       form.reset();
-      setUploadedImages([]);
+      previewUrls.current.forEach((url) => URL.revokeObjectURL(url));
+      previewUrls.current = [];
+      setImageFiles([]);
+      setPreviews([]);
       setVariants([]);
       setStep("basic");
     }
   }, [open, form]);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || uploadedImages.length >= 5) return;
+    if (!files) return;
 
-    setIsUploading(true);
-    try {
-      for (let i = 0; i < files.length && uploadedImages.length + i < 5; i++) {
-        const result = await uploadImageMutation.mutateAsync(files[i]);
-        if (result.ok) {
-          setUploadedImages((prev) => [
-            ...prev,
-            { key: result.key, url: result.url, provider: result.provider || "wasabi", type: "image" },
-          ]);
-        }
+    const remaining = 5 - imageFiles.length;
+    const filesToAdd = Array.from(files).slice(0, remaining);
+
+    const newFiles: File[] = [];
+    const newPreviews: string[] = [];
+    filesToAdd.forEach((file) => {
+      if (file.type.startsWith("image/") && file.size <= 10 * 1024 * 1024) {
+        newFiles.push(file);
+        newPreviews.push(URL.createObjectURL(file));
       }
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
+    });
 
-  const removeImage = (index: number) => {
-    setUploadedImages((prev) => prev.filter((_, i) => i !== index));
-  };
+    previewUrls.current = [...previewUrls.current, ...newPreviews];
+    setImageFiles((prev) => [...prev, ...newFiles]);
+    setPreviews((prev) => [...prev, ...newPreviews]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [imageFiles.length]);
+
+  const removeImage = useCallback((index: number) => {
+    URL.revokeObjectURL(previews[index]);
+    previewUrls.current = previewUrls.current.filter((_, i) => i !== index);
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => prev.filter((_, i) => i !== index));
+  }, [previews]);
 
   const addVariant = () => {
     setVariants((prev) => [...prev, { name: "", options: [""] }]);
@@ -185,27 +229,50 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
   };
 
   const stepIndex = STEPS.findIndex((s) => s.key === step);
+
+  const watchTitle = form.watch("title");
+  const watchPrice = form.watch("price");
+  const watchCategoryPath = form.watch("categoryPath");
+
   const canGoNext = () => {
     if (step === "basic") {
-      const title = form.getValues("title");
-      const price = form.getValues("price");
-      const categoryId = form.getValues("categoryId");
-      return !!title && price > 0 && !!categoryId;
+      return !!watchTitle?.trim() && watchPrice > 0 && watchCategoryPath.length >= 2;
     }
-    if (step === "images") return uploadedImages.length >= 1;
+    if (step === "images") return imageFiles.length >= 1;
     return true;
   };
 
-  const onSubmit = (data: CreateProductSchemaType) => {
-    const payload = {
-      ...data,
-      images: uploadedImages,
-      thumbnail: uploadedImages[0] || undefined,
-      variants: variants.filter((v) => v.name && v.options.some((o) => o)),
-    };
-    createProductMutation.mutate(payload, {
-      onSuccess: () => onOpenChange(false),
-    });
+  const onSubmit = async (data: CreateProductSchemaType) => {
+    if (imageFiles.length === 0) return;
+    setIsUploading(true);
+    try {
+      const uploadResults = await Promise.all(
+        imageFiles.map(async (file) => {
+          const result = await uploadImageMutation.mutateAsync(file);
+          return {
+            key: result.key,
+            url: result.url,
+            provider: result.provider || "wasabi",
+            type: "image" as const,
+          };
+        })
+      );
+
+      const payload = {
+        ...data,
+        images: uploadResults,
+        thumbnail: uploadResults[0] || undefined,
+        variants: variants.filter((v) => v.name && v.options.some((o) => o)),
+      };
+
+      createProductMutation.mutate(payload, {
+        onSuccess: () => onOpenChange(false),
+      });
+    } catch {
+      // errors handled by mutation
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -285,7 +352,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                       <FormItem>
                         <FormLabel>Price (&#x09F3;) *</FormLabel>
                         <FormControl>
-                          <Input type="number" min="1" {...field} />
+                          <Input type="number" min="1" onFocus={selectOnFocus} onKeyDown={blockNegative} onInput={stripNegative} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -299,7 +366,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                       <FormItem>
                         <FormLabel>Discount (%)</FormLabel>
                         <FormControl>
-                          <Input type="number" min="0" max="100" {...field} />
+                          <Input type="number" min="0" max="100" onFocus={selectOnFocus} onKeyDown={blockNegative} onInput={stripNegative} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -325,7 +392,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                       <FormItem>
                         <FormLabel>Stock</FormLabel>
                         <FormControl>
-                          <Input type="number" min="0" {...field} />
+                          <Input type="number" min="0" onFocus={selectOnFocus} onKeyDown={blockNegative} onInput={stripNegative} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -340,7 +407,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                         <FormLabel>Status</FormLabel>
                         <Select value={field.value} onValueChange={field.onChange}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full">
                               <SelectValue />
                             </SelectTrigger>
                           </FormControl>
@@ -358,30 +425,18 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                 <FormField
                   control={form.control}
                   name="categoryId"
-                  render={({ field }) => (
+                  render={() => (
                     <FormItem>
-                      <FormLabel>Category ID *</FormLabel>
+                      <FormLabel>Category *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter category ID" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="categoryPath"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category Path (comma-separated IDs) *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g. mainCatId,subCatId"
-                          value={field.value.join(",")}
-                          onChange={(e) => {
-                            const path = e.target.value.split(",").map((s) => s.trim()).filter(Boolean);
-                            field.onChange(path);
+                        <CategoryPicker
+                          value={{
+                            categoryId: form.getValues("categoryId"),
+                            categoryPath: form.getValues("categoryPath"),
+                          }}
+                          onChange={(val) => {
+                            form.setValue("categoryId", val.categoryId, { shouldValidate: true });
+                            form.setValue("categoryPath", val.categoryPath, { shouldValidate: true });
                           }}
                         />
                       </FormControl>
@@ -390,7 +445,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
                     name="brand"
@@ -418,6 +473,20 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name="country"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Country</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Bangladesh" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </div>
             )}
@@ -429,16 +498,16 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                   <p className="text-sm text-muted-foreground">
                     Upload 1-5 images. First image becomes the thumbnail.
                   </p>
-                  <span className="text-sm font-medium">{uploadedImages.length}/5</span>
+                  <span className="text-sm font-medium">{imageFiles.length}/5</span>
                 </div>
 
-                {/* Uploaded Images Grid */}
-                {uploadedImages.length > 0 && (
+                {imageFiles.length > 0 && (
                   <div className="grid grid-cols-3 gap-3">
-                    {uploadedImages.map((img, index) => (
-                      <div key={img.key} className="relative aspect-square rounded-lg overflow-hidden bg-muted group">
-                        <MediaImage
-                          mediaKey={img.key}
+                    {imageFiles.map((file, index) => (
+                      <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-muted group">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={previews[index]}
                           alt={`Product ${index + 1}`}
                           className="w-full h-full object-cover"
                         />
@@ -457,30 +526,24 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                   </div>
                 )}
 
-                {/* Upload Button */}
-                {uploadedImages.length < 5 && (
+                {imageFiles.length < 5 && (
                   <div>
                     <input
                       ref={fileInputRef}
                       type="file"
                       accept="image/*"
                       multiple
-                      onChange={handleImageUpload}
+                      onChange={handleImageSelect}
                       className="hidden"
                     />
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="secondary"
                       className="w-full"
-                      disabled={isUploading}
                       onClick={() => fileInputRef.current?.click()}
                     >
-                      {isUploading ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Upload className="w-4 h-4 mr-2" />
-                      )}
-                      {isUploading ? "Uploading..." : "Upload Images"}
+                      <Upload className="w-4 h-4 mr-2" />
+                      Add Images
                     </Button>
                   </div>
                 )}
@@ -542,7 +605,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                   </Card>
                 ))}
 
-                <Button type="button" variant="outline" className="w-full" onClick={addVariant}>
+                <Button type="button" variant="secondary" className="w-full" onClick={addVariant}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Variant
                 </Button>
@@ -575,7 +638,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                           <FormLabel>Fee Type</FormLabel>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full">
                                 <SelectValue />
                               </SelectTrigger>
                             </FormControl>
@@ -596,7 +659,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                         <FormItem>
                           <FormLabel>Shipping Fee (&#x09F3;)</FormLabel>
                           <FormControl>
-                            <Input type="number" min="0" {...field} />
+                            <Input type="number" min="0" onFocus={selectOnFocus} onKeyDown={blockNegative} onInput={stripNegative} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -612,7 +675,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                     <FormItem>
                       <FormLabel>Handling Time (days)</FormLabel>
                       <FormControl>
-                        <Input type="number" min="0" {...field} />
+                        <Input type="number" min="0" onFocus={selectOnFocus} onKeyDown={blockNegative} onInput={stripNegative} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -687,18 +750,30 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                   {form.getValues("brand") && (
                     <div className="text-sm">Brand: {form.getValues("brand")}</div>
                   )}
+                  {form.getValues("location") && (
+                    <div className="text-sm">Location: {form.getValues("location")}</div>
+                  )}
+                  {form.getValues("country") && (
+                    <div className="text-sm">Country: {form.getValues("country")}</div>
+                  )}
+                  {form.getValues("categoryPath").length >= 2 && (
+                    <div className="text-sm text-muted-foreground">
+                      Category: {getCategoryNames(form.getValues("categoryPath")).join(" > ")}
+                    </div>
+                  )}
                 </div>
 
                 {/* Images preview */}
-                {uploadedImages.length > 0 && (
+                {previews.length > 0 && (
                   <div>
-                    <p className="text-sm font-medium mb-2">Images ({uploadedImages.length})</p>
+                    <p className="text-sm font-medium mb-2">Images ({previews.length})</p>
                     <div className="flex gap-2 overflow-x-auto">
-                      {uploadedImages.map((img) => (
-                        <div key={img.key} className="w-16 h-16 rounded-md overflow-hidden bg-muted shrink-0">
-                          <MediaImage
-                            mediaKey={img.key}
-                            alt="Preview"
+                      {previews.map((url, i) => (
+                        <div key={i} className="w-16 h-16 rounded-md overflow-hidden bg-muted shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={url}
+                            alt={`Preview ${i + 1}`}
                             className="w-full h-full object-cover"
                           />
                         </div>
@@ -724,8 +799,13 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                 )}
 
                 {/* Shipping preview */}
-                <div className="text-sm text-muted-foreground">
-                  {freeShipping ? "Free shipping" : `Shipping: &#x09F3;${form.getValues("shipping.fee")}`}
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <p className="font-medium text-foreground">Shipping</p>
+                  <p>{freeShipping ? "Free shipping" : `Fee: ৳${form.getValues("shipping.fee")} (${form.getValues("shipping.feeType")})`}</p>
+                  <p>Handling time: {form.getValues("shipping.handlingTimeDays")} day(s)</p>
+                  {form.getValues("shipping.codAvailable") && <p>Cash on Delivery available</p>}
+                  {form.getValues("shipping.returnable") && <p>Returnable</p>}
+                  {form.getValues("shipping.warrantyText") && <p>Warranty: {form.getValues("shipping.warrantyText")}</p>}
                 </div>
               </div>
             )}
@@ -736,7 +816,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                 {stepIndex > 0 && (
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="secondary"
                     onClick={() => setStep(STEPS[stepIndex - 1].key)}
                   >
                     <ChevronLeft className="w-4 h-4 mr-1" />
@@ -746,13 +826,13 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
               </div>
               <div className="flex gap-2">
                 {step === "review" ? (
-                  <Button type="submit" disabled={createProductMutation.isPending}>
-                    {createProductMutation.isPending ? (
+                  <Button type="submit" disabled={createProductMutation.isPending || isUploading}>
+                    {(createProductMutation.isPending || isUploading) ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : (
                       <Package className="w-4 h-4 mr-2" />
                     )}
-                    {form.getValues("status") === "active" ? "Publish" : "Save Draft"}
+                    {isUploading ? "Uploading..." : form.getValues("status") === "active" ? "Publish" : "Save Draft"}
                   </Button>
                 ) : (
                   <Button
