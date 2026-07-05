@@ -4,6 +4,7 @@ import Providers from "../providers";
 import { getSession } from "@/lib/session";
 import ChatWindowManager from "@/features/chat/components/chat-window-manager";
 import { SocketProvider } from "@/features/chat/context/socket-context";
+import { FloatingCart } from "@/features/marketplace/components/floating-cart";
 
 export const metadata: Metadata = {
   title: "Daygist",
@@ -31,6 +32,7 @@ export default async function HomeLayout({
         <Navbar user={user} />
         {children}
         <ChatWindowManager />
+        <FloatingCart />
       </SocketProvider>
     </Providers>
   );

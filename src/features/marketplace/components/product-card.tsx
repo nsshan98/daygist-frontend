@@ -5,6 +5,7 @@ import { Badge } from "@/components/atoms/badge";
 import { Star, ShoppingCart } from "lucide-react";
 import { MediaImage } from "@/features/profile/components/media-image";
 import { Product } from "@/types/product.types";
+import { AddToCartButton } from "./add-to-cart-button";
 
 interface ProductCardProps {
   product: Product;
@@ -100,6 +101,13 @@ export function ProductCard({ product }: ProductCardProps) {
         {product.location && (
           <p className="text-xs text-muted-foreground">{product.location}</p>
         )}
+
+        {/* Add to Cart */}
+        <AddToCartButton
+          productId={product._id}
+          stock={product.stock}
+          className="w-full mt-1"
+        />
       </CardContent>
     </Card>
   );

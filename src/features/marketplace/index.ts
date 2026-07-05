@@ -3,6 +3,8 @@
 // Component exports
 export { ProductCard } from "./components/product-card";
 export { MarketplaceContent } from "./components/marketplace-content";
+export { AddToCartButton } from "./components/add-to-cart-button";
+export { FloatingCart } from "./components/floating-cart";
 
 // Hook exports
 export {
@@ -13,6 +15,16 @@ export {
   useGetProduct,
   useGetRelatedProducts,
 } from "./hooks/product-query";
+
+export {
+  useGetCart,
+  useAddToCart,
+  useRemoveFromCart,
+  useUpdateCartQty,
+} from "./hooks/cart-query";
+
+// Store exports
+export { useCartStore } from "./stores/cart-store";
 
 // Type re-exports
 export type {
@@ -27,3 +39,11 @@ export type {
   ProductFilters,
   ProductSort,
 } from "@/types/product.types";
+
+export type {
+  CartItem,
+  CartSeller,
+  CartResponse,
+  AddToCartPayload,
+  UpdateCartQtyPayload,
+} from "@/types/cart.types";
