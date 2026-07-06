@@ -12,6 +12,7 @@ import { SellerApplicationDialog } from "./seller-application-dialog";
 import { SellerProductList } from "./seller-product-list";
 import { CreateProductDialog } from "./create-product-dialog";
 import { SellerProfile, SellerStats } from "@/types/seller.types";
+import { SellerOrderList } from "./seller-order-list";
 
 export function SellerDashboard() {
   const { data: sellerData, isLoading, error } = useSellerProfile();
@@ -458,22 +459,12 @@ function ApprovedSellerView({
         <SellerProductList />
       </TabsContent>
 
-      <TabsContent value="orders">
-        <Card>
-          <CardHeader>
-            <CardTitle>Order Management</CardTitle>
-            <CardDescription>
-              Track and manage customer orders.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <CheckCircle className="h-12 w-12 mx-auto mb-4" />
-              <p className="text-lg font-medium">Order management coming soon</p>
-              <p className="text-sm">Start by adding your first product.</p>
-            </div>
-          </CardContent>
-        </Card>
+      <TabsContent value="orders" className="space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold">Order Management</h3>
+          <p className="text-sm text-muted-foreground">Track and manage customer orders.</p>
+        </div>
+        <SellerOrderList />
       </TabsContent>
 
       <TabsContent value="wallet">

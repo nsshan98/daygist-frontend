@@ -6,6 +6,8 @@ export { SellerDashboard } from "./components/seller-dashboard";
 export { SellerProductList } from "./components/seller-product-list";
 export { CreateProductDialog } from "./components/create-product-dialog";
 export { EditProductDialog } from "./components/edit-product-dialog";
+export { SellerOrderList } from "./components/seller-order-list";
+export { SellerOrderDetail } from "./components/seller-order-detail";
 
 // Hook exports
 export {
@@ -16,6 +18,12 @@ export {
   useUpdateSellerProduct,
   useDeleteSellerProduct,
 } from "./hooks/seller-query";
+
+export {
+  useGetSellerOrders,
+  useGetSellerOrder,
+  useUpdateOrderStatus,
+} from "./hooks/order-query";
 
 // Type re-exports
 export type {
@@ -38,3 +46,12 @@ export type {
   SellerProductUpdateResponse,
   SellerProductDeleteResponse,
 } from "@/types/product.types";
+
+export type {
+  OrderStatus,
+  SellerOrder,
+  SellerOrderListResponse,
+  SellerOrderDetailResponse,
+  UpdateOrderStatusPayload,
+  UpdateOrderStatusResponse,
+} from "@/types/order.types";

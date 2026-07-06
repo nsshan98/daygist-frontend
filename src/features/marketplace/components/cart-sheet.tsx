@@ -11,11 +11,12 @@ import { Skeleton } from "@/components/atoms/skeleton";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { MediaImage } from "@/features/profile/components/media-image";
 import { useCartStore } from "../stores/cart-store";
-import { useGetCart, useUpdateCartQty, useRemoveFromCart } from "../hooks/cart-query";
+import { useGetCart, useCartMutations } from "../hooks/cart-query";
 
 export function CartSheet() {
   const { isCartOpen, closeCart } = useCartStore();
   const { data, isLoading } = useGetCart();
+  const { useUpdateCartQty, useRemoveFromCart } = useCartMutations();
   const updateQty = useUpdateCartQty();
   const removeItem = useRemoveFromCart();
 

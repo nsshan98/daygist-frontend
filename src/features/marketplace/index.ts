@@ -5,6 +5,7 @@ export { ProductCard } from "./components/product-card";
 export { MarketplaceContent } from "./components/marketplace-content";
 export { AddToCartButton } from "./components/add-to-cart-button";
 export { FloatingCart } from "./components/floating-cart";
+export { ProductDetail } from "./components/product-detail";
 
 // Hook exports
 export {
@@ -18,9 +19,7 @@ export {
 
 export {
   useGetCart,
-  useAddToCart,
-  useRemoveFromCart,
-  useUpdateCartQty,
+  useCartMutations,
 } from "./hooks/cart-query";
 
 // Store exports

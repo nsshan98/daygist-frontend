@@ -13,11 +13,12 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { MediaImage } from "@/features/profile/components/media-image";
-import { useGetCart, useUpdateCartQty, useRemoveFromCart } from "../hooks/cart-query";
+import { useGetCart, useCartMutations } from "../hooks/cart-query";
 
 export function FloatingCart() {
   const [isOpen, setIsOpen] = useState(false);
   const { data, isLoading } = useGetCart();
+  const { useUpdateCartQty, useRemoveFromCart } = useCartMutations();
   const updateQty = useUpdateCartQty();
   const removeItem = useRemoveFromCart();
 
@@ -146,7 +147,6 @@ export function FloatingCart() {
                               variant="secondary"
                               size="icon"
                               className="size-5"
-                              disabled={updateQty.isPending || removeItem.isPending}
                               onClick={() => handleDecrement(item.productId, item.qty)}
                             >
                               <Minus className="w-2.5 h-2.5" />
@@ -158,7 +158,6 @@ export function FloatingCart() {
                               variant="secondary"
                               size="icon"
                               className="size-5"
-                              disabled={updateQty.isPending || removeItem.isPending}
                               onClick={() => handleIncrement(item.productId)}
                             >
                               <Plus className="w-2.5 h-2.5" />
@@ -168,7 +167,6 @@ export function FloatingCart() {
                             variant="ghost"
                             size="icon"
                             className="size-5 text-destructive hover:text-destructive"
-                            disabled={removeItem.isPending}
                             onClick={() => handleRemove(item.productId)}
                           >
                             <Trash2 className="w-3 h-3" />
