@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/atoms/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Badge } from "@/components/atoms/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/atoms/tabs";
 import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
-import { Building, CreditCard, MapPin, Phone, User, Wallet, CheckCircle, AlertCircle, Loader2, Plus, Clock, FileText, Shield, Search } from "lucide-react";
+import { Building, CreditCard, MapPin, Phone, User, Wallet, CheckCircle, AlertCircle, Loader2, Plus, Clock, FileText, Shield, Search, Package, ArrowLeft } from "lucide-react";
 import { useSellerProfile } from "../hooks/seller-query";
 import { SellerApplicationDialog } from "./seller-application-dialog";
 import { SellerProductList } from "./seller-product-list";
@@ -15,6 +15,7 @@ import { SellerProfile, SellerStats } from "@/types/seller.types";
 import { SellerOrderList } from "./seller-order-list";
 
 export function SellerDashboard() {
+  const router = useRouter();
   const { data: sellerData, isLoading, error } = useSellerProfile();
   const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
   const [isCreateProductOpen, setIsCreateProductOpen] = useState(false);
@@ -122,14 +123,25 @@ export function SellerDashboard() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 py-4">
+    <div className="max-w-7xl mx-auto space-y-6 py-4">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Seller Dashboard</h1>
-          <p className="text-muted-foreground">
-            Manage your seller account and track your business performance.
-          </p>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 -ml-2"
+            onClick={() => router.push("/marketplace")}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Seller Dashboard</h1>
+            <p className="text-muted-foreground">
+              Manage your seller account and track your business performance.
+            </p>
+          </div>
         </div>
         {sellerData.data?.status === "rejected" && (
           <Button
@@ -141,75 +153,6 @@ export function SellerDashboard() {
           </Button>
         )}
       </div>
-
-      {/* Seller Profile Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback>
-                {sellerData.data?.shopName?.charAt(0) || "S"}
-              </AvatarFallback>
-            </Avatar>
-            {sellerData.data?.shopName}
-            <Badge
-            className="capitalize"
-              variant={sellerData.data?.status === "approved" ? "default" :
-                       sellerData.data?.status === "pending" ? "secondary" : "destructive"}
-            >
-              {sellerData.data?.status}
-            </Badge>
-          </CardTitle>
-          <CardDescription>
-            Applied on {new Date(sellerData.data?.createdAt || "").toLocaleDateString()}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{sellerData.data?.phone}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span>{sellerData.data?.address}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Building className="h-4 w-4 text-muted-foreground" />
-                <span className="capitalize">{sellerData.data?.businessType}</span>
-              </div>
-            </div>
-            <div className="space-y-4">
-              {sellerData.data?.district && (
-                <div className="flex items-center gap-3">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{sellerData.data.district}</span>
-                </div>
-              )}
-              {sellerData.data?.businessType === "individual" && sellerData.data?.nidNumber && (
-                <div className="flex items-center gap-3">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span>ID: {sellerData.data.nidNumber}</span>
-                </div>
-              )}
-              {sellerData.data?.businessType === "business" && sellerData.data?.tradeLicense && (
-                <div className="flex items-center gap-3">
-                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  <span>{sellerData.data.tradeLicense}</span>
-                </div>
-              )}
-            </div>
-          </div>
-          {sellerData.data?.description && (
-            <div className="mt-4 pt-4 border-t">
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {sellerData.data.description}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {renderSellerContent()}
 
@@ -380,111 +323,208 @@ function ApprovedSellerView({
   stats: SellerStats;
   onCreateProduct: () => void;
 }) {
+  const [activeTab, setActiveTab] = useState<"overview" | "products" | "orders" | "wallet">("overview");
+
+  const navItems = [
+    { key: "overview" as const, label: "Overview", icon: CreditCard },
+    { key: "products" as const, label: "Products", icon: Package },
+    { key: "orders" as const, label: "Orders", icon: FileText },
+    { key: "wallet" as const, label: "Wallet", icon: Wallet },
+  ];
+
   return (
-    <Tabs defaultValue="overview" className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="products">Products</TabsTrigger>
-        <TabsTrigger value="orders">Orders</TabsTrigger>
-        <TabsTrigger value="wallet">Wallet</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="overview" className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.productCount || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                +{Math.floor((stats?.productCount || 0) * 0.2)} this month
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed Orders</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.completedOrdersCount || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats?.pendingOrdersCount || 0} pending
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Wallet Balance</CardTitle>
-              <Wallet className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">BDT {(stats?.walletBalance || 0).toLocaleString()}</div>
-              <p className="text-xs text-green-600">
-                Available for withdrawal
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Approval Status</CardTitle>
-              <CheckCircle className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">Active</div>
-              <p className="text-xs text-muted-foreground">
-                Approved on {seller.approvedAt ? new Date(seller.approvedAt).toLocaleDateString() : 'N/A'}
-              </p>
-            </CardContent>
-          </Card>
+    <div className="flex flex-col md:flex-row gap-6">
+      {/* Sidebar */}
+      <nav className="w-full md:w-56 shrink-0">
+        <div className="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible">
+          {navItems.map((item) => (
+            <button
+              key={item.key}
+              onClick={() => setActiveTab(item.key)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === item.key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              }`}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
+            </button>
+          ))}
         </div>
-      </TabsContent>
+      </nav>
 
-      <TabsContent value="products" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold">Your Products</h3>
-            <p className="text-sm text-muted-foreground">Manage your product listings.</p>
-          </div>
-          <Button onClick={onCreateProduct}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Product
-          </Button>
-        </div>
-        <SellerProductList />
-      </TabsContent>
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        {activeTab === "overview" && (
+          <div className="space-y-4">
+            {/* Shop Profile Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>
+                      {seller.shopName?.charAt(0) || "S"}
+                    </AvatarFallback>
+                  </Avatar>
+                  {seller.shopName}
+                  <Badge className="capitalize" variant="default">
+                    {seller.status}
+                  </Badge>
+                </CardTitle>
+                <CardDescription>
+                  Applied on {new Date(seller.createdAt || "").toLocaleDateString()}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span>{seller.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span>{seller.address}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Building className="h-4 w-4 text-muted-foreground" />
+                      <span className="capitalize">{seller.businessType}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    {seller.district && (
+                      <div className="flex items-center gap-3">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span>{seller.district}</span>
+                      </div>
+                    )}
+                    {seller.businessType === "individual" && seller.nidNumber && (
+                      <div className="flex items-center gap-3">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span>ID: {seller.nidNumber}</span>
+                      </div>
+                    )}
+                    {seller.businessType === "business" && seller.tradeLicense && (
+                      <div className="flex items-center gap-3">
+                        <CreditCard className="h-4 w-4 text-muted-foreground" />
+                        <span>{seller.tradeLicense}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {seller.description && (
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {seller.description}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-      <TabsContent value="orders" className="space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold">Order Management</h3>
-          <p className="text-sm text-muted-foreground">Track and manage customer orders.</p>
-        </div>
-        <SellerOrderList />
-      </TabsContent>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.productCount || 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    +{Math.floor((stats?.productCount || 0) * 0.2)} this month
+                  </p>
+                </CardContent>
+              </Card>
 
-      <TabsContent value="wallet">
-        <Card>
-          <CardHeader>
-            <CardTitle>Wallet Management</CardTitle>
-            <CardDescription>
-              Withdraw your earnings and view transaction history.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <Wallet className="h-12 w-12 mx-auto mb-4" />
-              <p className="text-lg font-medium">Wallet management coming soon</p>
-              <p className="text-sm">Withdrawals will be available once your account is fully set up.</p>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Completed Orders</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.completedOrdersCount || 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats?.pendingOrdersCount || 0} pending
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Wallet Balance</CardTitle>
+                  <Wallet className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">BDT {(stats?.walletBalance || 0).toLocaleString()}</div>
+                  <p className="text-xs text-green-600">
+                    Available for withdrawal
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Approval Status</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">Active</div>
+                  <p className="text-xs text-muted-foreground">
+                    Approved on {seller.approvedAt ? new Date(seller.approvedAt).toLocaleDateString() : 'N/A'}
+                  </p>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+          </div>
+        )}
+
+        {activeTab === "products" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold">Your Products</h3>
+                <p className="text-sm text-muted-foreground">Manage your product listings.</p>
+              </div>
+              <Button onClick={onCreateProduct}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Product
+              </Button>
+            </div>
+            <SellerProductList />
+          </div>
+        )}
+
+        {activeTab === "orders" && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold">Order Management</h3>
+              <p className="text-sm text-muted-foreground">Track and manage customer orders.</p>
+            </div>
+            <SellerOrderList />
+          </div>
+        )}
+
+        {activeTab === "wallet" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Wallet Management</CardTitle>
+              <CardDescription>
+                Withdraw your earnings and view transaction history.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                <Wallet className="h-12 w-12 mx-auto mb-4" />
+                <p className="text-lg font-medium">Wallet management coming soon</p>
+                <p className="text-sm">Withdrawals will be available once your account is fully set up.</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
   );
 }
 

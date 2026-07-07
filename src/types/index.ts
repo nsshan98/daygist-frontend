@@ -171,6 +171,27 @@ export type {
   SellerApplicationResponse,
 } from "@/types/seller.types";
 
+// Order Types
+export type {
+  OrderStatus,
+  PaymentMethod,
+  OrderAddress,
+  OrderUser,
+  OrderProduct,
+  OrderItem,
+  PlaceOrderItem,
+  PlaceOrderPayload,
+  PlaceOrderResponse,
+  BuyerOrder,
+  BuyerOrderListResponse,
+  BuyerOrderDetailResponse,
+  SellerOrder,
+  SellerOrderListResponse,
+  SellerOrderDetailResponse,
+  UpdateOrderStatusPayload,
+  UpdateOrderStatusResponse,
+} from "@/types/order.types";
+
 // Component Types (from stores)
 export type {
   PostType,

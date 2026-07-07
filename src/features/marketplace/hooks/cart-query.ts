@@ -2,14 +2,12 @@ import { useRef } from "react";
 import { axiosClient } from "@/lib/api/axios-client";
 import {
   CartResponse,
-  CartSeller,
   AddToCartPayload,
   AddToCartResponse,
   RemoveFromCartResponse,
   UpdateCartQtyPayload,
   UpdateCartQtyResponse,
 } from "@/types/cart.types";
-import { Product } from "@/types/product.types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -24,27 +22,58 @@ const useGetCart = () => {
       const { data } = await axiosClient.get("/e-commerce/cart");
       return data;
     },
-    staleTime: 1000 * 60 * 2,
+    staleTime: 0,
   });
 
   return cartQuery;
 };
 
-// ===============================|| CART MUTATIONS (Optimistic + Debounced) ||============================== //
+// ===============================|| CART MUTATIONS ||============================== //
 
 const useCartMutations = () => {
   const queryClient = useQueryClient();
   const timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const pendingQtyRef = useRef<Map<string, number>>(new Map());
 
-  const flushDebounced = (key: string, fn: () => Promise<void>) => {
-    const existing = timersRef.current.get(key);
+  const fetchCart = async (): Promise<CartResponse> => {
+    const { data } = await axiosClient.get("/e-commerce/cart");
+    return data;
+  };
+
+  const flushQty = async (productId: string) => {
+    const qty = pendingQtyRef.current.get(productId);
+    if (qty === undefined) return;
+    pendingQtyRef.current.delete(productId);
+
+    try {
+      if (qty <= 0) {
+        await axiosClient.delete(
+          `/e-commerce/cart/remove/${productId}?variant=Default`
+        );
+      } else {
+        await axiosClient.patch("/e-commerce/cart/qty", {
+          productId,
+          type: "set",
+          qty,
+          variant: "Default",
+        });
+      }
+      const cartData = await fetchCart();
+      queryClient.setQueryData(["cart"], cartData);
+    } catch {
+      toast.error("Failed to update cart");
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+    }
+  };
+
+  const debounceFlush = (productId: string) => {
+    const existing = timersRef.current.get(productId);
     if (existing) clearTimeout(existing);
     timersRef.current.set(
-      key,
+      productId,
       setTimeout(() => {
-        timersRef.current.delete(key);
-        fn();
+        timersRef.current.delete(productId);
+        flushQty(productId);
       }, DEBOUNCE_MS)
     );
   };
@@ -53,60 +82,37 @@ const useCartMutations = () => {
   const useAddToCart = () => {
     return useMutation({
       mutationFn: async (payload: AddToCartPayload): Promise<AddToCartResponse> => {
-        const { data } = await axiosClient.post("/e-commerce/cart/add", payload);
-        return data;
+        // No API call here — handled by debounced flush
+        return {} as AddToCartResponse;
       },
       onMutate: async (payload) => {
         await queryClient.cancelQueries({ queryKey: ["cart"] });
         const previous = queryClient.getQueryData<CartResponse>(["cart"]);
 
+        const currentQty =
+          previous?.data.find((i) => i.productId === payload.productId)?.qty ?? 0;
+        const newQty = currentQty + payload.qty;
+
+        pendingQtyRef.current.set(payload.productId, newQty);
+
+        // Optimistic: bump qty if already in cart
         queryClient.setQueryData<CartResponse>(["cart"], (old) => {
           if (!old) return old;
           const existing = old.data.find((i) => i.productId === payload.productId);
           if (existing) {
-            const newQty = existing.qty + payload.qty;
-            pendingQtyRef.current.set(payload.productId, newQty);
             return {
               ...old,
               data: old.data.map((i) =>
-                i.productId === payload.productId ? { ...i, qty: newQty } : i
+                i.productId === payload.productId
+                  ? { ...i, qty: newQty }
+                  : i
               ),
             };
           }
-          pendingQtyRef.current.set(payload.productId, payload.qty);
-          return {
-            ...old,
-            data: [
-              ...old.data,
-              {
-                productId: payload.productId,
-                qty: payload.qty,
-                product: {} as Product,
-                seller: {} as CartSeller,
-              },
-            ],
-          };
+          return old;
         });
 
-        flushDebounced(`add-${payload.productId}`, async () => {
-          const qty = pendingQtyRef.current.get(payload.productId);
-          if (qty === undefined) return;
-          pendingQtyRef.current.delete(payload.productId);
-          try {
-            await axiosClient.patch("/e-commerce/cart/qty", {
-              productId: payload.productId,
-              type: "set",
-              qty,
-              variant: "Default",
-            });
-            queryClient.invalidateQueries({ queryKey: ["cart"] });
-          } catch {
-            queryClient.setQueryData(["cart"], previous);
-            queryClient.invalidateQueries({ queryKey: ["cart"] });
-            toast.error("Failed to add to cart");
-          }
-        });
-
+        debounceFlush(payload.productId);
         return { previous };
       },
       onSuccess: () => {
@@ -125,16 +131,17 @@ const useCartMutations = () => {
   const useUpdateCartQty = () => {
     return useMutation({
       mutationFn: async (payload: UpdateCartQtyPayload): Promise<UpdateCartQtyResponse> => {
-        const { data } = await axiosClient.patch("/e-commerce/cart/qty", payload);
-        return data;
+        // No API call here — handled by debounced flush
+        return {} as UpdateCartQtyResponse;
       },
       onMutate: async (payload) => {
         await queryClient.cancelQueries({ queryKey: ["cart"] });
         const previous = queryClient.getQueryData<CartResponse>(["cart"]);
 
-        const currentQty = pendingQtyRef.current.get(payload.productId)
-          ?? previous?.data.find((i) => i.productId === payload.productId)?.qty
-          ?? 0;
+        const currentQty =
+          pendingQtyRef.current.get(payload.productId) ??
+          previous?.data.find((i) => i.productId === payload.productId)?.qty ??
+          0;
 
         let newQty: number;
         if (payload.type === "inc") {
@@ -149,6 +156,7 @@ const useCartMutations = () => {
 
         pendingQtyRef.current.set(payload.productId, newQty);
 
+        // Optimistic: update locally
         queryClient.setQueryData<CartResponse>(["cart"], (old) => {
           if (!old) return old;
           if (newQty <= 0) {
@@ -162,38 +170,7 @@ const useCartMutations = () => {
           };
         });
 
-        flushDebounced(`qty-${payload.productId}`, async () => {
-          const qty = pendingQtyRef.current.get(payload.productId);
-          if (qty === undefined) return;
-          pendingQtyRef.current.delete(payload.productId);
-          if (qty <= 0) {
-            try {
-              await axiosClient.delete(
-                `/e-commerce/cart/remove/${payload.productId}?variant=Default`
-              );
-              queryClient.invalidateQueries({ queryKey: ["cart"] });
-            } catch {
-              queryClient.setQueryData(["cart"], previous);
-              queryClient.invalidateQueries({ queryKey: ["cart"] });
-              toast.error("Failed to update cart");
-            }
-          } else {
-            try {
-              await axiosClient.patch("/e-commerce/cart/qty", {
-                productId: payload.productId,
-                type: "set",
-                qty,
-                variant: "Default",
-              });
-              queryClient.invalidateQueries({ queryKey: ["cart"] });
-            } catch {
-              queryClient.setQueryData(["cart"], previous);
-              queryClient.invalidateQueries({ queryKey: ["cart"] });
-              toast.error("Failed to update cart");
-            }
-          }
-        });
-
+        debounceFlush(payload.productId);
         return { previous };
       },
       onError: (_error, _payload, context) => {
@@ -209,17 +186,16 @@ const useCartMutations = () => {
   const useRemoveFromCart = () => {
     return useMutation({
       mutationFn: async (productId: string): Promise<RemoveFromCartResponse> => {
-        const { data } = await axiosClient.delete(
-          `/e-commerce/cart/remove/${productId}?variant=Default`
-        );
-        return data;
+        // No API call here — handled by debounced flush
+        return {} as RemoveFromCartResponse;
       },
       onMutate: async (productId) => {
         await queryClient.cancelQueries({ queryKey: ["cart"] });
         const previous = queryClient.getQueryData<CartResponse>(["cart"]);
 
-        pendingQtyRef.current.delete(productId);
+        pendingQtyRef.current.set(productId, 0);
 
+        // Optimistic: remove immediately
         queryClient.setQueryData<CartResponse>(["cart"], (old) => {
           if (!old) return old;
           return {
@@ -228,19 +204,7 @@ const useCartMutations = () => {
           };
         });
 
-        flushDebounced(`remove-${productId}`, async () => {
-          try {
-            await axiosClient.delete(
-              `/e-commerce/cart/remove/${productId}?variant=Default`
-            );
-            queryClient.invalidateQueries({ queryKey: ["cart"] });
-          } catch {
-            queryClient.setQueryData(["cart"], previous);
-            queryClient.invalidateQueries({ queryKey: ["cart"] });
-            toast.error("Failed to remove from cart");
-          }
-        });
-
+        debounceFlush(productId);
         return { previous };
       },
       onSuccess: () => {

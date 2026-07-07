@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/atoms/button";
 import {
   Sheet,
@@ -14,6 +15,7 @@ import { useCartStore } from "../stores/cart-store";
 import { useGetCart, useCartMutations } from "../hooks/cart-query";
 
 export function CartSheet() {
+  const router = useRouter();
   const { isCartOpen, closeCart } = useCartStore();
   const { data, isLoading } = useGetCart();
   const { useUpdateCartQty, useRemoveFromCart } = useCartMutations();
@@ -21,7 +23,7 @@ export function CartSheet() {
   const removeItem = useRemoveFromCart();
 
   const items = data?.data ?? [];
-  const totalItems = items.reduce((sum, item) => sum + item.qty, 0);
+  const productCount = items.length;
   const totalPrice = items.reduce(
     (sum, item) => sum + (item.product?.finalPrice ?? 0) * item.qty,
     0
@@ -50,9 +52,9 @@ export function CartSheet() {
           <SheetTitle className="flex items-center gap-2">
             <ShoppingBag className="w-5 h-5" />
             Cart
-            {totalItems > 0 && (
+            {productCount > 0 && (
               <span className="text-sm font-normal text-muted-foreground">
-                ({totalItems} item{totalItems !== 1 ? "s" : ""})
+                ({productCount} product{productCount !== 1 ? "s" : ""})
               </span>
             )}
           </SheetTitle>
@@ -82,9 +84,9 @@ export function CartSheet() {
             </div>
           ) : (
             <div className="space-y-4">
-              {items.map((item) => (
+              {items.map((item, idx) => (
                 <div
-                  key={item.productId}
+                  key={`${item.productId}-${idx}`}
                   className="flex gap-3 p-3 rounded-lg border"
                 >
                   {/* Thumbnail */}
@@ -135,7 +137,6 @@ export function CartSheet() {
                           variant="outline"
                           size="icon"
                           className="size-7"
-                          disabled={updateQty.isPending || removeItem.isPending}
                           onClick={() => handleDecrement(item.productId, item.qty)}
                         >
                           <Minus className="w-3 h-3" />
@@ -147,7 +148,7 @@ export function CartSheet() {
                           variant="outline"
                           size="icon"
                           className="size-7"
-                          disabled={updateQty.isPending || removeItem.isPending}
+                          disabled={item.qty >= (item.product?.stock ?? 0)}
                           onClick={() => handleIncrement(item.productId)}
                         >
                           <Plus className="w-3 h-3" />
@@ -157,7 +158,6 @@ export function CartSheet() {
                         variant="ghost"
                         size="icon"
                         className="size-7 text-destructive hover:text-destructive"
-                        disabled={removeItem.isPending}
                         onClick={() => handleRemove(item.productId)}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -179,8 +179,15 @@ export function CartSheet() {
                 &#x09F3;{totalPrice.toLocaleString()}
               </span>
             </div>
-            <Button className="w-full" size="lg">
-              Checkout ({totalItems} item{totalItems !== 1 ? "s" : ""})
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={() => {
+                closeCart();
+                router.push("/orders/checkout");
+              }}
+            >
+              Checkout ({productCount} product{productCount !== 1 ? "s" : ""})
             </Button>
           </div>
         )}

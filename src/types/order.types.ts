@@ -4,6 +4,8 @@ import { ProductImage } from "./product.types";
 
 export type OrderStatus = "placed" | "processing" | "shipped" | "delivered" | "cancelled";
 
+export type PaymentMethod = "Cash one delivery" | "BKASH";
+
 export interface OrderAddress {
   name: string;
   phone: string;
@@ -35,6 +37,66 @@ export interface OrderItem {
   variant: string;
   product?: OrderProduct;
 }
+
+// ===============================|| BUYER ORDER TYPES ||============================== //
+
+export interface PlaceOrderItem {
+  productId: string;
+  qty: number;
+  variant?: string;
+}
+
+export interface PlaceOrderPayload {
+  items: PlaceOrderItem[];
+  address: OrderAddress;
+  paymentMethod?: PaymentMethod;
+}
+
+export interface PlaceOrderResponse {
+  success: boolean;
+  message: string;
+  data: {
+    _id: string;
+    userId: string;
+    sellerId: string;
+    items: OrderItem[];
+    subtotal: number;
+    shippingFee: number;
+    total: number;
+    address: OrderAddress;
+    paymentMethod: string;
+    status: OrderStatus;
+    createdAt: string;
+    updatedAt: string;
+  };
+}
+
+export interface BuyerOrder {
+  _id: string;
+  userId: string;
+  sellerId: string;
+  items: OrderItem[];
+  subtotal: number;
+  shippingFee: number;
+  total: number;
+  address: OrderAddress;
+  paymentMethod: string;
+  status: OrderStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BuyerOrderListResponse {
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+  orders: BuyerOrder[];
+}
+
+export type BuyerOrderDetailResponse = BuyerOrder;
+
+// ===============================|| SELLER ORDER TYPES ||============================== //
 
 export interface SellerOrder {
   _id: string;

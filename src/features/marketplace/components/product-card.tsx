@@ -17,14 +17,14 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={`/marketplace/${product._id}`}>
-      <Card className="group overflow-hidden border-none shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer p-0 gap-0">
+      <Card className="group overflow-hidden border-none shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer p-0 gap-0">
         {/* Thumbnail */}
         <div className="relative aspect-square overflow-hidden bg-muted">
           {product.thumbnail?.key ? (
             <MediaImage
               mediaKey={product.thumbnail.key}
               alt={product.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              className="w-full h-full object-cover transition-transform duration-500"
               fallback={
                 <div className="flex items-center justify-center w-full h-full text-muted-foreground">
                   <ShoppingCart className="w-12 h-12" />

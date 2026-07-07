@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/atoms/button";
 import { Badge } from "@/components/atoms/badge";
 import { Skeleton } from "@/components/atoms/skeleton";
@@ -16,6 +17,7 @@ import { MediaImage } from "@/features/profile/components/media-image";
 import { useGetCart, useCartMutations } from "../hooks/cart-query";
 
 export function FloatingCart() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const { data, isLoading } = useGetCart();
   const { useUpdateCartQty, useRemoveFromCart } = useCartMutations();
@@ -23,7 +25,7 @@ export function FloatingCart() {
   const removeItem = useRemoveFromCart();
 
   const items = data?.data ?? [];
-  const totalItems = items.reduce((sum, item) => sum + item.qty, 0);
+  const productCount = items.length;
   const totalPrice = items.reduce(
     (sum, item) => sum + (item.product?.finalPrice ?? 0) * item.qty,
     0
@@ -99,9 +101,9 @@ export function FloatingCart() {
                 </div>
               ) : (
                 <div className="p-2 space-y-1">
-                  {items.map((item) => (
+                  {items.map((item, idx) => (
                     <div
-                      key={item.productId}
+                      key={`${item.productId}-${idx}`}
                       className="flex gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors"
                     >
                       {/* Thumbnail */}
@@ -158,6 +160,7 @@ export function FloatingCart() {
                               variant="secondary"
                               size="icon"
                               className="size-5"
+                              disabled={item.qty >= (item.product?.stock ?? 0)}
                               onClick={() => handleIncrement(item.productId)}
                             >
                               <Plus className="w-2.5 h-2.5" />
@@ -188,8 +191,15 @@ export function FloatingCart() {
                     &#x09F3;{totalPrice.toLocaleString()}
                   </span>
                 </div>
-                <Button className="w-full" size="sm">
-                  Checkout ({totalItems} item{totalItems !== 1 ? "s" : ""})
+                <Button
+                  className="w-full"
+                  size="sm"
+                  onClick={() => {
+                    setIsOpen(false);
+                    router.push("/orders/checkout");
+                  }}
+                >
+                  Checkout ({productCount} product{productCount !== 1 ? "s" : ""})
                 </Button>
               </div>
             )}
@@ -204,9 +214,9 @@ export function FloatingCart() {
           className="fixed right-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center"
         >
           <ShoppingBag className="w-5 h-5" />
-          {totalItems > 0 && (
+          {productCount > 0 && (
             <Badge className="absolute -top-1 -left-1 h-5 min-w-5 flex items-center justify-center p-0 bg-red-500 text-white text-[10px] font-bold rounded-full border-2 border-background">
-              {totalItems > 99 ? "99+" : totalItems}
+              {productCount > 99 ? "99+" : productCount}
             </Badge>
           )}
         </button>
