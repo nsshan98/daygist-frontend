@@ -179,3 +179,47 @@ export interface SellerProductDeleteResponse {
   success: boolean;
   message: string;
 }
+
+// ===============================|| BOOST PRICING TYPES ||============================== //
+
+export interface BoostPricingTier {
+  _id: string;
+  tier: "basic" | "regular" | "pro";
+  defaultDays: number;
+  price: number;
+  currency: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BoostPricingResponse {
+  success: boolean;
+  data: BoostPricingTier[];
+}
+
+// ===============================|| PAY FEE TYPES ||============================== //
+
+export interface PayFeePayload {
+  feeType: "upload" | "boost";
+  uploadFeeCost?: number;
+  tier?: "basic" | "regular" | "pro";
+}
+
+export interface PayFeeResponse {
+  success: boolean;
+  message: string;
+  data: {
+    productId: string;
+    feeType: "upload" | "boost";
+    cost: number;
+    boost: {
+      tier: string;
+      days: number;
+      startAt: string;
+      endAt: string;
+    } | null;
+    uploadFeePaid: boolean;
+    status: string;
+  };
+}

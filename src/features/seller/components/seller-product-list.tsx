@@ -22,10 +22,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Zap,
 } from "lucide-react";
 import { useGetSellerProducts, useDeleteSellerProduct } from "../hooks/seller-query";
 import { Product, ProductStatus } from "@/types/product.types";
 import { EditProductDialog } from "./edit-product-dialog";
+import { BoostProductDialog } from "./boost-product-dialog";
 
 const STATUS_FILTERS: { value: ProductStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -49,6 +51,7 @@ export function SellerProductList() {
   const [page, setPage] = useState(1);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [boostingProduct, setBoostingProduct] = useState<Product | null>(null);
 
   const { data, isLoading } = useGetSellerProducts(statusFilter, page, 20);
   const { deleteProductMutation } = useDeleteSellerProduct();
@@ -125,6 +128,7 @@ export function SellerProductList() {
                 product={product}
                 onEdit={() => setEditingProduct(product)}
                 onDelete={() => setDeletingProduct(product)}
+                onBoost={() => setBoostingProduct(product)}
               />
             ))}
           </div>
@@ -200,6 +204,17 @@ export function SellerProductList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Boost Dialog */}
+      {boostingProduct && (
+        <BoostProductDialog
+          product={boostingProduct}
+          open={!!boostingProduct}
+          onOpenChange={(open) => {
+            if (!open) setBoostingProduct(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -208,10 +223,12 @@ function SellerProductCard({
   product,
   onEdit,
   onDelete,
+  onBoost,
 }: {
   product: Product;
   onEdit: () => void;
   onDelete: () => void;
+  onBoost: () => void;
 }) {
   const hasDiscount = product.discountPercent > 0;
 
@@ -267,10 +284,16 @@ function SellerProductCard({
 
         {/* Actions */}
         <div className="flex gap-2 pt-1">
-          <Button variant="secondary" size="sm" className="flex-1" onClick={onEdit}>
+          <Button variant="default" size="sm" className="flex-1" onClick={onEdit}>
             <Pencil className="w-3.5 h-3.5 mr-1" />
             Edit
           </Button>
+          {product.status === "active" && (
+            <Button variant="secondary" size="sm" className="flex-1" onClick={onBoost}>
+              <Zap className="w-3.5 h-3.5 mr-1" />
+              Boost
+            </Button>
+          )}
           <Button variant="destructive" size="sm" onClick={onDelete}>
             <Trash2 className="w-3.5 h-3.5" />
           </Button>

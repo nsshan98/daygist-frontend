@@ -6,6 +6,7 @@ export { SellerDashboard } from "./components/seller-dashboard";
 export { SellerProductList } from "./components/seller-product-list";
 export { CreateProductDialog } from "./components/create-product-dialog";
 export { EditProductDialog } from "./components/edit-product-dialog";
+export { BoostProductDialog } from "./components/boost-product-dialog";
 export { SellerOrderList } from "./components/seller-order-list";
 export { SellerOrderDetail } from "./components/seller-order-detail";
 
@@ -17,6 +18,8 @@ export {
   useCreateSellerProduct,
   useUpdateSellerProduct,
   useDeleteSellerProduct,
+  useGetBoostPricing,
+  usePayFee,
 } from "./hooks/seller-query";
 
 export {
@@ -45,6 +48,10 @@ export type {
   SellerProductCreateResponse,
   SellerProductUpdateResponse,
   SellerProductDeleteResponse,
+  BoostPricingTier,
+  BoostPricingResponse,
+  PayFeePayload,
+  PayFeeResponse,
 } from "@/types/product.types";
 
 export type {

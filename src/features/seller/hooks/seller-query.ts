@@ -12,6 +12,9 @@ import {
   SellerProductUpdateResponse,
   SellerProductDeleteResponse,
   ProductStatus,
+  BoostPricingResponse,
+  PayFeePayload,
+  PayFeeResponse,
 } from "@/types/product.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -153,6 +156,55 @@ const useDeleteSellerProduct = () => {
   return { deleteProductMutation };
 };
 
+// ===============================|| BOOST PRICING ||============================== //
+
+const useGetBoostPricing = () => {
+  const boostPricingQuery = useQuery({
+    queryKey: ["boost-pricing"],
+    queryFn: async (): Promise<BoostPricingResponse> => {
+      const { data } = await axiosClient.get("/boost-pricing");
+      return data;
+    },
+    staleTime: 1000 * 60 * 10,
+  });
+
+  return boostPricingQuery;
+};
+
+// ===============================|| PAY FEE ||============================== //
+
+const usePayFee = () => {
+  const queryClient = useQueryClient();
+
+  const payFeeMutation = useMutation({
+    mutationFn: async ({
+      productId,
+      payload,
+    }: {
+      productId: string;
+      payload: PayFeePayload;
+    }): Promise<PayFeeResponse> => {
+      const { data: response } = await axiosClient.post(
+        `/e-commerce/pay-fee/${productId}`,
+        payload,
+        { headers: { "Content-Type": "application/json" } }
+      );
+      return response;
+    },
+    onSuccess: (response) => {
+      toast.success(response.message || "Payment successful!");
+      queryClient.invalidateQueries({ queryKey: ["seller-products"] });
+      queryClient.invalidateQueries({ queryKey: ["seller-profile"] });
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      const message = error.response?.data?.message || "Payment failed";
+      toast.error(message);
+    },
+  });
+
+  return { payFeeMutation };
+};
+
 // ===============================|| SELLER HOOKS EXPORT ||============================== //
 
 export {
@@ -162,4 +214,6 @@ export {
   useCreateSellerProduct,
   useUpdateSellerProduct,
   useDeleteSellerProduct,
+  useGetBoostPricing,
+  usePayFee,
 };
