@@ -9,23 +9,7 @@ import { Skeleton } from "@/components/atoms/skeleton";
 import { ChevronLeft, ChevronRight, Package, Eye } from "lucide-react";
 import { useGetMyOrders } from "../hooks/order-query";
 import { OrderStatus, BuyerOrder } from "@/types/order.types";
-
-const STATUS_FILTERS: { value: OrderStatus | "all"; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "placed", label: "Placed" },
-  { value: "processing", label: "Processing" },
-  { value: "shipped", label: "Shipped" },
-  { value: "delivered", label: "Delivered" },
-  { value: "cancelled", label: "Cancelled" },
-];
-
-const STATUS_COLORS: Record<string, string> = {
-  placed: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  processing: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  shipped: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  delivered: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  cancelled: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-};
+import { ORDER_STATUS_FILTERS, ORDER_STATUS_COLORS } from "@/lib/constants";
 
 export function MyOrdersList() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
@@ -39,7 +23,7 @@ export function MyOrdersList() {
     <div className="space-y-4">
       {/* Status Filters */}
       <div className="flex flex-wrap gap-2">
-        {STATUS_FILTERS.map((s) => (
+        {ORDER_STATUS_FILTERS.map((s) => (
           <Badge
             key={s.value}
             variant={statusFilter === s.value ? "default" : "outline"}
@@ -130,7 +114,7 @@ function OrderCard({ order }: { order: BuyerOrder }) {
                   #{order._id.slice(-8).toUpperCase()}
                 </span>
                 <Badge
-                  className={`capitalize text-xs ${STATUS_COLORS[order.status] || ""}`}
+                  className={`capitalize text-xs ${ORDER_STATUS_COLORS[order.status] || ""}`}
                   variant="secondary"
                 >
                   {order.status}

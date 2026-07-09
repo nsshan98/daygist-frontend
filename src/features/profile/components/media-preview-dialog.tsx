@@ -38,24 +38,8 @@ import {
   useGetPostDetail,
 } from "@/features/home/hooks/feed-query";
 import { ReactionPicker } from "@/components/molecules/reaction-picker";
-
-// Format relative time
-const formatRelativeTime = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) return "Just now";
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
-  });
-};
+import { formatRelativeTime } from "@/lib/helpers";
+import { CommentSkeleton } from "@/components/molecules/comment-skeleton";
 
 // Media Carousel Component
 function MediaCarousel({ 
@@ -439,15 +423,9 @@ export function MediaPreviewDialog({
             
             {isCommentsLoading ? (
               <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex gap-3">
-                    <Skeleton className="h-8 w-8 rounded-full" />
-                    <div className="flex-1">
-                      <Skeleton className="h-4 w-24 mb-1" />
-                      <Skeleton className="h-12 w-full rounded-2xl" />
-                    </div>
-                  </div>
-                ))}
+                <CommentSkeleton />
+                <CommentSkeleton />
+                <CommentSkeleton />
               </div>
             ) : comments.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">

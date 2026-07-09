@@ -13,6 +13,7 @@ import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { MediaImage } from "@/features/profile/components/media-image";
 import { useCartStore } from "../stores/cart-store";
 import { useGetCart, useCartMutations } from "../hooks/cart-query";
+import { EmptyState } from "@/components/molecules/empty-state";
 
 export function CartSheet() {
   const router = useRouter();
@@ -75,13 +76,11 @@ export function CartSheet() {
               ))}
             </div>
           ) : items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center py-12">
-              <ShoppingBag className="w-16 h-16 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-1">Your cart is empty</h3>
-              <p className="text-sm text-muted-foreground">
-                Add some products to get started
-              </p>
-            </div>
+            <EmptyState
+              icon={ShoppingBag}
+              title="Your cart is empty"
+              description="Add some products to get started"
+            />
           ) : (
             <div className="space-y-4">
               {items.map((item, idx) => (

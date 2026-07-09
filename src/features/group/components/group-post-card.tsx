@@ -13,13 +13,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/atoms/dialog";
 import { useDeleteGroupPost, useLikeGroupPost, useUnlikeGroupPost, useShareGroupPost } from "../hooks/group-post-query";
 import { useSignedMedia } from "@/features/profile/components/media-image";
 import { EditGroupPostDialog } from "./edit-group-post-dialog";
@@ -27,6 +20,8 @@ import { GroupCommentDialog } from "./group-comment-dialog";
 import { toast } from "sonner";
 import { GroupPostData } from "@/types";
 import { ReactionPicker } from "@/components/molecules/reaction-picker";
+import { formatRelativeTime } from "@/lib/helpers";
+import { DeletePostDialog } from "@/components/molecules/delete-post-dialog";
 
 interface GroupPostCardProps {
   post: GroupPostData;
@@ -84,18 +79,6 @@ export function GroupPostCard({
         setIsDeleteDialogOpen(false);
       },
     });
-  };
-
-  const formatRelativeTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    if (seconds < 60) return "just now";
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    if (seconds < 2592000) return `${Math.floor(seconds / 86400)}d ago`;
-    return date.toLocaleDateString();
   };
 
   const renderPostContent = () => {
@@ -276,33 +259,12 @@ export function GroupPostCard({
       </CardFooter>
 
       {/* Delete Post Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Delete Post</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-muted-foreground">
-              Are you sure you want to delete this post? This action cannot be undone.
-            </p>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button 
-              variant="secondary" 
-              onClick={() => setIsDeleteDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              variant="destructive"
-              onClick={handleDeletePost}
-              disabled={deleteGroupPostMutation.isPending}
-            >
-              {deleteGroupPostMutation.isPending ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeletePostDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onDelete={handleDeletePost}
+        isPending={deleteGroupPostMutation.isPending}
+      />
 
       {/* Edit Post Dialog */}
       <EditGroupPostDialog

@@ -13,13 +13,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/atoms/dialog";
 import { Textarea } from "@/components/atoms/textarea";
 import { useDeletePost, useSavePost, useUnsavePost, useLikePost, useUnlikePost, useSharePost } from "../hooks/feed-query";
 import { ReactionPicker } from "@/components/molecules/reaction-picker";
@@ -29,6 +22,8 @@ import { toast } from "sonner";
 import { useFollowUser } from "@/features/follow";
 import { EditPostDialog } from "./edit-post-dialog";
 import { FeedItem } from "@/types";
+import { formatRelativeTime } from "@/lib/helpers";
+import { DeletePostDialog } from "@/components/molecules/delete-post-dialog";
 
 interface FeedPostProps {
   post: FeedItem;
@@ -130,24 +125,6 @@ export function FeedPost({
     });
   };
   
-  // Format relative time
-  const formatRelativeTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
-    if (diffInSeconds < 60) return "Just now";
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-    
-    return date.toLocaleDateString("en-US", { 
-      month: "short", 
-      day: "numeric",
-      year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined
-    });
-  };
-
   // Render text post with background
   const renderTextPost = () => {
     if (data.backgroundUrl && data.textStyle) {
@@ -431,33 +408,12 @@ export function FeedPost({
       />
 
       {/* Delete Post Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Delete Post</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-muted-foreground">
-              Are you sure you want to delete this post? This action cannot be undone.
-            </p>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button 
-              variant="secondary" 
-              onClick={() => setIsDeleteDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              variant="destructive"
-              onClick={handleDeletePost}
-              disabled={deletePostMutation.isPending}
-            >
-              {deletePostMutation.isPending ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeletePostDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onDelete={handleDeletePost}
+        isPending={deletePostMutation.isPending}
+      />
     </Card>
   );
 }

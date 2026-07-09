@@ -21,6 +21,7 @@ import { placeOrderSchema, PlaceOrderSchemaType } from "@/schema/order-schema";
 import { useGetCart } from "@/features/marketplace/hooks/cart-query";
 import { usePlaceOrder } from "../hooks/order-query";
 import { MediaImage } from "@/features/profile/components/media-image";
+import { EmptyState } from "@/components/molecules/empty-state";
 
 export function CheckoutForm() {
   const router = useRouter();
@@ -88,14 +89,13 @@ export function CheckoutForm() {
     return (
       <Card className="border-none">
         <CardContent className="py-16 text-center">
-          <ShoppingBag className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Your cart is empty</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Add some products before checking out.
-          </p>
-          <Button onClick={() => router.push("/marketplace")}>
-            Browse Products
-          </Button>
+          <EmptyState
+            icon={ShoppingBag}
+            title="Your cart is empty"
+            description="Add some products before checking out."
+            actionLabel="Browse Products"
+            onAction={() => router.push("/marketplace")}
+          />
         </CardContent>
       </Card>
     );

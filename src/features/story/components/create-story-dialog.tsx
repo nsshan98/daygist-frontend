@@ -164,7 +164,7 @@ export function CreateStoryDialog() {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader className="border-b pb-4">
           <DialogTitle className="text-center text-xl font-semibold">
             Create Story
@@ -217,7 +217,7 @@ export function CreateStoryDialog() {
         {storyType === "text" && (
           <div className="space-y-4">
             <div
-              className="relative aspect-[9/16] rounded-xl overflow-hidden flex items-center justify-center"
+              className="relative rounded-xl overflow-hidden flex items-center justify-center max-h-[320px]"
               style={{ backgroundColor: backgroundUrl || "#667eea" }}
             >
               <textarea
@@ -292,7 +292,7 @@ export function CreateStoryDialog() {
                   const input = document.getElementById("story-image-upload");
                   if (input) input.click();
                 }}
-                className="w-full aspect-[9/16] rounded-xl border-2 border-dashed border-muted-foreground/50 flex flex-col items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all"
+                className="w-full max-h-[320px] aspect-[4/5] rounded-xl border-2 border-dashed border-muted-foreground/50 flex flex-col items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all"
               >
                 <ImageIcon className="w-12 h-12 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Click to upload image</span>
@@ -311,7 +311,7 @@ export function CreateStoryDialog() {
                 />
               </button>
             ) : (
-              <div className="relative aspect-[9/16] rounded-xl overflow-hidden">
+              <div className="relative max-h-[320px] aspect-[4/5] rounded-xl overflow-hidden">
                 <img
                   src={URL.createObjectURL(mediaFile)}
                   alt="Story preview"
@@ -337,7 +337,7 @@ export function CreateStoryDialog() {
                   const input = document.getElementById("story-video-upload");
                   if (input) input.click();
                 }}
-                className="w-full aspect-[9/16] rounded-xl border-2 border-dashed border-muted-foreground/50 flex flex-col items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all"
+                className="w-full max-h-[320px] aspect-[4/5] rounded-xl border-2 border-dashed border-muted-foreground/50 flex flex-col items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all"
               >
                 <Video className="w-12 h-12 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Click to upload video</span>
@@ -356,7 +356,7 @@ export function CreateStoryDialog() {
                 />
               </button>
             ) : (
-              <div className="relative aspect-[9/16] rounded-xl overflow-hidden bg-black">
+              <div className="relative max-h-[320px] aspect-[4/5] rounded-xl overflow-hidden bg-black">
                 <video
                   src={URL.createObjectURL(mediaFile)}
                   className="w-full h-full object-cover"

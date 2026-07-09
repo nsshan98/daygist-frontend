@@ -12,6 +12,7 @@ import { useGetUserProfile, useGetUserProfileById } from "../hooks/profile-query
 import { FollowListDialog, useFollowUser, useUnfollowUser } from "@/features/follow";
 import { isAxiosError } from "axios";
 import { toast } from "sonner";
+import { AnimatedBackground } from "@/components/molecules/animated-background";
 
 interface ProfileContentProps {
   username?: string;
@@ -103,10 +104,7 @@ export function ProfileContent({ username, userId }: ProfileContentProps) {
   return (
     <div className="min-h-screen bg-linear-to-b from-background via-background to-muted/20">
       {/* Animated background elements */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-3xl animate-pulse delay-1000" />
-      </div>
+      <AnimatedBackground />
 
       <main className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { MediaImage } from "@/features/profile/components/media-image";
 import { useGetCart, useCartMutations } from "../hooks/cart-query";
+import { EmptyState } from "@/components/molecules/empty-state";
 
 export function FloatingCart() {
   const router = useRouter();
@@ -92,13 +93,11 @@ export function FloatingCart() {
                   ))}
                 </div>
               ) : items.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 px-4">
-                  <ShoppingCart className="w-16 h-16 text-muted-foreground mb-4" />
-                  <h3 className="text-base font-semibold mb-1">Your cart is empty</h3>
-                  <p className="text-sm text-muted-foreground text-center">
-                    Add some products to get started
-                  </p>
-                </div>
+                <EmptyState
+                  icon={ShoppingCart}
+                  title="Your cart is empty"
+                  description="Add some products to get started"
+                />
               ) : (
                 <div className="p-2 space-y-1">
                   {items.map((item, idx) => (

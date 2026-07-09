@@ -5,6 +5,7 @@ export { Suggestions } from "./components/suggestions";
 export { Sidebar } from "./components/sidebar";
 export { MediaViewer } from "./components/media-viewer";
 export { CommentDialog } from "./components/comment-dialog";
+export { HomeContent } from "./components/home-content";
 
 export { PostModal } from "@/components/organisms/post-modal";
 export type {

@@ -34,24 +34,8 @@ import Link from "next/link";
 import { ReactionPicker } from "@/components/molecules/reaction-picker";
 import { Input } from "@/components/atoms/input";
 import { Skeleton } from "@/components/atoms/skeleton";
-
-// Format relative time
-const formatRelativeTime = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
-  if (diffInSeconds < 60) return "Just now";
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-  
-  return date.toLocaleDateString("en-US", { 
-    month: "short", 
-    day: "numeric",
-    year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined
-  });
-};
+import { formatRelativeTime } from "@/lib/helpers";
+import { CommentSkeleton } from "@/components/molecules/comment-skeleton";
 
 // Format numbers (e.g., 1000 -> 1K)
 const formatNumber = (num: number) => {
@@ -693,15 +677,9 @@ export function ReelCard({ reel, index, isActive, onNext, onPrevious, hasNext, h
                 {isLoadingComments ? (
                   // Loading skeleton
                   <div className="space-y-4">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex gap-3">
-                        <Skeleton className="h-8 w-8 rounded-full" />
-                        <div className="flex-1 space-y-2">
-                          <Skeleton className="h-4 w-24" />
-                          <Skeleton className="h-4 w-full" />
-                        </div>
-                      </div>
-                    ))}
+                    <CommentSkeleton />
+                    <CommentSkeleton />
+                    <CommentSkeleton />
                   </div>
                 ) : comments.length === 0 ? (
                   // Empty state

@@ -17,7 +17,7 @@ import { useSignedMedia } from "@/features/profile/components/media-image";
 import { useState } from "react";
 import { Skeleton } from "@/components/atoms/skeleton";
 import { ReactionPicker } from "@/components/molecules/reaction-picker";
-
+import { formatRelativeTime } from "@/lib/helpers";
 interface SavedPostCardProps {
   post: SavedPost;
   onUnsave: (postId: string) => void;
@@ -46,24 +46,6 @@ export function SavedPostCard({ post, onUnsave, isUnsaving }: SavedPostCardProps
   const firstMedia = post.medias?.[0];
   const { data: signedMediaUrl } = useSignedUrl(firstMedia?.key || null);
   const finalMediaUrl = signedMediaUrl || firstMedia?.url;
-
-  // Format relative time
-  const formatRelativeTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    if (diffInSeconds < 60) return "Just now";
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
-    });
-  };
 
   // Render preview based on post type
   const renderPreview = () => {

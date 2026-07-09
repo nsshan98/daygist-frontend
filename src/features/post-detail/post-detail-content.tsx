@@ -28,13 +28,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/atoms/dialog";
 import { Textarea } from "@/components/atoms/textarea";
 import { Skeleton } from "@/components/atoms/skeleton";
 import { toast } from "sonner";
@@ -54,24 +47,9 @@ import { useSignedMedia } from "@/features/profile/components/media-image";
 import { useFollowUser, useUnfollowUser } from "@/features/follow";
 import { FeedMedia, Comment } from "@/types";
 import { ReactionPicker } from "@/components/molecules/reaction-picker";
-
-// Format relative time
-const formatRelativeTime = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) return "Just now";
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
-  });
-};
+import { formatRelativeTime } from "@/lib/helpers";
+import { AnimatedBackground } from "@/components/molecules/animated-background";
+import { DeletePostDialog } from "@/components/molecules/delete-post-dialog";
 
 // Comment Item Component
 function CommentItem({
@@ -557,10 +535,7 @@ export function PostDetailContent() {
   return (
     <div className="min-h-screen bg-background">
       {/* Animated background elements */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-3xl animate-pulse delay-1000" />
-      </div>
+      <AnimatedBackground />
 
       <div className="mx-auto max-w-4xl px-4 py-6">
         {/* Back Button */}
@@ -788,26 +763,12 @@ export function PostDetailContent() {
       )}
 
       {/* Delete Post Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Delete Post</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-muted-foreground">
-              Are you sure you want to delete this post? This action cannot be undone.
-            </p>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="secondary" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDeletePost} disabled={deletePostMutation.isPending}>
-              {deletePostMutation.isPending ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeletePostDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onDelete={handleDeletePost}
+        isPending={deletePostMutation.isPending}
+      />
     </div>
   );
 }

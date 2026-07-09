@@ -30,24 +30,8 @@ import {
 import { useSignedMedia } from "@/features/profile/components/media-image";
 import { Comment, FeedItem, FeedMedia } from "@/types";
 import { ReactionPicker } from "@/components/molecules/reaction-picker";
-
-// Format relative time
-const formatRelativeTime = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) return "Just now";
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
-  });
-};
+import { formatRelativeTime } from "@/lib/helpers";
+import { CommentSkeleton } from "@/components/molecules/comment-skeleton";
 
 // Current User Avatar Component
 function CurrentUserAvatar({ currentUser }: { currentUser?: { name: string; avatar?: { url: string; key: string | null } | null } | null }) {
@@ -699,15 +683,4 @@ export function CommentDialog({
   );
 }
 
-// Comment Skeleton
-function CommentSkeleton() {
-  return (
-    <div className="flex gap-3 py-3">
-      <Skeleton className="h-9 w-9 rounded-full" />
-      <div className="flex-1">
-        <Skeleton className="h-6 w-24 mb-1" />
-        <Skeleton className="h-16 w-full rounded-2xl" />
-      </div>
-    </div>
-  );
-}
+

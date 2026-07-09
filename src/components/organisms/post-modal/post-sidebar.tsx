@@ -8,31 +8,22 @@ import {
   Send,
   Share2,
   Bookmark,
-  MoreHorizontal,
   Pencil,
   Trash2,
-  UserPlus,
-  UserMinus,
   Globe,
   Users,
   Lock,
   Loader2,
   Image as ImageIcon,
   Smile,
-  Link2,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Button } from "@/components/atoms/button";
 import { Textarea } from "@/components/atoms/textarea";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/atoms/dropdown-menu";
+
 import { Skeleton } from "@/components/atoms/skeleton";
 import { ReactionPicker } from "@/components/molecules/reaction-picker";
+import { CommentSkeleton } from "@/components/molecules/comment-skeleton";
 import { useSignedMedia } from "@/features/profile/components/media-image";
 import { useFollowUser, useUnfollowUser } from "@/features/follow";
 import {
@@ -205,6 +196,25 @@ export function PostSidebar({
                 <h3 className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
                   {data.author.name}
                 </h3>
+                {!data.author.isMe && (
+                  isFollowing ? (
+                    <span className="font-normal text-xs text-muted-foreground">
+                      · Following
+                    </span>
+                  ) : (
+                    <button
+                      className="font-normal text-xs text-primary hover:text-primary/80 cursor-pointer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleFollowToggle();
+                      }}
+                      disabled={followUserMutation.isPending || unfollowUserMutation.isPending}
+                    >
+                      {followUserMutation.isPending || unfollowUserMutation.isPending ? "..." : "· Follow"}
+                    </button>
+                  )
+                )}
                 {data.feeling && (
                   <span className="text-xs text-muted-foreground truncate">
                     is feeling {data.feeling.toLowerCase()}
@@ -220,90 +230,6 @@ export function PostSidebar({
               </p>
             </div>
           </Link>
-
-          <div className="flex items-center gap-1 shrink-0">
-            {!data.author.isMe && (
-              <Button
-                size="sm"
-                variant={isFollowing ? "outline" : "default"}
-                onClick={handleFollowToggle}
-                disabled={followUserMutation.isPending || unfollowUserMutation.isPending}
-                className="h-7 px-3 text-xs rounded-full"
-              >
-                {isFollowing ? (
-                  <>
-                    <UserMinus className="h-3 w-3 mr-1" />
-                    Following
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="h-3 w-3 mr-1" />
-                    Follow
-                  </>
-                )}
-              </Button>
-            )}
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 rounded-full hover:bg-primary/10"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/posts/${data._id}`);
-                  }}
-                  className="cursor-pointer"
-                >
-                  <Link2 className="mr-2 h-4 w-4" />
-                  Copy link
-                </DropdownMenuItem>
-                {data.author.isMe ? (
-                  <>
-                    <DropdownMenuItem
-                      onClick={() => setIsEditOpen(true)}
-                      className="cursor-pointer"
-                    >
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Edit post
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={onDelete}
-                      disabled={isDeleting}
-                      className="cursor-pointer text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      {isDeleting ? "Deleting..." : "Delete post"}
-                    </DropdownMenuItem>
-                  </>
-                ) : (
-                  <DropdownMenuItem
-                    onClick={handleFollowToggle}
-                    className="cursor-pointer"
-                  >
-                    {isFollowing ? (
-                      <>
-                        <UserMinus className="mr-2 h-4 w-4" />
-                        Unfollow
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        Follow
-                      </>
-                    )}
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </div>
       </div>
 
@@ -516,14 +442,3 @@ export function PostSidebar({
   );
 }
 
-function CommentSkeleton() {
-  return (
-    <div className="flex gap-2.5 py-2">
-      <Skeleton className="h-8 w-8 rounded-full" />
-      <div className="flex-1 space-y-1.5">
-        <Skeleton className="h-3 w-20" />
-        <Skeleton className="h-4 w-full rounded-2xl" />
-      </div>
-    </div>
-  );
-}

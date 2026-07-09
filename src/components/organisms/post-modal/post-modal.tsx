@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +28,7 @@ export function PostModal({
   currentUser,
 }: PostModalProps) {
   const queryClient = useQueryClient();
+  const overlayRef = useRef<HTMLDivElement | null>(null);
 
   const { likePostMutation } = useLikePost();
   const { unlikePostMutation } = useUnlikePost();
@@ -36,10 +37,37 @@ export function PostModal({
   const { sharePostMutation } = useSharePost();
   const { deletePostMutation } = useDeletePost();
 
+  // Body scroll lock
   useEffect(() => {
     if (open) {
       window.dispatchEvent(new Event("feed:pause-videos"));
+      document.body.style.overflow = "hidden";
     }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  // Backdrop overlay
+  useEffect(() => {
+    if (open && !overlayRef.current) {
+      const overlay = document.createElement("div");
+      overlay.className =
+        "fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-200";
+      overlay.setAttribute("aria-hidden", "true");
+      document.body.appendChild(overlay);
+      overlayRef.current = overlay;
+    } else if (!open && overlayRef.current) {
+      overlayRef.current.remove();
+      overlayRef.current = null;
+    }
+
+    return () => {
+      if (overlayRef.current) {
+        overlayRef.current.remove();
+        overlayRef.current = null;
+      }
+    };
   }, [open]);
 
   if (!post) return null;

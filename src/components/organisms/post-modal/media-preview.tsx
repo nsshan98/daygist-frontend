@@ -383,14 +383,24 @@ function ImageSlide({
   onZoomOut: () => void;
 }) {
   const [isLoaded, setIsLoaded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { useSignedUrl } = useSignedMedia();
   const { data: signedUrl } = useSignedUrl(media.key || null);
   const finalUrl = signedUrl || media.url;
 
-  const onWheel = (e: React.WheelEvent) => {
-    if (e.deltaY < 0) onZoomIn();
-    else onZoomOut();
-  };
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (e.deltaY < 0) onZoomIn();
+      else onZoomOut();
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [onZoomIn, onZoomOut]);
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (zoom <= 1) return;
@@ -410,8 +420,8 @@ function ImageSlide({
 
   return (
     <div
+      ref={containerRef}
       className="relative w-full h-full flex items-center justify-center overflow-hidden"
-      onWheel={onWheel}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
